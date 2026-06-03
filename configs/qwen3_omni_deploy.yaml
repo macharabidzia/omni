@@ -1,0 +1,37 @@
+name: qwen3-omni-native-realtime
+runtime:
+  model: Qwen/Qwen3-Omni-30B-A3B-Instruct
+  qwen_realtime_url: ws://qwen3-omni:8091/v1/realtime
+  qwen_health_url: http://qwen3-omni:8091/health
+services:
+  qwen3-omni:
+    port: 8091
+    command: >
+      vllm serve Qwen/Qwen3-Omni-30B-A3B-Instruct
+      --omni
+      --host 0.0.0.0
+      --port 8091
+      --trust-remote-code
+      --tensor-parallel-size 1
+      --max-model-len 32768
+      --gpu-memory-utilization 0.95
+  gateway:
+    port: 8080
+    env:
+      QWEN_REALTIME_URL: ws://qwen3-omni:8091/v1/realtime
+      QWEN_HEALTH_URL: http://qwen3-omni:8091/health
+  web:
+    port: 3000
+    env:
+      VITE_GATEWAY_HTTP_URL: http://localhost:8080
+      VITE_GATEWAY_WS_URL: ws://localhost:8080/ws/realtime
+runpod:
+  ssh:
+    host: 195.26.233.65
+    port: 57403
+    user: root
+    identity_file: ~/.ssh/id_ed25519
+  proxy:
+    web: https://y977m2sllhl4w8-5173.proxy.runpod.net
+    gateway: https://<runpod-gateway-host>
+

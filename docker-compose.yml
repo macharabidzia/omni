@@ -1,0 +1,78 @@
+services:
+  qwen3-omni:
+    build:
+      context: .
+      dockerfile: configs/qwen3-omni.Dockerfile
+    container_name: qwen3-omni
+    environment:
+      QWEN_MODEL: ${QWEN_MODEL:-Qwen/Qwen3-Omni-30B-A3B-Instruct}
+      QWEN_PORT: ${QWEN_PORT:-8091}
+      HF_HOME: /workspace/.cache/huggingface
+      TRANSFORMERS_CACHE: /workspace/.cache/huggingface
+      VLLM_USE_V1: "0"
+    command: >
+      bash -lc "vllm serve ${QWEN_MODEL:-Qwen/Qwen3-Omni-30B-A3B-Instruct}
+      --omni
+      --host 0.0.0.0
+      --port ${QWEN_PORT:-8091}
+      --trust-remote-code
+      --tensor-parallel-size 1
+      --max-model-len 32768
+      --gpu-memory-utilization 0.95"
+    ports:
+      - "${QWEN_PORT:-8091}:8091"
+    volumes:
+      - qwen-cache:/workspace/.cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${QWEN_PORT:-8091}/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ["gpu"]
+
+  gateway:
+    build:
+      context: .
+      dockerfile: apps/gateway/Dockerfile
+    container_name: qwen3-omni-gateway
+    environment:
+      GATEWAY_PORT: ${GATEWAY_PORT:-8080}
+      QWEN_REALTIME_URL: ${QWEN_REALTIME_URL:-ws://qwen3-omni:8091/v1/realtime}
+      QWEN_HEALTH_URL: ${QWEN_HEALTH_URL:-http://qwen3-omni:8091/health}
+      QWEN_MODEL: ${QWEN_MODEL:-Qwen/Qwen3-Omni-30B-A3B-Instruct}
+      QWEN_DEBUG_RAW_EVENTS: ${QWEN_DEBUG_RAW_EVENTS:-false}
+      QWEN_REQUEST_TIMEOUT_SECONDS: ${QWEN_REQUEST_TIMEOUT_SECONDS:-30}
+      QWEN_RESPONSE_TIMEOUT_SECONDS: ${QWEN_RESPONSE_TIMEOUT_SECONDS:-90}
+    depends_on:
+      qwen3-omni:
+        condition: service_started
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: qwen3-omni-web
+    environment:
+      VITE_GATEWAY_HTTP_URL: ${VITE_GATEWAY_HTTP_URL:-http://localhost:${GATEWAY_PORT:-8080}}
+      VITE_GATEWAY_WS_URL: ${VITE_GATEWAY_WS_URL:-ws://localhost:${GATEWAY_PORT:-8080}/ws/realtime}
+      WEB_PORT: ${WEB_PORT:-3000}
+    depends_on:
+      gateway:
+        condition: service_started
+    command: npm run dev -- --host 0.0.0.0 --port ${WEB_PORT:-3000}
+    ports:
+      - "${WEB_PORT:-3000}:${WEB_PORT:-3000}"
+    restart: unless-stopped
+
+volumes:
+  qwen-cache:
+
