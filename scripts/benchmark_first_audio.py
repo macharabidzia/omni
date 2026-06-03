@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Benchmark first-audio latency across chunk sizes and speakers.")
@@ -19,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--speakers", default="Ethan,Chelsie,Aiden")
     parser.add_argument("--modalities-list", default="text;text+audio")
     parser.add_argument("--output-dir", type=Path, default=Path("benchmark-results"))
-    parser.add_argument("--smoke-script", type=Path, default=Path("scripts/smoke_realtime_wav.py"))
+    parser.add_argument("--smoke-script", type=Path, default=REPO_ROOT / "scripts" / "smoke_realtime_wav.py")
     return parser.parse_args()
 
 
@@ -49,7 +51,7 @@ def percentile(values: list[float], pct: int) -> float | None:
 
 def main() -> None:
     args = parse_args()
-    output_dir = args.output_dir
+    output_dir = args.output_dir if args.output_dir.is_absolute() else REPO_ROOT / args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "event_logs").mkdir(parents=True, exist_ok=True)
 

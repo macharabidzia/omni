@@ -212,6 +212,7 @@ qwen3-omni-native-realtime/
 
   configs/
     qwen3_omni_deploy.yaml
+    qwen3_omni_single_a100.yaml
     runtime.env.example
 
   scripts/

@@ -33,6 +33,7 @@ class QwenRealtimeClient:
     def __init__(
         self,
         *,
+        model: str,
         url: str,
         request_timeout_seconds: float,
         response_timeout_seconds: float,
@@ -41,6 +42,7 @@ class QwenRealtimeClient:
         debug_raw_events: bool = False,
         instructions: str | None = None,
     ) -> None:
+        self.model = model
         self.url = url
         self.request_timeout_seconds = request_timeout_seconds
         self.response_timeout_seconds = response_timeout_seconds
@@ -77,30 +79,7 @@ class QwenRealtimeClient:
 
         session_update = {
             "type": "session.update",
-            "session": {
-                "modalities": modalities,
-                "voice": speaker,
-                "speaker": speaker,
-                "instructions": self.instructions,
-                "input_audio_format": "pcm16",
-                "output_audio_format": "pcm16",
-                "audio": {
-                    "input": {
-                        "format": {
-                            "type": "pcm16",
-                            "sample_rate_hz": input_sample_rate,
-                            "channels": 1,
-                        }
-                    },
-                    "output": {
-                        "format": {
-                            "type": "pcm16",
-                            "sample_rate_hz": self.output_sample_rate,
-                            "channels": 1,
-                        }
-                    },
-                },
-            },
+            "model": self.model,
         }
         await self._send(session_update)
 
@@ -113,26 +92,13 @@ class QwenRealtimeClient:
         )
 
     async def commit_audio(self) -> None:
-        response_payload = {
-            "modalities": self.modalities,
-            "instructions": self.instructions,
-        }
-        if self.output_audio:
-            response_payload["audio"] = {
-                "voice": self.speaker,
-                "format": "pcm16",
-            }
-
-        await self._send({"type": "input_audio_buffer.commit"})
-        await self._send(
-            {
-                "type": "response.create",
-                "response": response_payload,
-            }
-        )
+        await self._send({"type": "input_audio_buffer.commit", "final": False})
+        await self._send({"type": "input_audio_buffer.commit", "final": True})
 
     async def cancel_response(self) -> None:
-        await self._send({"type": "response.cancel"})
+        # Current official vllm-omni realtime websocket does not expose a
+        # cancel event. The gateway still suppresses later audio locally.
+        return
 
     async def close(self) -> None:
         if self.websocket is not None:
@@ -184,6 +150,7 @@ class QwenRealtimeClient:
             "conversation.item.input_audio_transcription.delta",
             "input_audio_buffer.transcript.delta",
             "response.audio_transcript.delta",
+            "transcription.delta",
         }:
             text = _first_non_empty(
                 payload.get("delta"),
@@ -206,7 +173,12 @@ class QwenRealtimeClient:
                 sample_rate=sample_rate,
             )
 
-        if raw_type in {"response.done", "response.completed"}:
+        if raw_type in {
+            "response.done",
+            "response.completed",
+            "response.audio.done",
+            "transcription.done",
+        }:
             return QwenEvent(kind="response_done", payload=payload)
 
         if raw_type == "error":

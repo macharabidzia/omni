@@ -3,12 +3,18 @@ import argparse
 import asyncio
 import base64
 import json
+import os
+import sys
 import wave
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
 import websockets
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from apps.gateway.src.realtime.audio import chunk_bytes_for_duration_ms
 from apps.gateway.src.realtime.event_map import normalize_qwen_event
@@ -20,14 +26,18 @@ from apps.gateway.src.realtime.qwen_client import QwenRealtimeClient
 class SessionRecorder:
     metrics: SessionMetrics = field(default_factory=SessionMetrics)
     events: list[dict] = field(default_factory=list)
+    errors: list[dict] = field(default_factory=list)
     assistant_audio_bytes: bytearray = field(default_factory=bytearray)
     assistant_audio_sample_rate: int = 24000
+    ready: asyncio.Event = field(default_factory=asyncio.Event)
     done: asyncio.Event = field(default_factory=asyncio.Event)
 
     def record(self, event: dict) -> None:
         self.events.append(event)
         event_type = event.get("type")
-        if event_type == "transcript.delta":
+        if event_type == "session.ready":
+            self.ready.set()
+        elif event_type == "transcript.delta":
             self.metrics.mark_once("t_first_transcript_delta")
         elif event_type == "assistant.text.delta":
             self.metrics.mark_once("t_first_text_delta")
@@ -42,6 +52,7 @@ class SessionRecorder:
             self.metrics.mark_once("t_response_done")
             self.done.set()
         elif event_type == "error":
+            self.errors.append(event)
             self.done.set()
 
 
@@ -58,6 +69,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--speaker", default="Ethan")
     parser.add_argument("--modalities", default="text,audio")
     parser.add_argument("--instructions", default=None)
+    parser.add_argument(
+        "--model",
+        default=os.environ.get("QWEN_MODEL", "Qwen/Qwen3-Omni-30B-A3B-Instruct"),
+    )
     parser.add_argument("--gateway-url", default="ws://localhost:8080/ws/realtime")
     parser.add_argument("--qwen-url", default="ws://localhost:8091/v1/realtime")
     parser.add_argument("--request-timeout-seconds", type=float, default=30.0)
@@ -86,6 +101,7 @@ def iter_chunks(audio_bytes: bytes, *, chunk_ms: int) -> Iterable[bytes]:
 async def run_direct(args: argparse.Namespace, audio_bytes: bytes, recorder: SessionRecorder) -> None:
     modalities = [value.strip() for value in args.modalities.split(",") if value.strip()]
     client = QwenRealtimeClient(
+        model=args.model,
         url=args.qwen_url,
         request_timeout_seconds=args.request_timeout_seconds,
         response_timeout_seconds=args.response_timeout_seconds,
@@ -142,6 +158,15 @@ async def run_gateway(args: argparse.Namespace, audio_bytes: bytes, recorder: Se
                 }
             )
         )
+
+        if not await wait_for_session_ready(recorder, timeout_seconds=args.request_timeout_seconds):
+            reader_task.cancel()
+            try:
+                await reader_task
+            except asyncio.CancelledError:
+                pass
+            return
+
         recorder.metrics.mark_once("t_microphone_started")
 
         for index, chunk in enumerate(iter_chunks(audio_bytes, chunk_ms=args.chunk_ms)):
@@ -176,6 +201,25 @@ async def collect_gateway_events(websocket, recorder: SessionRecorder) -> None:
         recorder.record(event)
 
 
+async def wait_for_session_ready(recorder: SessionRecorder, *, timeout_seconds: float) -> bool:
+    ready_task = asyncio.create_task(recorder.ready.wait())
+    done_task = asyncio.create_task(recorder.done.wait())
+    try:
+        done, pending = await asyncio.wait(
+            {ready_task, done_task},
+            timeout=timeout_seconds,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+    finally:
+        for task in (ready_task, done_task):
+            if not task.done():
+                task.cancel()
+
+    if ready_task in done and ready_task.result():
+        return True
+    return False
+
+
 def save_output_wav(output_path: Path, recorder: SessionRecorder) -> None:
     if not recorder.assistant_audio_bytes:
         return
@@ -196,12 +240,14 @@ async def main_async() -> None:
     args = parse_args()
     audio_bytes = load_wav(args.input)
     recorder = SessionRecorder()
+    requested_modalities = [value.strip() for value in args.modalities.split(",") if value.strip()]
 
     if args.direct:
         await run_direct(args, audio_bytes, recorder)
     else:
         await run_gateway(args, audio_bytes, recorder)
 
+    snapshot = recorder.metrics.snapshot()
     save_output_wav(args.output, recorder)
     save_json(args.events, recorder.events)
     save_json(
@@ -211,9 +257,33 @@ async def main_async() -> None:
             "speaker": args.speaker,
             "modalities": args.modalities,
             "chunk_ms": args.chunk_ms,
-            **recorder.metrics.snapshot(),
+            **snapshot,
         },
     )
+
+    summary = {
+        "mode": "direct" if args.direct else "gateway",
+        "speaker": args.speaker,
+        "modalities": requested_modalities,
+        "chunk_ms": args.chunk_ms,
+        "event_count": len(recorder.events),
+        "assistant_audio_bytes": len(recorder.assistant_audio_bytes),
+        "errors": recorder.errors,
+        "metrics": snapshot["metrics"],
+    }
+    print(json.dumps(summary, indent=2), flush=True)
+
+    if recorder.errors:
+        first_error = recorder.errors[0]
+        raise SystemExit(
+            f"Smoke test failed: {first_error.get('code', 'UNKNOWN_ERROR')}: {first_error.get('message', 'Unknown error')}"
+        )
+
+    if not any(event.get("type") == "assistant.done" for event in recorder.events):
+        raise SystemExit("Smoke test failed: assistant.done was not received.")
+
+    if "audio" in requested_modalities and not recorder.assistant_audio_bytes:
+        raise SystemExit("Smoke test failed: no assistant audio was received.")
 
 
 def main() -> None:
@@ -222,4 +292,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

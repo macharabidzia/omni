@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
+    "tsBuildInfoFile": "./node_modules/.tsconfig.app.tsbuildinfo",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
@@ -16,4 +17,3 @@
   },
   "include": ["src"]
 }
-

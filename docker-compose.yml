@@ -6,23 +6,25 @@ services:
     container_name: qwen3-omni
     environment:
       QWEN_MODEL: ${QWEN_MODEL:-Qwen/Qwen3-Omni-30B-A3B-Instruct}
+      QWEN_DEPLOY_CONFIG: ${QWEN_DEPLOY_CONFIG:-/workspace/configs/qwen3_omni_single_a100.yaml}
       QWEN_PORT: ${QWEN_PORT:-8091}
+      HF_HUB_DISABLE_XET: ${HF_HUB_DISABLE_XET:-1}
+      HF_TOKEN: ${HF_TOKEN:-}
       HF_HOME: /workspace/.cache/huggingface
       TRANSFORMERS_CACHE: /workspace/.cache/huggingface
       VLLM_USE_V1: "0"
     command: >
       bash -lc "vllm serve ${QWEN_MODEL:-Qwen/Qwen3-Omni-30B-A3B-Instruct}
       --omni
+      --deploy-config ${QWEN_DEPLOY_CONFIG:-/workspace/configs/qwen3_omni_single_a100.yaml}
       --host 0.0.0.0
       --port ${QWEN_PORT:-8091}
-      --trust-remote-code
-      --tensor-parallel-size 1
-      --max-model-len 32768
-      --gpu-memory-utilization 0.95"
+      --trust-remote-code"
     ports:
-      - "${QWEN_PORT:-8091}:8091"
+      - "${QWEN_PORT:-8091}:${QWEN_PORT:-8091}"
     volumes:
       - qwen-cache:/workspace/.cache
+      - ./models:/workspace/models
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${QWEN_PORT:-8091}/health || exit 1"]
       interval: 20s
@@ -51,7 +53,7 @@ services:
       QWEN_RESPONSE_TIMEOUT_SECONDS: ${QWEN_RESPONSE_TIMEOUT_SECONDS:-90}
     depends_on:
       qwen3-omni:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     restart: unless-stopped
@@ -75,4 +77,3 @@ services:
 
 volumes:
   qwen-cache:
-

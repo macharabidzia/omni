@@ -3,6 +3,7 @@ import type { SessionMode } from "../realtime/events";
 type CallControlsProps = {
   sessionActive: boolean;
   connecting: boolean;
+  startDisabled: boolean;
   pushToTalkActive: boolean;
   autoCommit: boolean;
   mode: SessionMode;
@@ -22,7 +23,11 @@ export function CallControls(props: CallControlsProps) {
   return (
     <section className="panel controls-panel">
       <div className="controls-row">
-        <button className="button primary" onClick={props.onStart} disabled={props.sessionActive || disabled}>
+        <button
+          className="button primary"
+          onClick={props.onStart}
+          disabled={props.startDisabled || props.sessionActive || disabled}
+        >
           Start Session
         </button>
         <button className="button" onClick={props.onStop} disabled={!props.sessionActive && !props.connecting}>
@@ -83,4 +88,3 @@ export function CallControls(props: CallControlsProps) {
     </section>
   );
 }
-

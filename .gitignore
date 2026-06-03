@@ -3,9 +3,12 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .venv/
+*.egg-info/
+*.tsbuildinfo
 node_modules/
 dist/
 .env
 benchmark-results/
 !benchmark-results/event_logs/.gitkeep
-
+models/*
+!models/.gitkeep

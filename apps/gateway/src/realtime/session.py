@@ -130,6 +130,7 @@ class RealtimeSession:
         self.metrics = SessionMetrics()
 
         self.qwen_client = QwenRealtimeClient(
+            model=self.settings.qwen_model,
             url=self.settings.qwen_realtime_url,
             request_timeout_seconds=self.settings.qwen_request_timeout_seconds,
             response_timeout_seconds=self.settings.qwen_response_timeout_seconds,
@@ -268,4 +269,3 @@ class RealtimeSession:
                 "timestamps": snapshot["timestamps"],
             }
         )
-

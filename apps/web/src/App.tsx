@@ -59,13 +59,16 @@ export default function App() {
     };
   }, [gatewayMetrics]);
 
-  async function refreshGatewayReady(): Promise<void> {
+  async function refreshGatewayReady(): Promise<string> {
     try {
       const response = await fetch(`${resolveGatewayHttpUrl()}/ready`);
       const payload = (await response.json()) as { status?: string };
-      setGatewayReady(payload.status ?? "unknown");
+      const status = payload.status ?? "unknown";
+      setGatewayReady(status);
+      return status;
     } catch {
       setGatewayReady("qwen_unreachable");
+      return "qwen_unreachable";
     }
   }
 
@@ -115,6 +118,14 @@ export default function App() {
     setGatewayMetrics({});
     localAudioPlayedMetricRef.current = null;
     commitAtRef.current = null;
+
+    const readyStatus = await refreshGatewayReady();
+    if (readyStatus !== "qwen_ready") {
+      setErrorText(`Gateway ready state is ${readyStatus}. Wait for Qwen to finish loading before starting a session.`);
+      setSessionState("idle");
+      return;
+    }
+
     setSessionState("connecting");
 
     try {
@@ -270,6 +281,7 @@ export default function App() {
       <CallControls
         sessionActive={sessionState === "ready"}
         connecting={sessionState === "connecting"}
+        startDisabled={sessionState !== "idle" || gatewayReady !== "qwen_ready"}
         pushToTalkActive={pushToTalkActive}
         autoCommit={autoCommit}
         mode={mode}
@@ -312,4 +324,3 @@ export default function App() {
     </main>
   );
 }
-

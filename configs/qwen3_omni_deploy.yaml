@@ -1,6 +1,7 @@
 name: qwen3-omni-native-realtime
 runtime:
   model: Qwen/Qwen3-Omni-30B-A3B-Instruct
+  hf_hub_disable_xet: true
   qwen_realtime_url: ws://qwen3-omni:8091/v1/realtime
   qwen_health_url: http://qwen3-omni:8091/health
 services:
@@ -9,6 +10,7 @@ services:
     command: >
       vllm serve Qwen/Qwen3-Omni-30B-A3B-Instruct
       --omni
+      --no-async-chunk
       --host 0.0.0.0
       --port 8091
       --trust-remote-code
@@ -34,4 +36,3 @@ runpod:
   proxy:
     web: https://y977m2sllhl4w8-5173.proxy.runpod.net
     gateway: https://<runpod-gateway-host>
-
