@@ -95,13 +95,7 @@ class RealtimeSession:
         await self._reset_runtime()
 
     async def _reset_runtime(self) -> None:
-        if self.qwen_reader_task is not None:
-            self.qwen_reader_task.cancel()
-            try:
-                await self.qwen_reader_task
-            except asyncio.CancelledError:
-                pass
-            self.qwen_reader_task = None
+        await self._close_qwen_realtime_session()
 
         if self.text_response_task is not None:
             self.text_response_task.cancel()
@@ -125,6 +119,56 @@ class RealtimeSession:
         self.browser_audio_chunk_count = 0
         self.browser_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
+
+    def _build_qwen_realtime_client(self) -> QwenRealtimeClient:
+        return QwenRealtimeClient(
+            model=self.settings.qwen_model,
+            url=self.settings.qwen_realtime_url,
+            request_timeout_seconds=self.settings.qwen_request_timeout_seconds,
+            response_timeout_seconds=self.settings.qwen_response_timeout_seconds,
+            output_sample_rate=self.settings.output_sample_rate,
+            max_ws_message_bytes=self.settings.max_ws_message_bytes,
+            debug_raw_events=self.settings.qwen_debug_raw_events,
+            instructions=self.settings.default_system_prompt,
+        )
+
+    async def _close_qwen_realtime_session(self) -> None:
+        if self.qwen_reader_task is not None:
+            self.qwen_reader_task.cancel()
+            try:
+                await self.qwen_reader_task
+            except asyncio.CancelledError:
+                pass
+            self.qwen_reader_task = None
+
+        if self.qwen_client is not None:
+            await self.qwen_client.close()
+            self.qwen_client = None
+
+    async def _open_qwen_realtime_session(self) -> None:
+        assert self.browser_config is not None
+        assert self.browser_config.output_audio
+
+        self.qwen_client = self._build_qwen_realtime_client()
+        await self.qwen_client.connect()
+        await self.qwen_client.start_session(
+            speaker=self.browser_config.speaker,
+            modalities=self.browser_config.modalities,
+            input_sample_rate=self.browser_config.input_sample_rate,
+            output_audio=self.browser_config.output_audio,
+        )
+        self.qwen_reader_task = asyncio.create_task(self._pump_qwen_events())
+
+    async def _restart_qwen_realtime_session(self) -> None:
+        assert self.browser_config is not None
+        assert self.browser_config.output_audio
+
+        await self._close_qwen_realtime_session()
+        self.ignore_model_audio = False
+        self.buffered_assistant_events.clear()
+        self.assistant_output_gate_open = False
+        self.assistant_audio_chunk_count = 0
+        await self._open_qwen_realtime_session()
 
     async def _start_session(self, event: dict) -> None:
         speaker = event.get("speaker", self.settings.supported_speakers[0])
@@ -170,25 +214,8 @@ class RealtimeSession:
         self.assistant_audio_chunk_count = 0
 
         if output_audio:
-            self.qwen_client = QwenRealtimeClient(
-                model=self.settings.qwen_model,
-                url=self.settings.qwen_realtime_url,
-                request_timeout_seconds=self.settings.qwen_request_timeout_seconds,
-                response_timeout_seconds=self.settings.qwen_response_timeout_seconds,
-                output_sample_rate=self.settings.output_sample_rate,
-                max_ws_message_bytes=self.settings.max_ws_message_bytes,
-                debug_raw_events=self.settings.qwen_debug_raw_events,
-                instructions=self.settings.default_system_prompt,
-            )
-
             try:
-                await self.qwen_client.connect()
-                await self.qwen_client.start_session(
-                    speaker=speaker,
-                    modalities=modalities,
-                    input_sample_rate=input_sample_rate,
-                    output_audio=output_audio,
-                )
+                await self._open_qwen_realtime_session()
             except Exception as exc:
                 logger.exception("Failed to establish Qwen session")
                 await self.send_error(
@@ -196,8 +223,6 @@ class RealtimeSession:
                     message=f"Qwen3-Omni realtime server is not available: {exc}",
                 )
                 return
-
-            self.qwen_reader_task = asyncio.create_task(self._pump_qwen_events())
         else:
             self.qwen_chat_client = QwenChatClient(
                 model=self.settings.qwen_model,
@@ -343,11 +368,11 @@ class RealtimeSession:
         self.buffered_assistant_events.clear()
         self.metrics.mark_once("t_barge_in")
         try:
-            await self.qwen_client.cancel_response()
+            await self._restart_qwen_realtime_session()
         except Exception as exc:
             await self.send_error(
                 code="QWEN_CANCEL_FAILED",
-                message=f"Failed to cancel active response: {exc}",
+                message=f"Failed to restart Qwen session after cancel: {exc}",
             )
             return
 

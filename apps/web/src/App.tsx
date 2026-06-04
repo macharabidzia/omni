@@ -87,6 +87,7 @@ export default function App() {
   const speechRearmAtRef = useRef(0);
   const bargeInChunkCountRef = useRef(0);
   const bargeInChunksRef = useRef<string[]>([]);
+  const silenceLoggedThisTurnRef = useRef(false);
 
   useEffect(() => {
     void refreshGatewayReady();
@@ -161,6 +162,8 @@ export default function App() {
       },
       onDrained: () => {
         setAssistantPlaying(false);
+        assistantResponseActiveRef.current = false;
+        bargeInRequestedRef.current = false;
         assistantPlaybackActiveRef.current = false;
         assistantPlaybackQueuedMsRef.current = 0;
         if (!uploadTurnActiveRef.current) {
@@ -171,6 +174,9 @@ export default function App() {
         resetBargeInDetection();
         speechRearmAtRef.current = performance.now() + LIVE_POST_PLAYBACK_REARM_MS;
         appendLocalDebugEvent("local.playback.drain");
+        if (queuedCommitRef.current && pendingSpeechTurnRef.current) {
+          void maybeCommitTurn();
+        }
       },
       onQueueChanged: ({ queuedMs }) => {
         assistantPlaybackQueuedMsRef.current = queuedMs;
@@ -181,6 +187,8 @@ export default function App() {
         }
       },
       onCleared: () => {
+        assistantResponseActiveRef.current = false;
+        bargeInRequestedRef.current = false;
         assistantPlaybackActiveRef.current = false;
         assistantPlaybackQueuedMsRef.current = 0;
         lastPlaybackQueueMsRef.current = 0;
@@ -193,6 +201,9 @@ export default function App() {
         speechRearmAtRef.current = performance.now() + LIVE_POST_PLAYBACK_REARM_MS;
         setAssistantPlaying(false);
         appendLocalDebugEvent("local.playback.clear");
+        if (queuedCommitRef.current && pendingSpeechTurnRef.current) {
+          void maybeCommitTurn();
+        }
       },
     });
 
@@ -282,6 +293,8 @@ export default function App() {
     }
 
     if (event.type === "assistant.audio.delta") {
+      assistantResponseActiveRef.current = true;
+      bargeInRequestedRef.current = false;
       playbackRef.current?.enqueue(event.audio_base64, event.sample_rate);
       return;
     }
@@ -427,6 +440,7 @@ export default function App() {
     }
     uploadTurnActiveRef.current = true;
     pendingSpeechTurnRef.current = true;
+    silenceLoggedThisTurnRef.current = false;
     speechChunkCountRef.current = LIVE_MIN_SPEECH_CHUNKS - 1;
     candidateSpeechChunkCountRef.current = 0;
 
@@ -462,7 +476,10 @@ export default function App() {
     if (silenceCommitTimerRef.current !== null) {
       return;
     }
-    appendLocalDebugEvent("local.turn.silence");
+    if (!silenceLoggedThisTurnRef.current) {
+      silenceLoggedThisTurnRef.current = true;
+      appendLocalDebugEvent("local.turn.silence");
+    }
     silenceCommitTimerRef.current = window.setTimeout(() => {
       silenceCommitTimerRef.current = null;
       queuedCommitRef.current = true;
@@ -494,6 +511,7 @@ export default function App() {
     assistantPlaybackActiveRef.current = false;
     assistantPlaybackQueuedMsRef.current = 0;
     speechRearmAtRef.current = 0;
+    silenceLoggedThisTurnRef.current = false;
     resetBargeInDetection();
   }
 

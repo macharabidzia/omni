@@ -108,6 +108,30 @@ class FakeEarlyAssistantQwenClient(FakeQwenClient):
         await self.events.put(None)
 
 
+class FakeRestartableQwenClient(FakeQwenClient):
+    instances: list["FakeRestartableQwenClient"] = []
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.instance_id = len(type(self).instances) + 1
+        self.closed = False
+        type(self).instances.append(self)
+
+    async def commit_audio(self) -> None:
+        await self.events.put(
+            QwenEvent(
+                kind="assistant_audio_delta",
+                payload={"type": "response.audio.delta"},
+                audio_base64=self.audio_chunks[-1],
+                sample_rate=24000,
+            )
+        )
+
+    async def close(self) -> None:
+        self.closed = True
+        await self.events.put(None)
+
+
 class FakeQwenChatClient:
     def __init__(self, **_kwargs) -> None:
         self.requests: list[bytes] = []
@@ -278,3 +302,68 @@ def test_websocket_text_mode_uses_chat_completions(monkeypatch) -> None:
 
         assert "assistant.audio.delta" not in seen_types
         assert seen_text == "brief text reply"
+
+
+def test_websocket_cancel_restarts_upstream_qwen_session(monkeypatch) -> None:
+    monkeypatch.setattr(session_module, "QwenRealtimeClient", FakeRestartableQwenClient)
+    FakeRestartableQwenClient.instances = []
+    client = TestClient(app)
+
+    with client.websocket_connect("/ws/realtime") as websocket:
+        websocket.send_json(
+            {
+                "type": "session.start",
+                "speaker": "Ethan",
+                "modalities": ["text", "audio"],
+                "input_sample_rate": 16000,
+                "output_audio": True,
+            }
+        )
+        assert websocket.receive_json()["type"] == "session.ready"
+        assert websocket.receive_json()["type"] == "metrics.update"
+
+        websocket.send_json(
+            {
+                "type": "audio.append",
+                "audio_base64": _valid_audio_base64(),
+                "sample_rate": 16000,
+                "channels": 1,
+                "format": "pcm16",
+            }
+        )
+        websocket.receive_json()
+        websocket.send_json({"type": "audio.commit"})
+
+        first_audio = None
+        while first_audio is None:
+            event = websocket.receive_json()
+            if event["type"] == "assistant.audio.delta":
+                first_audio = event
+
+        websocket.send_json({"type": "response.cancel"})
+        cancel_event = websocket.receive_json()
+        assert cancel_event["type"] == "metrics.update"
+
+        websocket.send_json(
+            {
+                "type": "audio.append",
+                "audio_base64": _valid_audio_base64(),
+                "sample_rate": 16000,
+                "channels": 1,
+                "format": "pcm16",
+            }
+        )
+        websocket.receive_json()
+        websocket.send_json({"type": "audio.commit"})
+
+        second_audio = None
+        while second_audio is None:
+            event = websocket.receive_json()
+            if event["type"] == "assistant.audio.delta":
+                second_audio = event
+
+    assert len(FakeRestartableQwenClient.instances) == 2
+    assert FakeRestartableQwenClient.instances[0].closed is True
+    assert FakeRestartableQwenClient.instances[1].closed is True
+    assert first_audio["sample_rate"] == 24000
+    assert second_audio["sample_rate"] == 24000
