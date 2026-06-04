@@ -44,6 +44,7 @@ class RealtimeSession:
         self.browser_audio_chunk_count = 0
         self.browser_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
+        self.upstream_response_pending = False
 
     async def handle_browser_event(self, event: dict) -> bool:
         event_type = event.get("type")
@@ -119,6 +120,7 @@ class RealtimeSession:
         self.browser_audio_chunk_count = 0
         self.browser_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
+        self.upstream_response_pending = False
 
     def _build_qwen_realtime_client(self) -> QwenRealtimeClient:
         return QwenRealtimeClient(
@@ -168,6 +170,7 @@ class RealtimeSession:
         self.buffered_assistant_events.clear()
         self.assistant_output_gate_open = False
         self.assistant_audio_chunk_count = 0
+        self.upstream_response_pending = False
         await self._open_qwen_realtime_session()
 
     async def _start_session(self, event: dict) -> None:
@@ -212,6 +215,7 @@ class RealtimeSession:
         self.browser_audio_chunk_count = 0
         self.browser_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
+        self.upstream_response_pending = False
 
         if output_audio:
             try:
@@ -270,6 +274,25 @@ class RealtimeSession:
         self.metrics.mark_once("t_first_audio_chunk_sent")
         if not self.browser_config.output_audio:
             self.buffered_audio_bytes.extend(validated.audio_bytes)
+        is_first_chunk_of_turn = self.browser_audio_chunk_count == 0
+        if (
+            self.browser_config.output_audio
+            and self.qwen_client is not None
+            and is_first_chunk_of_turn
+            and self.upstream_response_pending
+        ):
+            logger.info(
+                "Session %s rotating stale upstream Qwen session before new browser turn",
+                self.session_id,
+            )
+            try:
+                await self._restart_qwen_realtime_session()
+            except Exception as exc:
+                await self.send_error(
+                    code="QWEN_STALE_SESSION_RESET_FAILED",
+                    message=f"Failed to reset stale Qwen session before new turn: {exc}",
+                )
+                return
         self.browser_audio_chunk_count += 1
         self.browser_audio_total_bytes += len(validated.audio_bytes)
         if self.browser_audio_chunk_count == 1:
@@ -341,6 +364,7 @@ class RealtimeSession:
                 self.browser_audio_total_bytes,
             )
             await self.qwen_client.commit_audio()
+            self.upstream_response_pending = True
             self.browser_audio_chunk_count = 0
             self.browser_audio_total_bytes = 0
         except Exception as exc:
@@ -427,6 +451,7 @@ class RealtimeSession:
             if self.ignore_model_audio:
                 return
         elif qwen_event.kind == "response_done":
+            self.upstream_response_pending = False
             self.metrics.mark_once("t_response_done")
             logger.info(
                 "Session %s response done assistant_audio_chunks=%d",
@@ -435,6 +460,7 @@ class RealtimeSession:
             )
             self.assistant_audio_chunk_count = 0
         elif qwen_event.kind == "error":
+            self.upstream_response_pending = False
             logger.error(
                 "Session %s upstream Qwen error code=%s message=%s",
                 self.session_id,
