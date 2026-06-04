@@ -337,78 +337,6 @@ messages = [
     },
 ]
 
- my SETUP
-
- Uptime
-
-3m 39s
-
-GPU
-
-A100 SXM1x
-
-vCPU
-
-42 (AMD EPYC 7763 64-Core Processor)
-
-Memory
-
-333 GB
-
-Container disk
-
-150 GB
-
-GPU location
-
-Location
-
-
-
-Enable Global Networking
-Access your pod via a stable hostname within the Runpod network.
-
-Pricing
-
-Compute
-
-$1.49/hr
-
-Container storage
-
-(150 GB)$0.021/hr
-
-Volume storage
-
-(200 GB)$0.028/hr
-
-Total
-
-$1.54/hr
-
-Container
-
-Image
-
-
-Template
-
-cw3nka7d08
-
-Network volume
-
-Size
-
-200 GB
-
-Name
-
-impressive_harlequin_bug_volume
-
-Mount path
-
-/workspace
-
 HTTP services
 Connect to your service using HTTP using a proxied domain and port
 
@@ -424,12 +352,12 @@ SSH
 Connect to your Pod using SSH. (No support for SCP & SFTP)
 
 $
-ssh y977m2sllhl4w8-644114c5@ssh.runpod.io -i ~/.ssh/id_ed25519
+ssh 7lycxebyx5swhu-64411390@ssh.runpod.io -i ~/.ssh/id_ed25519
 SSH over exposed TCP
 Connect to your Pod using SSH over a direct TCP connection. (Supports SCP & SFTP)
 
 $
-ssh root@195.26.233.65 -p 57403 -i ~/.ssh/id_ed25519
+ssh root@195.26.233.28 -p 58614 -i ~/.ssh/id_ed25519
 Web terminal
 Connect to your Pod using a terminal directly in your browser
 
@@ -439,8 +367,8 @@ Enable web terminal
 Direct TCP ports
 Connect to your Pod using direct TCP connections to exposed ports.
 
-ssh  195.26.233.65:57403
+195.26.233.28:58614
 
 :22
 
-https://y977m2sllhl4w8-5173.proxy.runpod.net/
+https://7lycxebyx5swhu-5173.proxy.runpod.net/

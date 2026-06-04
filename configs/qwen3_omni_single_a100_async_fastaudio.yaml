@@ -1,0 +1,66 @@
+async_chunk: true
+
+connectors:
+  connector_of_shared_memory:
+    name: SharedMemoryConnector
+    extra:
+      # Keep the first chunk and the steady cadence aligned at 2 frames so
+      # the browser does not drain between the first and second audio deltas.
+      codec_chunk_frames: 2
+      initial_codec_chunk_frames: 2
+      codec_left_context_frames: 25
+
+stages:
+  - stage_id: 0
+    max_num_batched_tokens: 2048
+    max_num_seqs: 1
+    max_model_len: 2048
+    gpu_memory_utilization: 0.79
+    enforce_eager: true
+    trust_remote_code: true
+    enable_prefix_caching: false
+    devices: "0"
+    default_sampling_params:
+      temperature: 0.4
+      top_p: 0.9
+      top_k: 1
+      max_tokens: 16
+      seed: 42
+      repetition_penalty: 1.05
+
+  - stage_id: 1
+    max_num_batched_tokens: 2048
+    max_num_seqs: 1
+    max_model_len: 2048
+    gpu_memory_utilization: 0.14
+    enforce_eager: true
+    trust_remote_code: true
+    enable_prefix_caching: false
+    devices: "0"
+    input_connectors:
+      from_stage_0: connector_of_shared_memory
+    default_sampling_params:
+      temperature: 0.9
+      top_k: 50
+      max_tokens: 2048
+      seed: 42
+      repetition_penalty: 1.05
+
+  - stage_id: 2
+    max_num_batched_tokens: 51200
+    max_num_seqs: 1
+    gpu_memory_utilization: 0.001
+    enforce_eager: true
+    trust_remote_code: true
+    enable_prefix_caching: false
+    async_scheduling: false
+    devices: "0"
+    input_connectors:
+      from_stage_1: connector_of_shared_memory
+    default_sampling_params:
+      temperature: 0.0
+      top_p: 1.0
+      top_k: -1
+      max_tokens: 65536
+      seed: 42
+      repetition_penalty: 1.1

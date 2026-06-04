@@ -4,13 +4,16 @@ connectors:
   connector_of_shared_memory:
     name: SharedMemoryConnector
     extra:
-      codec_chunk_frames: 25
+      # Lower the code2wav chunk target; on the supported /v1/realtime path
+      # this was the best architecture-compliant live configuration we measured.
+      codec_chunk_frames: 4
       codec_left_context_frames: 25
 
 stages:
   - stage_id: 0
-    # Conservative single-GPU profile: leave headroom for thinker->talker
-    # tensor handoff during realtime requests.
+    # Low-latency single-GPU profile: keep stage 0 bounded so realtime
+    # generation can begin during upload without running too far ahead of
+    # incomplete speech.
     max_num_batched_tokens: 2048
     max_num_seqs: 1
     max_model_len: 2048
@@ -23,7 +26,7 @@ stages:
       temperature: 0.4
       top_p: 0.9
       top_k: 1
-      max_tokens: 32
+      max_tokens: 16
       seed: 42
       repetition_penalty: 1.05
 

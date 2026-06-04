@@ -79,6 +79,23 @@ input {
   margin-top: 12px;
 }
 
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #344154;
+  background: #151b24;
+  color: #9eabb8;
+}
+
+.live-pill.active {
+  border-color: #2f8b67;
+  background: #183126;
+  color: #b7efd2;
+}
+
 .button {
   border: 1px solid #344154;
   background: #1e2733;
@@ -253,4 +270,3 @@ input {
     grid-template-columns: 1fr;
   }
 }
-

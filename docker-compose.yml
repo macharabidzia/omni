@@ -8,6 +8,7 @@ services:
       QWEN_MODEL: ${QWEN_MODEL:-Qwen/Qwen3-Omni-30B-A3B-Instruct}
       QWEN_DEPLOY_CONFIG: ${QWEN_DEPLOY_CONFIG:-/workspace/configs/qwen3_omni_single_a100.yaml}
       QWEN_PORT: ${QWEN_PORT:-8091}
+      QWEN_VLLM_FLAGS: ${QWEN_VLLM_FLAGS:-}
       HF_HUB_DISABLE_XET: ${HF_HUB_DISABLE_XET:-1}
       HF_TOKEN: ${HF_TOKEN:-}
       HF_HOME: /workspace/.cache/huggingface
@@ -19,7 +20,8 @@ services:
       --deploy-config ${QWEN_DEPLOY_CONFIG:-/workspace/configs/qwen3_omni_single_a100.yaml}
       --host 0.0.0.0
       --port ${QWEN_PORT:-8091}
-      --trust-remote-code"
+      --trust-remote-code
+      ${QWEN_VLLM_FLAGS:-}"
     ports:
       - "${QWEN_PORT:-8091}:${QWEN_PORT:-8091}"
     volumes:
@@ -46,8 +48,10 @@ services:
     environment:
       GATEWAY_PORT: ${GATEWAY_PORT:-8080}
       QWEN_REALTIME_URL: ${QWEN_REALTIME_URL:-ws://qwen3-omni:8091/v1/realtime}
+      QWEN_CHAT_URL: ${QWEN_CHAT_URL:-http://qwen3-omni:8091/v1/chat/completions}
       QWEN_HEALTH_URL: ${QWEN_HEALTH_URL:-http://qwen3-omni:8091/health}
       QWEN_MODEL: ${QWEN_MODEL:-Qwen/Qwen3-Omni-30B-A3B-Instruct}
+      QWEN_TEXT_MAX_COMPLETION_TOKENS: ${QWEN_TEXT_MAX_COMPLETION_TOKENS:-64}
       QWEN_DEBUG_RAW_EVENTS: ${QWEN_DEBUG_RAW_EVENTS:-false}
       QWEN_REQUEST_TIMEOUT_SECONDS: ${QWEN_REQUEST_TIMEOUT_SECONDS:-30}
       QWEN_RESPONSE_TIMEOUT_SECONDS: ${QWEN_RESPONSE_TIMEOUT_SECONDS:-90}

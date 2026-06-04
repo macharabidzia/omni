@@ -52,6 +52,12 @@ QWEN_DEPLOY_CONFIG=/workspace/configs/qwen3_omni_deploy.yaml
 docker compose up --build
 ```
 
+For latency instrumentation during benchmarking, set:
+
+```bash
+QWEN_VLLM_FLAGS=--log-stats
+```
+
 7. Open `http://localhost:3000`.
 
 Services:
@@ -76,6 +82,16 @@ cd apps/web
 npm ci
 npm run dev -- --host 0.0.0.0 --port 3000
 ```
+
+Persistent model workflow:
+
+```bash
+scripts/run_qwen_model.sh
+scripts/run_gateway_dev.sh
+scripts/run_web_dev.sh
+```
+
+Keep the Qwen model process on `:8091` running across ordinary gateway and web iteration. Normal gateway/web code changes should not require a model restart unless model-serving behavior or model boot configuration changed.
 
 ## Verification
 
@@ -105,6 +121,12 @@ Run the gateway smoke test once Qwen is live:
 python3 scripts/smoke_realtime_wav.py --gateway --input /tmp/test.wav
 ```
 
+The smoke client defaults to `20 ms` upload chunks.
+
+The default model launch path uses `configs/qwen3_omni_single_a100_async_fastaudio.yaml`, applies a local `vllm-omni` route patch so `/v1/realtime` can run with `async_chunk=true`, and applies a local `qwen3_omni` stage patch so code2wav can use `initial_codec_chunk_frames=2` with a steady `codec_chunk_frames=2` cadence.
+
+The gateway keeps browser turn semantics by buffering assistant text/audio until `audio.commit`, and the live web client auto-commits after local silence detection instead of using push-to-talk. On the target A100, the warmed real proxy path now measures `p50 465.46 ms / p95 487.79 ms / p99 490.76 ms` first playable audio after commit at `20 ms` chunks with `sample_count 5`; evidence is in `benchmark-results/live_gateway_proxy_chunk2x2_warm/`. A real page check against `https://7lycxebyx5swhu-5173.proxy.runpod.net/` recorded `Commit to Audio Played 494.1 ms`, and its debug log shows no early playback drain between the first and second assistant audio chunks; evidence is in `tmp/playwright-live-check/result-after-chunk2x2.json`.
+
 Run the direct model smoke test against the native realtime endpoint:
 
 ```bash
@@ -121,12 +143,10 @@ RunPod overrides and SSH examples are staged in:
 
 - [configs/runtime.env.example](configs/runtime.env.example)
 - [configs/runpod_ssh_config.example](configs/runpod_ssh_config.example)
-- [docs/OPERATIONS.md](docs/OPERATIONS.md)
 
 ## Docs
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/STREAMING_PROTOCOL.md](docs/STREAMING_PROTOCOL.md)
-- [docs/LATENCY.md](docs/LATENCY.md)
-- [docs/OPERATIONS.md](docs/OPERATIONS.md)
-- [docs/TASKS.md](docs/TASKS.md)
+- [docs/architecture.md](docs/architecture.md)
+- [docs/steps.md](docs/steps.md)
+- [docs/AGENTS.md](docs/AGENTS.md)
+- [tasks.md](tasks.md)

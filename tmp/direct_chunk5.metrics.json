@@ -1,0 +1,26 @@
+{
+  "mode": "direct",
+  "speaker": "Ethan",
+  "modalities": "text,audio",
+  "chunk_ms": 5,
+  "timestamps": {
+    "t_session_start": 0.0,
+    "t_microphone_started": 71.71,
+    "t_first_audio_chunk_sent": 72.04,
+    "t_audio_commit_sent": 3912.37,
+    "t_first_transcript_delta": 5707.54,
+    "t_first_text_delta": null,
+    "t_first_audio_delta_received": 7848.63,
+    "t_first_audio_played": 7848.63,
+    "t_response_done": 10567.23,
+    "t_barge_in": null
+  },
+  "metrics": {
+    "mic_to_first_transcript_ms": 5635.84,
+    "commit_to_first_transcript_ms": 1795.17,
+    "commit_to_first_text_ms": null,
+    "commit_to_first_audio_delta_ms": 3936.25,
+    "commit_to_first_audio_played_ms": 3936.25,
+    "full_response_ms": 6654.86
+  }
+}

@@ -35,6 +35,10 @@ class Settings(BaseSettings):
         default="ws://qwen3-omni:8091/v1/realtime",
         alias="QWEN_REALTIME_URL",
     )
+    qwen_chat_url: str = Field(
+        default="http://qwen3-omni:8091/v1/chat/completions",
+        alias="QWEN_CHAT_URL",
+    )
     qwen_health_url: str = Field(
         default="http://qwen3-omni:8091/health",
         alias="QWEN_HEALTH_URL",
@@ -50,13 +54,17 @@ class Settings(BaseSettings):
     )
     input_sample_rate: int = 16000
     output_sample_rate: int = 24000
-    allowed_chunk_ms: tuple[int, ...] = (20, 40, 80, 120, 200)
-    default_browser_chunk_ms: int = 80
-    default_smoke_chunk_ms: int = 200
+    allowed_chunk_ms: tuple[int, ...] = (10, 20, 40, 80, 120, 200)
+    default_browser_chunk_ms: int = 20
+    default_smoke_chunk_ms: int = 20
     supported_speakers: tuple[str, ...] = ("Ethan", "Chelsie", "Aiden")
     default_modalities: tuple[str, ...] = ("text", "audio")
     max_ws_message_bytes: int = 4 * 1024 * 1024
     default_system_prompt: str = DEFAULT_SYSTEM_PROMPT
+    text_max_completion_tokens: int = Field(
+        default=64,
+        alias="QWEN_TEXT_MAX_COMPLETION_TOKENS",
+    )
 
 
 @lru_cache

@@ -9,12 +9,38 @@ class PlaybackProcessor extends AudioWorkletProcessor {
       const data = event.data;
       if (data.type === "enqueue" && data.samples) {
         this.queue.push(new Float32Array(data.samples));
+        this.port.postMessage({
+          type: "queue",
+          queuedFrames: this.pendingFrames(),
+          queuedMs: this.pendingMs(),
+        });
       } else if (data.type === "clear") {
         this.queue = [];
         this.offset = 0;
         this.active = false;
+        this.port.postMessage({ type: "clear" });
       }
     };
+  }
+
+  pendingFrames() {
+    if (this.queue.length === 0) {
+      return 0;
+    }
+    let frames = 0;
+    for (let index = 0; index < this.queue.length; index += 1) {
+      const chunk = this.queue[index];
+      if (index === 0) {
+        frames += Math.max(0, chunk.length - this.offset);
+      } else {
+        frames += chunk.length;
+      }
+    }
+    return frames;
+  }
+
+  pendingMs() {
+    return Math.round((this.pendingFrames() / sampleRate) * 1000);
   }
 
   process(_inputs, outputs) {
@@ -29,7 +55,11 @@ class PlaybackProcessor extends AudioWorkletProcessor {
       if (this.queue.length === 0) {
         if (this.active) {
           this.active = false;
-          this.port.postMessage({ type: "drain" });
+          this.port.postMessage({
+            type: "drain",
+            queuedFrames: 0,
+            queuedMs: 0,
+          });
         }
         break;
       }
@@ -42,7 +72,11 @@ class PlaybackProcessor extends AudioWorkletProcessor {
 
       if (!this.active) {
         this.active = true;
-        this.port.postMessage({ type: "started" });
+        this.port.postMessage({
+          type: "started",
+          queuedFrames: this.pendingFrames(),
+          queuedMs: this.pendingMs(),
+        });
       }
 
       if (this.offset >= current.length) {
@@ -56,4 +90,3 @@ class PlaybackProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor("playback-processor", PlaybackProcessor);
-

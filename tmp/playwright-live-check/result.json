@@ -1,0 +1,91 @@
+{
+  "url": "https://7lycxebyx5swhu-5173.proxy.runpod.net/",
+  "fakeAudioPath": "/workspace/omni/tmp/fake_mic_turn.wav",
+  "waitError": null,
+  "statusLine": "Gateway: qwen_ready | Session: ready",
+  "livePill": "Mic Live",
+  "transcript": "Hello! Here's a short latency test reply:\n\n**\"Pong - ",
+  "assistantText": "Assistant text deltas will appear here.",
+  "errorText": null,
+  "debugEventTypes": [
+    "session.ready",
+    "local.capture.live",
+    "metrics.update",
+    "local.speech.detected",
+    "local.turn.started",
+    "metrics.update",
+    "local.turn.silence",
+    "local.turn.silence",
+    "local.turn.silence",
+    "local.turn.silence",
+    "local.turn.silence",
+    "local.turn.silence",
+    "local.turn.silence",
+    "local.turn.commit",
+    "metrics.update",
+    "transcript.delta",
+    "metrics.update",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "metrics.update",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta"
+  ],
+  "metrics": [
+    {
+      "label": "Mic to Transcript",
+      "value": "3670.8 ms"
+    },
+    {
+      "label": "Commit to Transcript",
+      "value": "160.4 ms"
+    },
+    {
+      "label": "Commit to Text",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Audio Delta",
+      "value": "588.4 ms"
+    },
+    {
+      "label": "Commit to Audio Played",
+      "value": "654.2 ms"
+    },
+    {
+      "label": "Full Response",
+      "value": "--"
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+    }
+  ],
+  "pageErrors": []
+}

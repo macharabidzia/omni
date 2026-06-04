@@ -4,6 +4,8 @@ import { resampleFloat32 } from "./resampler";
 type PlaybackCallbacks = {
   onStarted: () => void;
   onDrained: () => void;
+  onQueueChanged?: (state: { queuedFrames: number; queuedMs: number }) => void;
+  onCleared?: () => void;
 };
 
 export class PlaybackWorkletController {
@@ -22,12 +24,23 @@ export class PlaybackWorkletController {
     this.workletNode = new AudioWorkletNode(this.audioContext, "playback-processor", {
       outputChannelCount: [2],
     });
-    this.workletNode.port.onmessage = (event: MessageEvent<{ type: string }>) => {
+    this.workletNode.port.onmessage = (
+      event: MessageEvent<{ type: string; queuedFrames?: number; queuedMs?: number }>,
+    ) => {
       if (event.data.type === "started") {
         this.callbacks.onStarted();
       }
       if (event.data.type === "drain") {
         this.callbacks.onDrained();
+      }
+      if (event.data.type === "queue" || event.data.type === "started" || event.data.type === "drain") {
+        this.callbacks.onQueueChanged?.({
+          queuedFrames: event.data.queuedFrames ?? 0,
+          queuedMs: event.data.queuedMs ?? 0,
+        });
+      }
+      if (event.data.type === "clear") {
+        this.callbacks.onCleared?.();
       }
     };
     this.workletNode.connect(this.audioContext.destination);
@@ -61,4 +74,3 @@ export class PlaybackWorkletController {
     this.workletNode = null;
   }
 }
-

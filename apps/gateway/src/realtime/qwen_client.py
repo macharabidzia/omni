@@ -8,6 +8,7 @@ import websockets
 
 
 logger = logging.getLogger(__name__)
+_INITIAL_SERVER_EVENT_TIMEOUT_SECONDS = 5.0
 
 
 @dataclass(slots=True)
@@ -54,16 +55,30 @@ class QwenRealtimeClient:
         self.modalities: list[str] = ["text", "audio"]
         self.speaker = "Ethan"
         self.output_audio = True
+        self.input_stream_started = False
 
     async def connect(self) -> None:
         if self.websocket is not None:
             return
-        self.websocket = await websockets.connect(
+        websocket = await websockets.connect(
             self.url,
             max_size=self.max_ws_message_bytes,
             open_timeout=self.request_timeout_seconds,
             close_timeout=2,
         )
+        try:
+            await _expect_session_created(
+                websocket,
+                timeout_seconds=min(
+                    self.request_timeout_seconds,
+                    _INITIAL_SERVER_EVENT_TIMEOUT_SECONDS,
+                ),
+                debug_raw_events=self.debug_raw_events,
+            )
+        except Exception:
+            await websocket.close()
+            raise
+        self.websocket = websocket
 
     async def start_session(
         self,
@@ -76,6 +91,7 @@ class QwenRealtimeClient:
         self.modalities = modalities
         self.speaker = speaker
         self.output_audio = output_audio
+        self.input_stream_started = False
 
         session_update = {
             "type": "session.update",
@@ -83,7 +99,14 @@ class QwenRealtimeClient:
         }
         await self._send(session_update)
 
+    async def _ensure_input_stream_started(self) -> None:
+        if self.input_stream_started:
+            return
+        await self._send({"type": "input_audio_buffer.commit", "final": False})
+        self.input_stream_started = True
+
     async def append_audio(self, pcm16_base64: str) -> None:
+        await self._ensure_input_stream_started()
         await self._send(
             {
                 "type": "input_audio_buffer.append",
@@ -92,7 +115,7 @@ class QwenRealtimeClient:
         )
 
     async def commit_audio(self) -> None:
-        await self._send({"type": "input_audio_buffer.commit", "final": False})
+        await self._ensure_input_stream_started()
         await self._send({"type": "input_audio_buffer.commit", "final": True})
 
     async def cancel_response(self) -> None:
@@ -179,22 +202,16 @@ class QwenRealtimeClient:
             "response.audio.done",
             "transcription.done",
         }:
+            self.input_stream_started = False
             return QwenEvent(kind="response_done", payload=payload)
 
         if raw_type == "error":
+            self.input_stream_started = False
             return QwenEvent(
                 kind="error",
                 payload=payload,
-                code=_first_non_empty(
-                    payload.get("code"),
-                    payload.get("error", {}).get("code") if isinstance(payload.get("error"), dict) else None,
-                    "QWEN_ERROR",
-                ),
-                message=_first_non_empty(
-                    payload.get("message"),
-                    payload.get("error", {}).get("message") if isinstance(payload.get("error"), dict) else None,
-                    "Qwen returned an unspecified error.",
-                ),
+                code=_extract_error_code(payload),
+                message=_extract_error_message(payload),
             )
 
         return None
@@ -234,3 +251,97 @@ def _extract_audio_sample_rate(payload: dict) -> int | None:
             if isinstance(nested, int):
                 return nested
     return None
+
+
+def _extract_error_code(payload: dict) -> str:
+    return (
+        _first_non_empty(
+            payload.get("code"),
+            payload.get("error", {}).get("code") if isinstance(payload.get("error"), dict) else None,
+        )
+        or "QWEN_ERROR"
+    )
+
+
+def _extract_error_message(payload: dict) -> str:
+    nested_error = payload.get("error")
+    return (
+        _first_non_empty(
+            payload.get("message"),
+            nested_error if isinstance(nested_error, str) else None,
+            nested_error.get("message") if isinstance(nested_error, dict) else None,
+        )
+        or "Qwen returned an unspecified error."
+    )
+
+
+async def probe_qwen_realtime_websocket(
+    *,
+    url: str,
+    request_timeout_seconds: float,
+    max_ws_message_bytes: int,
+    debug_raw_events: bool = False,
+) -> None:
+    websocket = await websockets.connect(
+        url,
+        max_size=max_ws_message_bytes,
+        open_timeout=request_timeout_seconds,
+        close_timeout=2,
+    )
+    try:
+        await _expect_session_created(
+            websocket,
+            timeout_seconds=min(
+                request_timeout_seconds,
+                _INITIAL_SERVER_EVENT_TIMEOUT_SECONDS,
+            ),
+            debug_raw_events=debug_raw_events,
+        )
+    finally:
+        await websocket.close()
+
+
+async def _expect_session_created(
+    websocket,
+    *,
+    timeout_seconds: float,
+    debug_raw_events: bool,
+) -> None:
+    try:
+        raw_message = await asyncio.wait_for(
+            websocket.recv(),
+            timeout=timeout_seconds,
+        )
+    except asyncio.TimeoutError as exc:
+        raise RuntimeError(
+            "Timed out waiting for Qwen realtime session.created event."
+        ) from exc
+    except websockets.ConnectionClosed as exc:
+        raise RuntimeError(
+            f"Qwen realtime websocket closed during startup: {exc}"
+        ) from exc
+
+    if isinstance(raw_message, bytes):
+        raise RuntimeError(
+            "Qwen realtime websocket sent unexpected binary startup data."
+        )
+
+    try:
+        payload = json.loads(raw_message)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "Qwen realtime websocket sent invalid JSON during startup."
+        ) from exc
+
+    if debug_raw_events:
+        logger.debug("Raw Qwen startup event: %s", payload)
+
+    event_type = payload.get("type")
+    if event_type == "error":
+        raise RuntimeError(
+            f"{_extract_error_code(payload)}: {_extract_error_message(payload)}"
+        )
+    if event_type != "session.created":
+        raise RuntimeError(
+            f"Unexpected Qwen realtime startup event: {event_type or 'unknown'}"
+        )

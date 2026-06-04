@@ -9,6 +9,7 @@ node_modules/
 dist/
 .env
 benchmark-results/
+.venv-qwen/
 !benchmark-results/event_logs/.gitkeep
 models/*
 !models/.gitkeep

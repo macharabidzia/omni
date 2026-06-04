@@ -1,6 +1,7 @@
 import base64
 import math
 from dataclasses import dataclass
+from typing import Iterator
 
 
 class AudioValidationError(ValueError):
@@ -97,3 +98,21 @@ def chunk_bytes_for_duration_ms(duration_ms: int, sample_rate: int = 16000) -> i
     sample_count = math.ceil(sample_rate * (duration_ms / 1000))
     return sample_count * 2
 
+
+def iter_pcm16_chunks(
+    audio_bytes: bytes,
+    *,
+    duration_ms: int,
+    sample_rate: int = 16000,
+    pad_final_chunk: bool = False,
+) -> Iterator[bytes]:
+    if len(audio_bytes) % 2 != 0:
+        raise ValueError("PCM16 audio must contain 2-byte aligned samples.")
+
+    chunk_size = chunk_bytes_for_duration_ms(duration_ms, sample_rate=sample_rate)
+    for start in range(0, len(audio_bytes), chunk_size):
+        chunk = audio_bytes[start : start + chunk_size]
+        if len(chunk) == chunk_size or not pad_final_chunk:
+            yield chunk
+            continue
+        yield chunk + (b"\x00" * (chunk_size - len(chunk)))

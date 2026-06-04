@@ -5,6 +5,7 @@ import base64
 import json
 import os
 import sys
+import time
 import wave
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -16,7 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from apps.gateway.src.realtime.audio import chunk_bytes_for_duration_ms
+from apps.gateway.src.realtime.audio import iter_pcm16_chunks
 from apps.gateway.src.realtime.event_map import normalize_qwen_event
 from apps.gateway.src.realtime.metrics import SessionMetrics
 from apps.gateway.src.realtime.qwen_client import QwenRealtimeClient
@@ -33,7 +34,11 @@ class SessionRecorder:
     done: asyncio.Event = field(default_factory=asyncio.Event)
 
     def record(self, event: dict) -> None:
-        self.events.append(event)
+        event_with_time = {
+            **event,
+            "t_ms": round((time.perf_counter() - self.metrics.t_session_start) * 1000, 2),
+        }
+        self.events.append(event_with_time)
         event_type = event.get("type")
         if event_type == "session.ready":
             self.ready.set()
@@ -62,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     mode.add_argument("--direct", action="store_true")
     mode.add_argument("--gateway", action="store_true")
     parser.add_argument("--input", type=Path, required=True)
-    parser.add_argument("--chunk-ms", type=int, default=200)
+    parser.add_argument("--chunk-ms", type=int, default=20)
     parser.add_argument("--output", type=Path, default=Path("output.wav"))
     parser.add_argument("--events", type=Path, default=Path("events.json"))
     parser.add_argument("--metrics", type=Path, default=Path("metrics.json"))
@@ -73,8 +78,9 @@ def parse_args() -> argparse.Namespace:
         "--model",
         default=os.environ.get("QWEN_MODEL", "Qwen/Qwen3-Omni-30B-A3B-Instruct"),
     )
-    parser.add_argument("--gateway-url", default="ws://localhost:8080/ws/realtime")
+    parser.add_argument("--gateway-url", default="ws://localhost:8000/ws/realtime")
     parser.add_argument("--qwen-url", default="ws://localhost:8091/v1/realtime")
+    parser.add_argument("--send-delay-ms", type=float, default=0.0)
     parser.add_argument("--request-timeout-seconds", type=float, default=30.0)
     parser.add_argument("--response-timeout-seconds", type=float, default=90.0)
     parser.add_argument("--output-sample-rate", type=int, default=24000)
@@ -93,9 +99,12 @@ def load_wav(path: Path) -> bytes:
 
 
 def iter_chunks(audio_bytes: bytes, *, chunk_ms: int) -> Iterable[bytes]:
-    chunk_size = chunk_bytes_for_duration_ms(chunk_ms, sample_rate=16000)
-    for start in range(0, len(audio_bytes), chunk_size):
-        yield audio_bytes[start : start + chunk_size]
+    yield from iter_pcm16_chunks(
+        audio_bytes,
+        duration_ms=chunk_ms,
+        sample_rate=16000,
+        pad_final_chunk=True,
+    )
 
 
 async def run_direct(args: argparse.Namespace, audio_bytes: bytes, recorder: SessionRecorder) -> None:
@@ -123,10 +132,13 @@ async def run_direct(args: argparse.Namespace, audio_bytes: bytes, recorder: Ses
     recorder.events.append({"type": "session.ready", "mode": "direct"})
     recorder.metrics.mark_once("t_microphone_started")
 
-    for index, chunk in enumerate(iter_chunks(audio_bytes, chunk_ms=args.chunk_ms)):
+    chunks = list(iter_chunks(audio_bytes, chunk_ms=args.chunk_ms))
+    for index, chunk in enumerate(chunks):
         if index == 0:
             recorder.metrics.mark_once("t_first_audio_chunk_sent")
         await client.append_audio(base64.b64encode(chunk).decode("ascii"))
+        if args.send_delay_ms > 0 and index + 1 < len(chunks):
+            await asyncio.sleep(args.send_delay_ms / 1000)
 
     recorder.metrics.mark_once("t_audio_commit_sent")
     await client.commit_audio()
@@ -169,7 +181,8 @@ async def run_gateway(args: argparse.Namespace, audio_bytes: bytes, recorder: Se
 
         recorder.metrics.mark_once("t_microphone_started")
 
-        for index, chunk in enumerate(iter_chunks(audio_bytes, chunk_ms=args.chunk_ms)):
+        chunks = list(iter_chunks(audio_bytes, chunk_ms=args.chunk_ms))
+        for index, chunk in enumerate(chunks):
             if index == 0:
                 recorder.metrics.mark_once("t_first_audio_chunk_sent")
             await websocket.send(
@@ -183,6 +196,8 @@ async def run_gateway(args: argparse.Namespace, audio_bytes: bytes, recorder: Se
                     }
                 )
             )
+            if args.send_delay_ms > 0 and index + 1 < len(chunks):
+                await asyncio.sleep(args.send_delay_ms / 1000)
 
         recorder.metrics.mark_once("t_audio_commit_sent")
         await websocket.send(json.dumps({"type": "audio.commit"}))

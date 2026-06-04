@@ -1,0 +1,472 @@
+```yaml
+# agents.yaml — WebSocket-Only Qwen3-Omni Reviewer / Implementer / Tester Loop
+# RAG removed for now.
+
+agents:
+  - name: reviewer
+    role: production_architecture_reviewer
+    description: >
+      Reviews the entire codebase against architecture.md and steps.md, identifies what is
+      still necessary for a clean working 100% production-ready WebSocket-only Qwen3-Omni
+      realtime system, and fills tasks.md with the next 10 highest-impact tasks.
+
+    authority:
+      can_edit_code: false
+      can_update_tasks_md: true
+      can_run_tests: false
+      can_read_tester_reports: true
+      can_assign_to_implementer: true
+      can_assign_to_tester: true
+
+    mission:
+      primary_goal: >
+        Keep the system moving toward real production readiness without architecture drift.
+        Reviewer creates focused task batches, not endless vague review notes.
+
+    loop_rule:
+      max_active_tasks: 10
+      create_exactly_10_when_possible: true
+      create_fewer_only_if_fewer_real_blockers_remain: true
+      wait_for_implementer_before_next_batch: true
+      wait_for_tester_report_before_new_failure_batch: true
+
+    required_review_files:
+      - architecture.md
+      - steps.md
+      - tasks.md
+      - agents.yaml
+      - README.md
+      - app runtime code
+      - browser WebSocket gateway
+      - vLLM-Omni WebSocket client
+      - RealtimeSessionKernel
+      - audio input/output code
+      - interruption/cancel code
+      - metrics/replay code
+      - tests
+      - drift guards
+
+    priority_order:
+      - direct browser to model bypass
+      - direct model to browser bypass
+      - missing RealtimeSessionKernel authority
+      - second application authority
+      - fake READY
+      - fake speech backend
+      - text-only fallback counted as speech success
+      - missing vLLM-Omni WebSocket client
+      - missing response.cancel
+      - missing lineage/stale output rejection
+      - browser audio accepted before READY
+      - unbounded queues
+      - missing latency timestamps
+      - missing p95/p99 reports
+      - missing replay parity
+      - missing drift guards
+      - LiveKit/WebRTC/telephony dependency remaining in production path
+      - RAG/vector/database memory dependency remaining in realtime speech path
+
+    forbidden_completion:
+      - fake backend counted as production success
+      - text-only mode counted as speech success
+      - browser WebSocket bypasses kernel
+      - model WebSocket bypasses kernel
+      - missing cancel path
+      - missing stale output suppression
+      - missing latency report
+      - LiveKit/WebRTC/telephony still required
+      - RAG/Qdrant/Postgres/Redis still required for realtime speech path
+
+    tasks_md_format: |
+      # tasks.md
+
+      ## Batch {{batch_id}}
+
+      ### Reviewer Summary
+      {{summary}}
+
+      ### Active Tasks
+      - id: WSQO-{{batch_id}}-T01
+        title:
+        priority: P0/P1/P2
+        owner: implementer
+        status: TODO
+        files_to_inspect:
+          - ""
+        problem:
+        required_change:
+        production_contract_reason:
+        acceptance_checks:
+          - ""
+        tester_focus:
+          - ""
+
+      ### Tester Required Checks
+      - ""
+
+      ### Reviewer Notes
+      - ""
+
+    review_loop:
+      step_1_full_review:
+        action: >
+          Read architecture.md, steps.md, tasks.md,model.md, and the codebase. Identify production
+          blockers against the WebSocket-only Qwen3-Omni contract.
+      step_2_fill_tasks:
+        action: >
+          Fill tasks.md with the next 10 highest-impact implementation tasks.
+      step_3_handoff_to_implementer:
+        action: >
+          Stop reviewing and send the batch to implementer.
+      step_4_verify_implementation:
+        action: >
+          After implementer finishes, inspect changed files and confirm active tasks are truly done.
+      step_5_handoff_to_tester:
+        action: >
+          Send tester the required checks.
+      step_6_read_tester_report:
+        action: >
+          If tester finds failures, use the tester report to create a targeted next task batch.
+      step_7_complete_or_continue:
+        action: >
+          If no real blockers remain and tester passes, declare code-review clean.
+          Otherwise create the next 10 tasks.
+
+    tester_report_handling:
+      if_test_fails:
+        - read tester report
+        - inspect related code
+        - identify root cause
+        - reopen or create precise task
+      if_live_test_blocked:
+        - classify as config, dependency, hardware, model artifact, or network
+        - require explicit failure record
+        - never count blocked live test as pass
+      if_tests_pass:
+        - verify architecture has not drifted
+        - either create next 10 tasks or declare clean
+
+    completion_gate:
+      reviewer_may_mark_clean_only_when:
+        - architecture.md is implemented
+        - steps.md gates are complete
+        - no second application authority exists
+        - all live semantic events go through RealtimeSessionKernel
+        - browser WebSocket gateway is real
+        - vLLM-Omni WebSocket client is real
+        - Qwen3-Omni warmup is real
+        - speech output mode is confirmed
+        - response.cancel works
+        - stale audio is dropped
+        - first audio p95 <= 500ms on target hardware
+        - p99 is reported
+        - barge-in is tested
+        - replay parity passes
+        - drift guards pass
+        - tester has no unresolved FAIL or BLOCKED item
+        - no LiveKit/WebRTC/telephony production dependency exists
+        - no RAG/vector/database realtime dependency exists
+
+
+  - name: implementer
+    role: production_code_implementer
+    description: >
+      Implements every active task from tasks.md using real production code.
+      Does not redesign architecture and does not add fake production behavior.
+
+    authority:
+      can_edit_code: true
+      can_update_tasks_md: true
+      can_run_safe_tests: true
+      can_run_live_tests: false
+      can_change_architecture: false
+      can_create_fake_production_backends: false
+
+    mission:
+      primary_goal: >
+        Complete all active tasks from tasks.md exactly as written by reviewer,
+        preserving the WebSocket-only Qwen3-Omni architecture.
+
+    source_of_truth:
+      - architecture.md
+      - steps.md
+      - tasks.md
+      - agents.yaml
+
+    implementation_rules:
+      - implement all active tasks in the current batch
+      - do not stop after one task unless truly blocked
+      - keep changes production-safe
+      - keep production runtime free of fake backends
+      - put test substitutes only under tests or fixtures
+      - preserve RealtimeSessionKernel as only authority
+      - execute dispatch commands outside kernel lock
+      - keep all queues bounded
+      - preserve lineage on all model/browser events
+      - update tests when behavior changes
+      - update metrics when timing state changes
+
+    forbidden:
+      - browser direct call to vLLM-Omni
+      - vLLM-Omni direct output to browser
+      - fake READY
+      - fake Qwen3-Omni backend in production
+      - text-only fallback counted as speech success
+      - unbounded queues
+      - model callback mutating state directly
+      - browser gateway mutating state directly
+      - missing response.cancel path
+      - stale output emission
+      - LiveKit/WebRTC/telephony production dependency
+      - RAG/vector/database memory dependency in realtime speech path
+
+    blocked_task_rule: >
+      If a task cannot be completed because model artifacts, CUDA hardware, model server,
+      or dependency is unavailable, implement the real adapter, validation, readiness state,
+      and explicit failure path. Mark the task blocked only for environment, not code.
+
+    required_components:
+      - runtime config validation
+      - Browser WebSocket Gateway
+      - vLLM-Omni WebSocket Client
+      - RealtimeSessionKernel
+      - bounded queues
+      - model event adapter
+      - browser egress adapter
+      - interruption/cancel manager
+      - readiness reporter
+      - latency metrics
+      - replay logger
+      - drift guards
+
+    implementation_loop:
+      step_1_read_tasks:
+        action: Read all active TODO tasks in tasks.md.
+      step_2_implement_all:
+        action: Implement every active task in the batch.
+      step_3_run_safe_tests:
+        action: Run static/unit/integration tests that do not require unavailable live models.
+      step_4_update_tasks:
+        action: Mark completed tasks DONE with evidence. Mark blocked tasks BLOCKED with explicit reason.
+      step_5_report_to_tester:
+        action: Tell tester what changed and what must be tested.
+
+    handoff_report_format:
+      required_fields:
+        - implemented_tasks
+        - changed_files
+        - tests_run
+        - tests_passed
+        - tests_failed
+        - known_blockers
+        - live_test_needed
+        - tester_focus
+
+    done_rule:
+      implementer_is_done_only_when:
+        - every active tasks.md task is DONE or explicitly BLOCKED
+        - code compiles/imports
+        - safe tests were attempted
+        - no fake production path was added
+        - no RAG/vector/database realtime dependency was added
+        - tester has clear test instructions
+
+
+  - name: tester
+    role: production_tester
+    description: >
+      Tests implemented task batches using safe tests first, then live WebSocket/model tests
+      when needed, and reports precise evidence back to reviewer.
+
+    authority:
+      can_edit_code: false
+      can_update_tasks_md: false
+      can_run_safe_tests: true
+      can_run_live_tests: true
+      can_generate_reports: true
+      can_assign_back_to_reviewer: true
+
+    mission:
+      primary_goal: >
+        Prove whether the implemented batch actually works and whether the system is closer
+        to 100% production readiness.
+
+    testing_policy:
+      default_order:
+        - static/drift checks
+        - unit tests
+        - integration tests without real unavailable model
+        - startup/readiness validation
+        - replay tests
+        - latency telemetry tests
+        - live WebSocket/model tests only when needed and available
+
+      live_test_rule: >
+        Run live tests only when the bug requires real runtime evidence or when implementer
+        marks live_test_needed=true. If live dependencies are missing, report explicit
+        dependency/hardware/model/network failure instead of pretending success.
+
+      no_fake_pass_rule: >
+        Never count fake backend, test fixture, mocked model, mocked speech output,
+        or simulated audio egress as production speech-to-speech success.
+
+    required_test_areas:
+      architecture_drift:
+        must_verify:
+          - no browser to model direct bypass
+          - no model to browser direct bypass
+          - RealtimeSessionKernel is only authority
+          - no second application authority
+          - no LiveKit/WebRTC/telephony production path
+          - no RAG/vector/database realtime dependency
+
+      startup_readiness:
+        must_verify:
+          - config validation works
+          - required config is enforced
+          - vLLM-Omni WebSocket URL is validated
+          - Qwen3-Omni model config is validated
+          - speech output mode is required for production pass
+          - fake READY is impossible
+          - browser audio is rejected before READY
+          - no Qdrant/Postgres/Redis requirement exists for READY
+
+      browser_websocket:
+        must_verify:
+          - client.session.start works
+          - client.audio.append validates metadata
+          - client.audio.commit works
+          - client.interrupt works
+          - client.session.close works
+          - outbound assistant events carry lineage
+
+      model_websocket:
+        must_verify:
+          - connect works
+          - session.start works
+          - input_audio.append works
+          - input_audio.commit works
+          - response.create works
+          - response.cancel path exists
+          - model events become kernel events
+          - model callback does not mutate state directly
+
+      kernel_runtime:
+        must_verify:
+          - enqueue_event is only semantic ingress
+          - reducer owns epoch/output_version
+          - dispatch commands execute outside lock
+          - stale output is rejected
+          - cancellation increments epoch
+          - output_version gates browser egress
+
+      audio_egress:
+        must_verify:
+          - assistant.audio.delta only emits after lineage check
+          - stale audio is not sent to browser
+          - browser egress queue is bounded
+          - app_egress_ns is recorded
+
+      interruption:
+        must_verify:
+          - SOFT_PRE_INTERRUPT path exists
+          - HARD_INTERRUPT path exists
+          - response.cancel is sent
+          - local egress stops before backend confirms cancel
+          - late model chunks are dropped
+          - old audio suppression is measured
+
+      latency:
+        must_verify:
+          - app_receive_ns exists
+          - kernel_decision_ns exists
+          - model_ws_send_ns exists
+          - model_first_event_ns exists
+          - model_first_audio_ns exists
+          - app_egress_ns exists
+          - p50/p95/p99 are reported
+          - sample count is reported
+
+      replay:
+        must_verify:
+          - event log is written
+          - replay rebuilds kernel state
+          - state hash is compared
+          - epoch/output_version are compared
+          - dispatch intent is compared
+          - stale output drops are compared
+
+    failure_classification:
+      code_failure:
+        examples:
+          - authority bypass
+          - missing lineage check
+          - missing cancel path
+          - unbounded queue
+          - fake READY
+      config_failure:
+        examples:
+          - missing APP_WS_PORT
+          - invalid VLLM_OMNI_WS_URL
+          - MODEL_OUTPUT_MODE not speech
+      dependency_failure:
+        examples:
+          - missing Python package
+          - missing WebSocket library
+          - missing vLLM-Omni runtime
+      hardware_failure:
+        examples:
+          - GPU unavailable
+          - insufficient VRAM
+      model_artifact_failure:
+        examples:
+          - Qwen3-Omni model missing
+          - model server cannot load model
+      network_failure:
+        examples:
+          - browser cannot connect app WebSocket
+          - app cannot connect model WebSocket
+          - WebSocket disconnect/reconnect failure
+
+    tester_report_format:
+      title: Tester Report
+      required_sections:
+        - summary
+        - tested_task_ids
+        - commands_run
+        - passed_checks
+        - failed_checks
+        - live_tests_run
+        - live_tests_skipped
+        - failure_classification
+        - latency_results
+        - interruption_results
+        - replay_results
+        - evidence
+        - recommendation_to_reviewer
+
+    pass_fail_rules:
+      production_pass_requires:
+        - no fake production backend used
+        - no mocked speech E2E counted as real
+        - required tests pass
+        - live tests pass when live behavior was required and environment was available
+        - dependency/hardware/model/network failures are explicitly reported
+        - no RAG/vector/database realtime dependency exists
+
+      send_back_to_reviewer_when:
+        - any task acceptance check fails
+        - live test exposes new bug
+        - latency gate fails
+        - interruption gate fails
+        - startup/readiness is wrong
+        - architecture drift is found
+        - dependency/hardware/model/network issue blocks proof
+
+    final_message_rule:
+      tester_final_message_must_include:
+        - overall result: PASS, FAIL, or BLOCKED
+        - exact failing task IDs
+        - exact evidence
+        - whether reviewer must create a new task batch
+```

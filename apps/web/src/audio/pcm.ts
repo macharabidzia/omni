@@ -15,14 +15,18 @@ export function pcm16ToFloat32(samples: Int16Array): Float32Array {
   return output;
 }
 
-export function encodePcm16Base64(samples: Float32Array): string {
-  const pcm16 = float32ToPcm16(samples);
-  const bytes = new Uint8Array(pcm16.buffer);
+export function encodeAudioBytesBase64(audioBytes: ArrayBufferLike | Uint8Array): string {
+  const bytes = audioBytes instanceof Uint8Array ? audioBytes : new Uint8Array(audioBytes);
   let binary = "";
   for (let index = 0; index < bytes.length; index += 1) {
     binary += String.fromCharCode(bytes[index]);
   }
   return window.btoa(binary);
+}
+
+export function encodePcm16Base64(samples: Float32Array): string {
+  const pcm16 = float32ToPcm16(samples);
+  return encodeAudioBytesBase64(pcm16.buffer);
 }
 
 export function decodePcm16Base64(audioBase64: string): Int16Array {
@@ -33,4 +37,3 @@ export function decodePcm16Base64(audioBase64: string): Int16Array {
   }
   return new Int16Array(bytes.buffer);
 }
-
