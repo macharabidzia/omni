@@ -303,6 +303,7 @@ export default function App() {
     if (event.type === "assistant.done") {
       assistantResponseActiveRef.current = false;
       bargeInRequestedRef.current = false;
+      playbackRef.current?.finalizePending();
       if (queuedCommitRef.current && pendingSpeechTurnRef.current) {
         void maybeCommitTurn();
       }

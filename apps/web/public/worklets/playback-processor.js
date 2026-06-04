@@ -5,9 +5,8 @@ class PlaybackProcessor extends AudioWorkletProcessor {
     this.offset = 0;
     this.active = false;
     this.startupMinChunks = 2;
-    this.startupMinFrames = Math.round(sampleRate * 0.22);
-    this.startupMaxWaitFrames = Math.round(sampleRate * 0.22);
-    this.startupWaitFrames = 0;
+    this.startupMinFrames = Math.round(sampleRate * 0.18);
+    this.finalized = false;
     this.underrunFrames = 0;
     this.underrunReported = false;
     this.drainHoldFrames = Math.round(sampleRate * 0.25);
@@ -18,7 +17,7 @@ class PlaybackProcessor extends AudioWorkletProcessor {
         const wasEmpty = this.queue.length === 0;
         this.queue.push(new Float32Array(data.samples));
         if (wasEmpty && !this.active) {
-          this.startupWaitFrames = 0;
+          this.finalized = false;
         }
         this.underrunFrames = 0;
         this.underrunReported = false;
@@ -31,10 +30,12 @@ class PlaybackProcessor extends AudioWorkletProcessor {
         this.queue = [];
         this.offset = 0;
         this.active = false;
-        this.startupWaitFrames = 0;
+        this.finalized = false;
         this.underrunFrames = 0;
         this.underrunReported = false;
         this.port.postMessage({ type: "clear" });
+      } else if (data.type === "finalize") {
+        this.finalized = true;
       }
     };
   }
@@ -67,7 +68,7 @@ class PlaybackProcessor extends AudioWorkletProcessor {
     return (
       this.queue.length >= this.startupMinChunks ||
       pendingFrames >= this.startupMinFrames ||
-      this.startupWaitFrames >= this.startupMaxWaitFrames
+      this.finalized
     );
   }
 
@@ -81,17 +82,15 @@ class PlaybackProcessor extends AudioWorkletProcessor {
 
     if (!this.active) {
       if (this.queue.length === 0) {
-        this.startupWaitFrames = 0;
+        this.finalized = false;
         return true;
       }
-
-      this.startupWaitFrames += left.length;
       if (!this.readyToStartPlayback()) {
         return true;
       }
 
       this.active = true;
-      this.startupWaitFrames = 0;
+      this.finalized = false;
       this.underrunFrames = 0;
       this.underrunReported = false;
       this.port.postMessage({
@@ -115,6 +114,7 @@ class PlaybackProcessor extends AudioWorkletProcessor {
           }
           if (this.underrunFrames >= this.drainHoldFrames) {
             this.active = false;
+            this.finalized = false;
             this.underrunFrames = 0;
             this.underrunReported = false;
             this.port.postMessage({

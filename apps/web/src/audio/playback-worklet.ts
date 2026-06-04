@@ -67,6 +67,10 @@ export class PlaybackWorkletController {
     );
   }
 
+  finalizePending(): void {
+    this.workletNode?.port.postMessage({ type: "finalize" });
+  }
+
   clear(): void {
     this.workletNode?.port.postMessage({ type: "clear" });
   }
