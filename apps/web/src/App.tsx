@@ -14,10 +14,8 @@ type DebugEvent = GatewayInboundEvent | { type: string; [key: string]: unknown }
 const INPUT_SAMPLE_RATE = 16000;
 const CHUNK_MS = 20;
 const LIVE_SPEECH_LEVEL_THRESHOLD = 0.015;
-const LIVE_BARGE_IN_LEVEL_THRESHOLD = 0.045;
 const LIVE_SILENCE_COMMIT_MS = 450;
 const LIVE_MIN_SPEECH_CHUNKS = 2;
-const LIVE_BARGE_IN_MIN_SPEECH_CHUNKS = 4;
 const LIVE_PREROLL_CHUNKS = 8;
 const LIVE_POST_PLAYBACK_REARM_MS = 180;
 const PLAYBACK_DEBUG_QUEUE_EVENT_MIN_STEP_MS = 40;
@@ -177,6 +175,9 @@ export default function App() {
         if (queuedCommitRef.current && pendingSpeechTurnRef.current) {
           void maybeCommitTurn();
         }
+      },
+      onUnderrun: ({ queuedMs }) => {
+        appendLocalDebugEvent("local.playback.underrun", { queued_ms: queuedMs });
       },
       onQueueChanged: ({ queuedMs }) => {
         assistantPlaybackQueuedMsRef.current = queuedMs;
@@ -525,37 +526,12 @@ export default function App() {
   }
 
   function handleSuppressedChunk(audioBase64: string, level: number): void {
+    void audioBase64;
+    void level;
     clearSilenceCommitTimer();
     candidateSpeechChunkCountRef.current = 0;
     preRollChunksRef.current = [];
-
-    if (level < LIVE_BARGE_IN_LEVEL_THRESHOLD) {
-      resetBargeInDetection();
-      return;
-    }
-
-    pushChunkWithLimit(bargeInChunksRef.current, audioBase64, LIVE_PREROLL_CHUNKS);
-    bargeInChunkCountRef.current += 1;
-    if (bargeInChunkCountRef.current === 1) {
-      appendLocalDebugEvent("local.barge_in.detected", {
-        level: roundLevel(level),
-      });
-    }
-
-    if (bargeInChunkCountRef.current < LIVE_BARGE_IN_MIN_SPEECH_CHUNKS) {
-      return;
-    }
-
-    appendLocalDebugEvent("local.barge_in.accepted", {
-      level: roundLevel(level),
-      speech_chunks: bargeInChunkCountRef.current,
-    });
-    cancelResponse();
-    preRollChunksRef.current = [...bargeInChunksRef.current];
-    const acceptedSpeechChunks = bargeInChunkCountRef.current;
     resetBargeInDetection();
-    startLiveTurnUpload();
-    speechChunkCountRef.current = acceptedSpeechChunks;
   }
 
   function resetBargeInDetection(): void {

@@ -4,6 +4,7 @@ import { resampleFloat32 } from "./resampler";
 type PlaybackCallbacks = {
   onStarted: () => void;
   onDrained: () => void;
+  onUnderrun?: (state: { queuedFrames: number; queuedMs: number }) => void;
   onQueueChanged?: (state: { queuedFrames: number; queuedMs: number }) => void;
   onCleared?: () => void;
 };
@@ -32,6 +33,12 @@ export class PlaybackWorkletController {
       }
       if (event.data.type === "drain") {
         this.callbacks.onDrained();
+      }
+      if (event.data.type === "underrun") {
+        this.callbacks.onUnderrun?.({
+          queuedFrames: event.data.queuedFrames ?? 0,
+          queuedMs: event.data.queuedMs ?? 0,
+        });
       }
       if (event.data.type === "queue" || event.data.type === "started" || event.data.type === "drain") {
         this.callbacks.onQueueChanged?.({
