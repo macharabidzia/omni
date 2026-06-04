@@ -14,9 +14,12 @@ type DebugEvent = GatewayInboundEvent | { type: string; [key: string]: unknown }
 const INPUT_SAMPLE_RATE = 16000;
 const CHUNK_MS = 20;
 const LIVE_SPEECH_LEVEL_THRESHOLD = 0.015;
+const LIVE_BARGE_IN_LEVEL_THRESHOLD = 0.045;
 const LIVE_SILENCE_COMMIT_MS = 450;
 const LIVE_MIN_SPEECH_CHUNKS = 2;
+const LIVE_BARGE_IN_MIN_SPEECH_CHUNKS = 4;
 const LIVE_PREROLL_CHUNKS = 8;
+const LIVE_POST_PLAYBACK_REARM_MS = 180;
 const PLAYBACK_DEBUG_QUEUE_EVENT_MIN_STEP_MS = 40;
 const DEBUG_EVENT_LIMIT = 200;
 const DEBUG_AUDIO_FLUSH_DELAY_MS = 120;
@@ -79,6 +82,11 @@ export default function App() {
   const queuedCommitRef = useRef(false);
   const bargeInRequestedRef = useRef(false);
   const lastPlaybackQueueMsRef = useRef<number | null>(null);
+  const assistantPlaybackActiveRef = useRef(false);
+  const assistantPlaybackQueuedMsRef = useRef(0);
+  const speechRearmAtRef = useRef(0);
+  const bargeInChunkCountRef = useRef(0);
+  const bargeInChunksRef = useRef<string[]>([]);
 
   useEffect(() => {
     void refreshGatewayReady();
@@ -138,6 +146,13 @@ export default function App() {
     playbackRef.current = new PlaybackWorkletController({
       onStarted: () => {
         setAssistantPlaying(true);
+        assistantPlaybackActiveRef.current = true;
+        if (!uploadTurnActiveRef.current) {
+          clearSilenceCommitTimer();
+          candidateSpeechChunkCountRef.current = 0;
+          preRollChunksRef.current = [];
+        }
+        resetBargeInDetection();
         appendLocalDebugEvent("local.playback.started");
         if (commitAtRef.current !== null && localAudioPlayedMetricRef.current === null) {
           localAudioPlayedMetricRef.current = performance.now() - commitAtRef.current;
@@ -146,9 +161,19 @@ export default function App() {
       },
       onDrained: () => {
         setAssistantPlaying(false);
+        assistantPlaybackActiveRef.current = false;
+        assistantPlaybackQueuedMsRef.current = 0;
+        if (!uploadTurnActiveRef.current) {
+          clearSilenceCommitTimer();
+          candidateSpeechChunkCountRef.current = 0;
+          preRollChunksRef.current = [];
+        }
+        resetBargeInDetection();
+        speechRearmAtRef.current = performance.now() + LIVE_POST_PLAYBACK_REARM_MS;
         appendLocalDebugEvent("local.playback.drain");
       },
       onQueueChanged: ({ queuedMs }) => {
+        assistantPlaybackQueuedMsRef.current = queuedMs;
         const previous = lastPlaybackQueueMsRef.current;
         if (previous === null || Math.abs(previous - queuedMs) >= PLAYBACK_DEBUG_QUEUE_EVENT_MIN_STEP_MS || queuedMs === 0) {
           lastPlaybackQueueMsRef.current = queuedMs;
@@ -156,7 +181,17 @@ export default function App() {
         }
       },
       onCleared: () => {
+        assistantPlaybackActiveRef.current = false;
+        assistantPlaybackQueuedMsRef.current = 0;
         lastPlaybackQueueMsRef.current = 0;
+        if (!uploadTurnActiveRef.current) {
+          clearSilenceCommitTimer();
+          candidateSpeechChunkCountRef.current = 0;
+          preRollChunksRef.current = [];
+        }
+        resetBargeInDetection();
+        speechRearmAtRef.current = performance.now() + LIVE_POST_PLAYBACK_REARM_MS;
+        setAssistantPlaying(false);
         appendLocalDebugEvent("local.playback.clear");
       },
     });
@@ -333,12 +368,14 @@ export default function App() {
       return;
     }
 
+    if (!uploadTurnActiveRef.current && isAssistantOutputBlocking()) {
+      handleSuppressedChunk(audioBase64, level);
+      return;
+    }
+
     const isSpeech = level >= LIVE_SPEECH_LEVEL_THRESHOLD;
     if (!uploadTurnActiveRef.current) {
-      preRollChunksRef.current.push(audioBase64);
-      if (preRollChunksRef.current.length > LIVE_PREROLL_CHUNKS) {
-        preRollChunksRef.current.splice(0, preRollChunksRef.current.length - LIVE_PREROLL_CHUNKS);
-      }
+      pushChunkWithLimit(preRollChunksRef.current, audioBase64, LIVE_PREROLL_CHUNKS);
     }
 
     if (isSpeech) {
@@ -454,6 +491,58 @@ export default function App() {
     queuedCommitRef.current = false;
     bargeInRequestedRef.current = false;
     lastPlaybackQueueMsRef.current = null;
+    assistantPlaybackActiveRef.current = false;
+    assistantPlaybackQueuedMsRef.current = 0;
+    speechRearmAtRef.current = 0;
+    resetBargeInDetection();
+  }
+
+  function isAssistantOutputBlocking(): boolean {
+    return (
+      assistantResponseActiveRef.current ||
+      assistantPlaybackActiveRef.current ||
+      assistantPlaybackQueuedMsRef.current > 0 ||
+      performance.now() < speechRearmAtRef.current
+    );
+  }
+
+  function handleSuppressedChunk(audioBase64: string, level: number): void {
+    clearSilenceCommitTimer();
+    candidateSpeechChunkCountRef.current = 0;
+    preRollChunksRef.current = [];
+
+    if (level < LIVE_BARGE_IN_LEVEL_THRESHOLD) {
+      resetBargeInDetection();
+      return;
+    }
+
+    pushChunkWithLimit(bargeInChunksRef.current, audioBase64, LIVE_PREROLL_CHUNKS);
+    bargeInChunkCountRef.current += 1;
+    if (bargeInChunkCountRef.current === 1) {
+      appendLocalDebugEvent("local.barge_in.detected", {
+        level: roundLevel(level),
+      });
+    }
+
+    if (bargeInChunkCountRef.current < LIVE_BARGE_IN_MIN_SPEECH_CHUNKS) {
+      return;
+    }
+
+    appendLocalDebugEvent("local.barge_in.accepted", {
+      level: roundLevel(level),
+      speech_chunks: bargeInChunkCountRef.current,
+    });
+    cancelResponse();
+    preRollChunksRef.current = [...bargeInChunksRef.current];
+    const acceptedSpeechChunks = bargeInChunkCountRef.current;
+    resetBargeInDetection();
+    startLiveTurnUpload();
+    speechChunkCountRef.current = acceptedSpeechChunks;
+  }
+
+  function resetBargeInDetection(): void {
+    bargeInChunkCountRef.current = 0;
+    bargeInChunksRef.current = [];
   }
 
   function handleSessionClosed(): void {
@@ -585,4 +674,11 @@ export default function App() {
 
 function roundLevel(level: number): number {
   return Math.round(level * 10000) / 10000;
+}
+
+function pushChunkWithLimit(buffer: string[], audioBase64: string, limit: number): void {
+  buffer.push(audioBase64);
+  if (buffer.length > limit) {
+    buffer.splice(0, buffer.length - limit);
+  }
 }

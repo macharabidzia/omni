@@ -4,11 +4,14 @@ class PlaybackProcessor extends AudioWorkletProcessor {
     this.queue = [];
     this.offset = 0;
     this.active = false;
+    this.underrunFrames = 0;
+    this.drainHoldFrames = Math.round(sampleRate * 0.25);
 
     this.port.onmessage = (event) => {
       const data = event.data;
       if (data.type === "enqueue" && data.samples) {
         this.queue.push(new Float32Array(data.samples));
+        this.underrunFrames = 0;
         this.port.postMessage({
           type: "queue",
           queuedFrames: this.pendingFrames(),
@@ -18,6 +21,7 @@ class PlaybackProcessor extends AudioWorkletProcessor {
         this.queue = [];
         this.offset = 0;
         this.active = false;
+        this.underrunFrames = 0;
         this.port.postMessage({ type: "clear" });
       }
     };
@@ -54,16 +58,21 @@ class PlaybackProcessor extends AudioWorkletProcessor {
     for (let frame = 0; frame < left.length; frame += 1) {
       if (this.queue.length === 0) {
         if (this.active) {
-          this.active = false;
-          this.port.postMessage({
-            type: "drain",
-            queuedFrames: 0,
-            queuedMs: 0,
-          });
+          this.underrunFrames += left.length - frame;
+          if (this.underrunFrames >= this.drainHoldFrames) {
+            this.active = false;
+            this.underrunFrames = 0;
+            this.port.postMessage({
+              type: "drain",
+              queuedFrames: 0,
+              queuedMs: 0,
+            });
+          }
         }
         break;
       }
 
+      this.underrunFrames = 0;
       const current = this.queue[0];
       const sample = current[this.offset] ?? 0;
       left[frame] = sample;

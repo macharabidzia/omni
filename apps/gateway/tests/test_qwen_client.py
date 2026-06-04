@@ -100,3 +100,21 @@ def test_parse_event_uses_string_error_message() -> None:
     assert event is not None
     assert event.code == "unsupported"
     assert event.message == "The /v1/realtime API is not supported."
+
+
+def test_parse_event_ignores_non_terminal_audio_done_events() -> None:
+    client = QwenRealtimeClient(
+        model="qwen",
+        url="ws://qwen/v1/realtime",
+        request_timeout_seconds=1.0,
+        response_timeout_seconds=1.0,
+        output_sample_rate=24000,
+        max_ws_message_bytes=1024,
+    )
+
+    assert client._parse_event({"type": "response.audio.done"}) is None
+    assert client._parse_event({"type": "transcription.done"}) is None
+
+    event = client._parse_event({"type": "response.done"})
+    assert event is not None
+    assert event.kind == "response_done"

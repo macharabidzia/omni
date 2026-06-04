@@ -199,11 +199,15 @@ class QwenRealtimeClient:
         if raw_type in {
             "response.done",
             "response.completed",
-            "response.audio.done",
-            "transcription.done",
         }:
             self.input_stream_started = False
             return QwenEvent(kind="response_done", payload=payload)
+
+        if raw_type in {
+            "response.audio.done",
+            "transcription.done",
+        }:
+            return None
 
         if raw_type == "error":
             self.input_stream_started = False
