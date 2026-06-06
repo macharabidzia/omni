@@ -1,0 +1,12 @@
+[
+  {
+    "type": "session.ready",
+    "mode": "direct"
+  },
+  {
+    "type": "error",
+    "code": "QWEN_TIMEOUT",
+    "message": "Timed out waiting for Qwen response: ",
+    "t_ms": 60026.27
+  }
+]

@@ -72,5 +72,4 @@ class SessionMetrics:
     def _delta_ms(start: float | None, end: float | None) -> float | None:
         if start is None or end is None:
             return None
-        return round((end - start) * 1000, 2)
-
+        return round(max(end - start, 0.0) * 1000, 2)

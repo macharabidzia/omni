@@ -1,9 +1,8 @@
 import asyncio
 import logging
 from dataclasses import dataclass
+from typing import Awaitable, Callable
 from uuid import uuid4
-
-from fastapi import WebSocket
 
 from src.config import Settings
 from src.realtime.audio import AudioValidationError, validate_audio_chunk
@@ -14,9 +13,11 @@ from src.realtime.qwen_client import QwenEvent, QwenRealtimeClient
 
 logger = logging.getLogger(__name__)
 
+EventSink = Callable[[dict], Awaitable[None]]
+
 
 @dataclass(slots=True)
-class BrowserSessionConfig:
+class RealtimeSessionConfig:
     speaker: str
     modalities: list[str]
     input_sample_rate: int
@@ -24,11 +25,18 @@ class BrowserSessionConfig:
 
 
 class RealtimeSession:
-    def __init__(self, *, websocket: WebSocket, settings: Settings) -> None:
-        self.websocket = websocket
+    def __init__(
+        self,
+        *,
+        settings: Settings,
+        emit_event: EventSink | None,
+    ) -> None:
+        if emit_event is None:
+            raise ValueError("RealtimeSession requires an event sink.")
+        self.emit_event = emit_event
         self.settings = settings
         self.session_id = str(uuid4())
-        self.browser_config: BrowserSessionConfig | None = None
+        self.session_config: RealtimeSessionConfig | None = None
         self.qwen_client: QwenRealtimeClient | None = None
         self.qwen_chat_client: QwenChatClient | None = None
         self.qwen_reader_task: asyncio.Task | None = None
@@ -41,44 +49,17 @@ class RealtimeSession:
         self.buffered_audio_bytes = bytearray()
         self.assistant_output_gate_open = True
         self.buffered_assistant_events: list[QwenEvent] = []
-        self.browser_audio_chunk_count = 0
-        self.browser_audio_total_bytes = 0
+        self.precommit_assistant_output_started = False
+        self.input_audio_chunk_count = 0
+        self.input_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
         self.upstream_response_pending = False
-
-    async def handle_browser_event(self, event: dict) -> bool:
-        event_type = event.get("type")
-
-        if event_type == "session.start":
-            await self._start_session(event)
-            return False
-
-        if event_type == "audio.append":
-            await self._append_audio(event)
-            return False
-
-        if event_type == "audio.commit":
-            await self._commit_audio()
-            return False
-
-        if event_type == "response.cancel":
-            await self._cancel_response()
-            return False
-
-        if event_type == "session.end":
-            return True
-
-        await self.send_error(
-            code="UNSUPPORTED_EVENT",
-            message=f"Unsupported browser event type: {event_type}",
-        )
-        return False
 
     async def send_event(self, payload: dict) -> None:
         if self.closed:
             return
         async with self.send_lock:
-            await self.websocket.send_json(payload)
+            await self.emit_event(payload)
 
     async def send_error(self, *, code: str, message: str) -> None:
         await self.send_event(
@@ -117,8 +98,9 @@ class RealtimeSession:
         self.buffered_audio_bytes.clear()
         self.buffered_assistant_events.clear()
         self.assistant_output_gate_open = True
-        self.browser_audio_chunk_count = 0
-        self.browser_audio_total_bytes = 0
+        self.precommit_assistant_output_started = False
+        self.input_audio_chunk_count = 0
+        self.input_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
         self.upstream_response_pending = False
 
@@ -148,27 +130,28 @@ class RealtimeSession:
             self.qwen_client = None
 
     async def _open_qwen_realtime_session(self) -> None:
-        assert self.browser_config is not None
-        assert self.browser_config.output_audio
+        assert self.session_config is not None
+        assert self.session_config.output_audio
 
         self.qwen_client = self._build_qwen_realtime_client()
         await self.qwen_client.connect()
         await self.qwen_client.start_session(
-            speaker=self.browser_config.speaker,
-            modalities=self.browser_config.modalities,
-            input_sample_rate=self.browser_config.input_sample_rate,
-            output_audio=self.browser_config.output_audio,
+            speaker=self.session_config.speaker,
+            modalities=self.session_config.modalities,
+            input_sample_rate=self.session_config.input_sample_rate,
+            output_audio=self.session_config.output_audio,
         )
         self.qwen_reader_task = asyncio.create_task(self._pump_qwen_events())
 
     async def _restart_qwen_realtime_session(self) -> None:
-        assert self.browser_config is not None
-        assert self.browser_config.output_audio
+        assert self.session_config is not None
+        assert self.session_config.output_audio
 
         await self._close_qwen_realtime_session()
         self.ignore_model_audio = False
         self.buffered_assistant_events.clear()
         self.assistant_output_gate_open = False
+        self.precommit_assistant_output_started = False
         self.assistant_audio_chunk_count = 0
         self.upstream_response_pending = False
         await self._open_qwen_realtime_session()
@@ -196,13 +179,13 @@ class RealtimeSession:
         if input_sample_rate != self.settings.input_sample_rate:
             await self.send_error(
                 code="UNSUPPORTED_SAMPLE_RATE",
-                message="Browser sessions must send 16 kHz PCM16 mono audio to the gateway.",
+                message="Input audio must be 16 kHz PCM16 mono.",
             )
             return
 
         output_audio = bool(event.get("output_audio", "audio" in modalities))
         await self._reset_runtime()
-        self.browser_config = BrowserSessionConfig(
+        self.session_config = RealtimeSessionConfig(
             speaker=speaker,
             modalities=modalities,
             input_sample_rate=input_sample_rate,
@@ -212,8 +195,9 @@ class RealtimeSession:
         self.last_metrics_snapshot = None
         self.ignore_model_audio = False
         self.assistant_output_gate_open = not output_audio
-        self.browser_audio_chunk_count = 0
-        self.browser_audio_total_bytes = 0
+        self.precommit_assistant_output_started = False
+        self.input_audio_chunk_count = 0
+        self.input_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
         self.upstream_response_pending = False
 
@@ -250,11 +234,14 @@ class RealtimeSession:
         )
         await self._send_metrics_update()
 
+    async def start_session(self, event: dict) -> None:
+        await self._start_session(event)
+
     async def _append_audio(self, event: dict) -> None:
-        if self.browser_config is None:
+        if self.session_config is None:
             await self.send_error(
                 code="SESSION_NOT_STARTED",
-                message="Send session.start before audio.append.",
+                message="Start a session before streaming audio.",
             )
             return
 
@@ -272,17 +259,17 @@ class RealtimeSession:
 
         self.metrics.mark_once("t_microphone_started")
         self.metrics.mark_once("t_first_audio_chunk_sent")
-        if not self.browser_config.output_audio:
+        if not self.session_config.output_audio:
             self.buffered_audio_bytes.extend(validated.audio_bytes)
-        is_first_chunk_of_turn = self.browser_audio_chunk_count == 0
+        is_first_chunk_of_turn = self.input_audio_chunk_count == 0
         if (
-            self.browser_config.output_audio
+            self.session_config.output_audio
             and self.qwen_client is not None
             and is_first_chunk_of_turn
             and self.upstream_response_pending
         ):
             logger.info(
-                "Session %s rotating stale upstream Qwen session before new browser turn",
+                "Session %s rotating stale upstream Qwen session before new turn",
                 self.session_id,
             )
             try:
@@ -293,11 +280,11 @@ class RealtimeSession:
                     message=f"Failed to reset stale Qwen session before new turn: {exc}",
                 )
                 return
-        self.browser_audio_chunk_count += 1
-        self.browser_audio_total_bytes += len(validated.audio_bytes)
-        if self.browser_audio_chunk_count == 1:
+        self.input_audio_chunk_count += 1
+        self.input_audio_total_bytes += len(validated.audio_bytes)
+        if self.input_audio_chunk_count == 1:
             logger.info(
-                "Session %s received first browser audio chunk duration_ms=%d bytes=%d",
+                "Session %s received first input audio chunk duration_ms=%d bytes=%d",
                 self.session_id,
                 validated.duration_ms,
                 len(validated.audio_bytes),
@@ -318,18 +305,35 @@ class RealtimeSession:
 
         await self._send_metrics_update()
 
+    async def append_audio_chunk(
+        self,
+        *,
+        audio_base64: str,
+        sample_rate: int,
+        channels: int = 1,
+        audio_format: str = "pcm16",
+    ) -> None:
+        await self._append_audio(
+            {
+                "audio_base64": audio_base64,
+                "sample_rate": sample_rate,
+                "channels": channels,
+                "format": audio_format,
+            }
+        )
+
     async def _commit_audio(self) -> None:
-        if self.browser_config is None:
+        if self.session_config is None:
             await self.send_error(
                 code="SESSION_NOT_STARTED",
-                message="Send session.start before audio.commit.",
+                message="Start a session before committing audio.",
             )
             return
 
         self.ignore_model_audio = False
         self.metrics.mark_once("t_audio_commit_sent")
 
-        if not self.browser_config.output_audio:
+        if not self.session_config.output_audio:
             if self.text_response_task is not None and not self.text_response_task.done():
                 await self.send_error(
                     code="RESPONSE_IN_PROGRESS",
@@ -346,7 +350,7 @@ class RealtimeSession:
             await self._send_metrics_update()
             return
 
-        if self.browser_audio_chunk_count == 0:
+        if self.input_audio_chunk_count == 0:
             await self.send_error(
                 code="EMPTY_AUDIO",
                 message="No audio buffered for realtime commit.",
@@ -355,18 +359,31 @@ class RealtimeSession:
 
         try:
             assert self.qwen_client is not None
+            response_already_started = self.precommit_assistant_output_started
+            if response_already_started:
+                self.upstream_response_pending = True
             self.assistant_output_gate_open = True
             await self._flush_buffered_assistant_events()
+            self.precommit_assistant_output_started = False
+            if response_already_started:
+                logger.info(
+                    "Session %s skipping explicit commit because upstream response already started",
+                    self.session_id,
+                )
+                self.input_audio_chunk_count = 0
+                self.input_audio_total_bytes = 0
+                await self._send_metrics_update()
+                return
             logger.info(
                 "Session %s committing %d audio chunks (%d bytes) to Qwen",
                 self.session_id,
-                self.browser_audio_chunk_count,
-                self.browser_audio_total_bytes,
+                self.input_audio_chunk_count,
+                self.input_audio_total_bytes,
             )
             await self.qwen_client.commit_audio()
             self.upstream_response_pending = True
-            self.browser_audio_chunk_count = 0
-            self.browser_audio_total_bytes = 0
+            self.input_audio_chunk_count = 0
+            self.input_audio_total_bytes = 0
         except Exception as exc:
             await self.send_error(
                 code="QWEN_COMMIT_FAILED",
@@ -375,6 +392,9 @@ class RealtimeSession:
             return
 
         await self._send_metrics_update()
+
+    async def commit_audio(self) -> None:
+        await self._commit_audio()
 
     async def _cancel_response(self) -> None:
         if self.text_response_task is not None and not self.text_response_task.done():
@@ -402,6 +422,9 @@ class RealtimeSession:
 
         await self._send_metrics_update()
 
+    async def cancel_response(self) -> None:
+        await self._cancel_response()
+
     async def _pump_qwen_events(self) -> None:
         assert self.qwen_client is not None
         async for qwen_event in self.qwen_client.iter_events():
@@ -416,13 +439,14 @@ class RealtimeSession:
             return
 
         if self._should_buffer_assistant_event(qwen_event):
+            self.precommit_assistant_output_started = True
             self.buffered_assistant_events.append(qwen_event)
             return
 
         await self._forward_qwen_event(qwen_event)
 
     def _should_buffer_assistant_event(self, qwen_event: QwenEvent) -> bool:
-        if self.browser_config is None or not self.browser_config.output_audio:
+        if self.session_config is None or not self.session_config.output_audio:
             return False
         if self.assistant_output_gate_open:
             return False
@@ -487,7 +511,7 @@ class RealtimeSession:
         )
 
     async def _run_text_only_completion(self) -> None:
-        assert self.browser_config is not None
+        assert self.session_config is not None
         assert self.qwen_chat_client is not None
         audio_pcm16 = bytes(self.buffered_audio_bytes)
         self.buffered_audio_bytes.clear()
@@ -495,7 +519,7 @@ class RealtimeSession:
         try:
             text = await self.qwen_chat_client.respond_text_only(
                 audio_pcm16=audio_pcm16,
-                sample_rate=self.browser_config.input_sample_rate,
+                sample_rate=self.session_config.input_sample_rate,
             )
         except asyncio.CancelledError:
             self.text_response_task = None

@@ -1,0 +1,56 @@
+already patched: /workspace/omni/.venv-qwen/lib/python3.12/site-packages/vllm_omni/entrypoints/openai/api_server.py
+already patched: /workspace/omni/.venv-qwen/lib/python3.12/site-packages/vllm_omni/model_executor/stage_input_processors/qwen3_omni.py
+/workspace/omni/.venv-qwen/lib/python3.12/site-packages/vllm_omni/model_executor/models/qwen3_omni/qwen3_omni.py: already patched
+/workspace/omni/.venv-qwen/lib/python3.12/site-packages/vllm/model_executor/models/qwen3_asr_realtime.py: already patched
+INFO 06-06 17:39:15 [nixl_utils.py:20] Setting UCX_RCACHE_MAX_UNRELEASED to '1024' to avoid a rare memory leak in UCX when using NIXL.
+WARNING 06-06 17:39:15 [nixl_utils.py:34] NIXL is not available
+WARNING 06-06 17:39:15 [nixl_utils.py:44] NIXL agent config is not available
+INFO 06-06 17:39:29 [main.py:51] Delegating entrypoint handling to vllm-omni
+INFO 06-06 17:39:29 [logo.py:52]        █     █     █▄   ▄█       ▄▀▀▀▀▄ █▄   ▄█ █▄    █ ▀█▀ 
+INFO 06-06 17:39:29 [logo.py:52]  ▄▄ ▄█ █     █     █ ▀▄▀ █  ▄▄▄  █    █ █ ▀▄▀ █ █ ▀▄  █  █  
+INFO 06-06 17:39:29 [logo.py:52]   █▄█▀ █     █     █     █       █    █ █     █ █   ▀▄█  █  
+INFO 06-06 17:39:29 [logo.py:52]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀        ▀▀▀▀  ▀     ▀ ▀     ▀ ▀▀▀ 
+INFO 06-06 17:39:29 [logo.py:52] 
+(APIServer pid=42927) INFO 06-06 17:39:29 [utils.py:299] vLLM server version 0.20.2, serving model /workspace/omni/models/Qwen3-Omni-30B-A3B-Instruct
+(APIServer pid=42927) INFO 06-06 17:39:29 [utils.py:233] non-default args: {'model_tag': '/workspace/omni/models/Qwen3-Omni-30B-A3B-Instruct', 'host': '0.0.0.0', 'port': 8091, 'model': '/workspace/omni/models/Qwen3-Omni-30B-A3B-Instruct', 'tokenizer_mode': None, 'trust_remote_code': True, 'dtype': None, 'enforce_eager': None, 'config_format': None, 'load_format': None, 'safetensors_load_strategy': 'prefetch', 'pipeline_parallel_size': None, 'tensor_parallel_size': None, 'data_parallel_size': None, 'gpu_memory_utilization': None, 'mm_processor_cache_gb': None, 'skip_mm_profiling': None, 'compilation_config': None, 'profiler_config': None}
+(APIServer pid=42927) INFO 06-06 17:39:29 [omni_base.py:167] [AsyncOmni] Initializing with model /workspace/omni/models/Qwen3-Omni-30B-A3B-Instruct
+(APIServer pid=42927) INFO 06-06 17:39:29 [async_omni_engine.py:248] [AsyncOmniEngine] Initializing with model /workspace/omni/models/Qwen3-Omni-30B-A3B-Instruct
+(APIServer pid=42927) WARNING 06-06 17:39:29 [utils.py:191] Filtered out 1 callable object(s) from base_engine_args that are not compatible with OmegaConf: ['dispatch_function']. 
+(APIServer pid=42927) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'interleaved'}
+(APIServer pid=42927) INFO 06-06 17:39:30 [async_omni_engine.py:310] [AsyncOmniEngine] Launching Orchestrator thread with 3 stages
+(APIServer pid=42927) INFO 06-06 17:39:30 [initialization.py:351] Loaded OmniTransferConfig with 2 connector configurations
+(APIServer pid=42927) WARNING 06-06 17:39:30 [envs.py:1830] Unknown vLLM environment variable detected: VLLM_QWEN_REALTIME_SEGMENT_DURATION_S
+(APIServer pid=42927) WARNING 06-06 17:39:30 [envs.py:1830] Unknown vLLM environment variable detected: VLLM_OMNI_ALLOW_REALTIME_ASYNC_CHUNK
+(APIServer pid=42927) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'interleaved'}
+(APIServer pid=42927) INFO 06-06 17:39:30 [model.py:555] Resolved architecture: Qwen3OmniMoeForConditionalGeneration
+(APIServer pid=42927) INFO 06-06 17:39:30 [model.py:1680] Using max model len 2048
+(APIServer pid=42927) INFO 06-06 17:39:30 [vllm.py:840] Asynchronous scheduling is enabled.
+(APIServer pid=42927) WARNING 06-06 17:39:30 [vllm.py:896] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(APIServer pid=42927) WARNING 06-06 17:39:30 [vllm.py:914] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(APIServer pid=42927) INFO 06-06 17:39:30 [kernel.py:205] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'])
+(APIServer pid=42927) INFO 06-06 17:39:30 [vllm.py:1089] Cudagraph is disabled under eager mode
+(APIServer pid=42927) INFO 06-06 17:39:30 [compilation.py:303] Enabled custom fusions: norm_quant, act_quant
+(APIServer pid=42927) WARNING 06-06 17:39:30 [envs.py:1830] Unknown vLLM environment variable detected: VLLM_QWEN_REALTIME_SEGMENT_DURATION_S
+(APIServer pid=42927) WARNING 06-06 17:39:30 [envs.py:1830] Unknown vLLM environment variable detected: VLLM_OMNI_ALLOW_REALTIME_ASYNC_CHUNK
+(APIServer pid=42927) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'interleaved'}
+(APIServer pid=42927) INFO 06-06 17:39:30 [model.py:555] Resolved architecture: Qwen3OmniMoeForConditionalGeneration
+(APIServer pid=42927) INFO 06-06 17:39:30 [model.py:1680] Using max model len 2048
+(APIServer pid=42927) INFO 06-06 17:39:30 [model.py:1680] Using max model len 2048
+(APIServer pid=42927) WARNING 06-06 17:39:30 [vllm.py:896] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(APIServer pid=42927) WARNING 06-06 17:39:30 [vllm.py:914] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(APIServer pid=42927) INFO 06-06 17:39:30 [kernel.py:205] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'])
+(APIServer pid=42927) INFO 06-06 17:39:30 [vllm.py:1089] Cudagraph is disabled under eager mode
+(APIServer pid=42927) WARNING 06-06 17:39:30 [envs.py:1830] Unknown vLLM environment variable detected: VLLM_QWEN_REALTIME_SEGMENT_DURATION_S
+(APIServer pid=42927) WARNING 06-06 17:39:30 [envs.py:1830] Unknown vLLM environment variable detected: VLLM_OMNI_ALLOW_REALTIME_ASYNC_CHUNK
+(APIServer pid=42927) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'interleaved'}
+(APIServer pid=42927) INFO 06-06 17:39:30 [model.py:555] Resolved architecture: Qwen3OmniMoeForConditionalGeneration
+(APIServer pid=42927) INFO 06-06 17:39:30 [model.py:1680] Using max model len 65536
+(APIServer pid=42927) INFO 06-06 17:39:30 [scheduler.py:239] Chunked prefill is enabled with max_num_batched_tokens=51200.
+(APIServer pid=42927) INFO 06-06 17:39:30 [vllm.py:840] Asynchronous scheduling is disabled.
+(APIServer pid=42927) WARNING 06-06 17:39:30 [vllm.py:896] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(APIServer pid=42927) WARNING 06-06 17:39:30 [vllm.py:914] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(APIServer pid=42927) INFO 06-06 17:39:30 [kernel.py:205] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'])
+(APIServer pid=42927) INFO 06-06 17:39:30 [vllm.py:1089] Cudagraph is disabled under eager mode
+(APIServer pid=42927) INFO 06-06 17:39:30 [stage_init_utils.py:535] [stage_init] Stage-0 set runtime devices: 0
+(APIServer pid=42927) INFO 06-06 17:39:30 [async_omni_engine.py:685] [AsyncOmniEngine] Stage 0 engine launch started
+(APIServer pid=42927) INFO 06-06 17:39:30 [stage_init_utils.py:535] [stage_init] Stage-1 set runtime devices: 0

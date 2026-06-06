@@ -45,7 +45,7 @@ try {
 
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForFunction(
-    () => document.body.innerText.includes("Gateway: qwen_ready"),
+    () => document.body.innerText.includes("Ready: ready"),
     undefined,
     { timeout: 60000 },
   );
@@ -65,9 +65,11 @@ try {
   let waitError = null;
   try {
     await page.waitForFunction(
-      () => document.querySelector(".debug-log")?.textContent?.includes('"type": "assistant.audio.delta"'),
+      () =>
+        document.querySelector(".debug-log")?.textContent?.includes('"type": "local.turn.commit"') &&
+        document.querySelector(".debug-log")?.textContent?.includes('"type": "local.playback.started"'),
       undefined,
-      { timeout: 30000 },
+      { timeout: 60000 },
     );
     await page.waitForTimeout(1500);
   } catch (error) {
@@ -111,8 +113,9 @@ try {
   };
   await fs.writeFile(outputPath, JSON.stringify(output, null, 2), "utf-8");
 
-  const hasAssistantAudio = result.debugEventTypes.includes("assistant.audio.delta");
-  if (!hasAssistantAudio || result.errorText || pageErrors.length > 0 || waitError) {
+  const hasPlaybackStart = result.debugEventTypes.includes("local.playback.started");
+  const hasCommit = result.debugEventTypes.includes("local.turn.commit");
+  if (!hasPlaybackStart || !hasCommit || result.errorText || pageErrors.length > 0 || waitError) {
     process.exit(1);
   }
 } finally {

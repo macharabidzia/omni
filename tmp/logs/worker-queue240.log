@@ -1,0 +1,25 @@
+2026-06-06 16:22:02,498 INFO __main__ LiveKit worker config livekit_url=ws://185.62.58.164:7880 api_key_present=True api_secret_present=True room=omni-room agent_id=omni-worker
+/workspace/omni/.venv-qwen/lib/python3.12/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 9 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+  return self._jws.encode(
+Nvidia Decoder is supported.
+2026-06-06 16:22:03,441 INFO livekit livekit_api::signal_client::signal_stream:104:livekit_api::signal_client::signal_stream - connecting to ws://185.62.58.164:7880/rtc?sdk=python&os=Ubuntu&os_version=24.4.0&device_model=AS+-4124GO-NART%2B&protocol=17&client_protocol=1&auto_subscribe=1&adaptive_stream=0&version=1.1.10&capabilities=CAP_PACKET_TRAILER
+2026-06-06 16:22:05,520 INFO __main__ LiveKit worker connected room=omni-room
+2026-06-06 16:22:05,672 INFO __main__ LiveKit worker published assistant track sample_rate=48000 frame_ms=20 queue_ms=240
+2026-06-06 16:22:31,575 INFO src.realtime.session Session 9f8d5136-18c1-4f64-a84e-7368133dfe18 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 16:22:31,904 INFO src.realtime.session Session 9f8d5136-18c1-4f64-a84e-7368133dfe18 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 16:22:35,563 INFO src.realtime.session Session 9f8d5136-18c1-4f64-a84e-7368133dfe18 committing 191 audio chunks (122240 bytes) to Qwen
+2026-06-06 16:22:35,945 INFO src.realtime.session Session 9f8d5136-18c1-4f64-a84e-7368133dfe18 received first assistant audio delta
+2026-06-06 16:22:39,482 INFO src.realtime.session Session 9f8d5136-18c1-4f64-a84e-7368133dfe18 response done assistant_audio_chunks=54
+2026-06-06 16:22:40,242 INFO src.realtime.session Session 9f8d5136-18c1-4f64-a84e-7368133dfe18 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 16:22:45,310 INFO src.realtime.session Session efd50690-f05a-454d-893c-bfa5e6f1a429 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 16:22:45,646 INFO src.realtime.session Session efd50690-f05a-454d-893c-bfa5e6f1a429 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 16:22:49,175 INFO src.realtime.session Session efd50690-f05a-454d-893c-bfa5e6f1a429 committing 184 audio chunks (117760 bytes) to Qwen
+2026-06-06 16:22:49,549 INFO src.realtime.session Session efd50690-f05a-454d-893c-bfa5e6f1a429 received first assistant audio delta
+2026-06-06 16:22:53,537 INFO src.realtime.session Session efd50690-f05a-454d-893c-bfa5e6f1a429 response done assistant_audio_chunks=58
+2026-06-06 16:22:54,325 INFO src.realtime.session Session efd50690-f05a-454d-893c-bfa5e6f1a429 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 16:22:59,333 INFO src.realtime.session Session f7ba75d6-cc0c-42af-b185-4f028102c76a started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 16:22:59,655 INFO src.realtime.session Session f7ba75d6-cc0c-42af-b185-4f028102c76a received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 16:23:03,355 INFO src.realtime.session Session f7ba75d6-cc0c-42af-b185-4f028102c76a committing 193 audio chunks (123520 bytes) to Qwen
+2026-06-06 16:23:03,726 INFO src.realtime.session Session f7ba75d6-cc0c-42af-b185-4f028102c76a received first assistant audio delta
+2026-06-06 16:23:08,161 INFO src.realtime.session Session f7ba75d6-cc0c-42af-b185-4f028102c76a response done assistant_audio_chunks=66
+2026-06-06 16:23:08,994 INFO src.realtime.session Session f7ba75d6-cc0c-42af-b185-4f028102c76a received first input audio chunk duration_ms=20 bytes=640

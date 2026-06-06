@@ -1,0 +1,71 @@
+{
+  "status": "warning",
+  "input_path": "tmp/playwright-live-check/control-latency-probe-reliable/run1.wav",
+  "sample_rate": 48000,
+  "duration_ms": 8448.0,
+  "active_region": {
+    "start_ms": 4498.79,
+    "end_ms": 8231.27,
+    "duration_ms": 3732.5
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 1,
+  "longest_edge_silence_ms": 68.17,
+  "edge_silence_runs": [
+    {
+      "start_ms_in_active": 12.44,
+      "end_ms_in_active": 80.58,
+      "length_ms": 68.17,
+      "start_ms_absolute": 4511.23,
+      "end_ms_absolute": 4579.38,
+      "pre_peak_abs": 13,
+      "post_peak_abs": 10
+    }
+  ],
+  "internal_silence_runs_ge_threshold": 2,
+  "longest_internal_silence_ms": 32.48,
+  "internal_silence_runs": [
+    {
+      "start_ms_in_active": 83.21,
+      "end_ms_in_active": 104.81,
+      "length_ms": 21.62,
+      "start_ms_absolute": 4582.0,
+      "end_ms_absolute": 4603.6,
+      "pre_peak_abs": 10,
+      "post_peak_abs": 271
+    },
+    {
+      "start_ms_in_active": 281.62,
+      "end_ms_in_active": 314.08,
+      "length_ms": 32.48,
+      "start_ms_absolute": 4780.42,
+      "end_ms_absolute": 4812.88,
+      "pre_peak_abs": 57,
+      "post_peak_abs": 4025
+    }
+  ],
+  "suspicious_internal_silence_runs_ge_threshold": 1,
+  "longest_suspicious_internal_silence_ms": 32.48,
+  "suspicious_internal_silence_runs": [
+    {
+      "start_ms_in_active": 281.62,
+      "end_ms_in_active": 314.08,
+      "length_ms": 32.48,
+      "start_ms_absolute": 4780.42,
+      "end_ms_absolute": 4812.88,
+      "pre_peak_abs": 57,
+      "post_peak_abs": 4025
+    }
+  ],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 186,
+    "max": 4260,
+    "p95": 1156
+  },
+  "warnings": [
+    "suspicious internal silence run 32.48 ms exceeded 20.0 ms"
+  ]
+}

@@ -1,0 +1,20 @@
+2026-06-06 16:45:57,251 INFO __main__ LiveKit worker config livekit_url=ws://127.0.0.1:7880 api_key_present=True api_secret_present=True room=omni-room agent_id=omni-worker
+/workspace/omni/.venv-qwen/lib/python3.12/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 9 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+  return self._jws.encode(
+Nvidia Decoder is supported.
+2026-06-06 16:45:58,191 INFO livekit livekit_api::signal_client::signal_stream:104:livekit_api::signal_client::signal_stream - connecting to ws://127.0.0.1:7880/rtc?sdk=python&os=Ubuntu&os_version=24.4.0&device_model=AS+-4124GO-NART%2B&protocol=17&client_protocol=1&auto_subscribe=1&adaptive_stream=0&version=1.1.10&capabilities=CAP_PACKET_TRAILER
+2026-06-06 16:45:58,284 INFO __main__ LiveKit worker connected room=omni-room
+2026-06-06 16:45:58,290 INFO __main__ LiveKit worker published assistant track sample_rate=48000 frame_ms=20 queue_ms=60
+2026-06-06 16:46:36,973 INFO src.realtime.session Session 6e472c66-56e3-4fc2-8b40-33560ef2df4f started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 16:46:37,008 INFO __main__ LiveKit control received participant=browser-3c6a2976843b type=client.speech.start sequence=2 transit_ms=2.16 reliable_topic=omni.control
+2026-06-06 16:46:37,008 INFO src.realtime.session Session 6e472c66-56e3-4fc2-8b40-33560ef2df4f received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 16:46:41,188 INFO __main__ LiveKit control received participant=browser-3c6a2976843b type=client.speech.commit sequence=3 transit_ms=1.74 reliable_topic=omni.control
+2026-06-06 16:46:41,189 INFO src.realtime.session Session 6e472c66-56e3-4fc2-8b40-33560ef2df4f committing 211 audio chunks (135040 bytes) to Qwen
+2026-06-06 16:46:41,581 INFO src.realtime.session Session 6e472c66-56e3-4fc2-8b40-33560ef2df4f received first assistant audio delta
+2026-06-06 16:46:46,072 INFO src.realtime.session Session 6e472c66-56e3-4fc2-8b40-33560ef2df4f response done assistant_audio_chunks=58
+2026-06-06 16:46:46,555 INFO __main__ LiveKit control received participant=browser-3c6a2976843b type=client.speech.start sequence=4 transit_ms=3.21 reliable_topic=omni.control
+2026-06-06 16:46:46,555 INFO src.realtime.session Session 6e472c66-56e3-4fc2-8b40-33560ef2df4f received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 16:47:48,064 WARNING livekit livekit_api::signal_client:555:livekit_api::signal_client - dropping pass-through signal — no stream available
+2026-06-06 16:47:48,071 INFO livekit livekit::room:1669:livekit::room - disconnected from room with reason: DuplicateIdentity
+2026-06-06 16:47:48,072 WARNING __main__ LiveKit worker disconnected from room.
+2026-06-06 16:47:48,073 WARNING livekit livekit_ffi::server:260:livekit_ffi::server - Attempted to drop unknown FFI handle: 16

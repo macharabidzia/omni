@@ -11,8 +11,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
-import websockets
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -21,6 +19,8 @@ from apps.gateway.src.realtime.audio import iter_pcm16_chunks
 from apps.gateway.src.realtime.event_map import normalize_qwen_event
 from apps.gateway.src.realtime.metrics import SessionMetrics
 from apps.gateway.src.realtime.qwen_client import QwenRealtimeClient
+
+DEFAULT_LOCAL_MODEL = REPO_ROOT / "models" / "Qwen3-Omni-30B-A3B-Instruct"
 
 
 @dataclass
@@ -62,10 +62,12 @@ class SessionRecorder:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Stream a WAV file into Qwen realtime or the gateway.")
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--direct", action="store_true")
-    mode.add_argument("--gateway", action="store_true")
+    parser = argparse.ArgumentParser(description="Run a direct Qwen realtime smoke test from a WAV file.")
+    parser.add_argument(
+        "--direct",
+        action="store_true",
+        help="Retained for compatibility. Direct Qwen mode is the only supported mode.",
+    )
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--chunk-ms", type=int, default=20)
     parser.add_argument("--output", type=Path, default=Path("output.wav"))
@@ -76,9 +78,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--instructions", default=None)
     parser.add_argument(
         "--model",
-        default=os.environ.get("QWEN_MODEL", "Qwen/Qwen3-Omni-30B-A3B-Instruct"),
+        default=os.environ.get("QWEN_MODEL", str(DEFAULT_LOCAL_MODEL)),
     )
-    parser.add_argument("--gateway-url", default="ws://localhost:8000/ws/realtime")
     parser.add_argument("--qwen-url", default="ws://localhost:8091/v1/realtime")
     parser.add_argument("--send-delay-ms", type=float, default=0.0)
     parser.add_argument("--request-timeout-seconds", type=float, default=30.0)
@@ -154,87 +155,6 @@ async def collect_direct_events(client: QwenRealtimeClient, recorder: SessionRec
             recorder.record(normalized)
 
 
-async def run_gateway(args: argparse.Namespace, audio_bytes: bytes, recorder: SessionRecorder) -> None:
-    modalities = [value.strip() for value in args.modalities.split(",") if value.strip()]
-
-    async with websockets.connect(args.gateway_url, max_size=4 * 1024 * 1024) as websocket:
-        reader_task = asyncio.create_task(collect_gateway_events(websocket, recorder))
-        await websocket.send(
-            json.dumps(
-                {
-                    "type": "session.start",
-                    "speaker": args.speaker,
-                    "modalities": modalities,
-                    "input_sample_rate": 16000,
-                    "output_audio": "audio" in modalities,
-                }
-            )
-        )
-
-        if not await wait_for_session_ready(recorder, timeout_seconds=args.request_timeout_seconds):
-            reader_task.cancel()
-            try:
-                await reader_task
-            except asyncio.CancelledError:
-                pass
-            return
-
-        recorder.metrics.mark_once("t_microphone_started")
-
-        chunks = list(iter_chunks(audio_bytes, chunk_ms=args.chunk_ms))
-        for index, chunk in enumerate(chunks):
-            if index == 0:
-                recorder.metrics.mark_once("t_first_audio_chunk_sent")
-            await websocket.send(
-                json.dumps(
-                    {
-                        "type": "audio.append",
-                        "audio_base64": base64.b64encode(chunk).decode("ascii"),
-                        "sample_rate": 16000,
-                        "channels": 1,
-                        "format": "pcm16",
-                    }
-                )
-            )
-            if args.send_delay_ms > 0 and index + 1 < len(chunks):
-                await asyncio.sleep(args.send_delay_ms / 1000)
-
-        recorder.metrics.mark_once("t_audio_commit_sent")
-        await websocket.send(json.dumps({"type": "audio.commit"}))
-        await asyncio.wait_for(recorder.done.wait(), timeout=args.response_timeout_seconds)
-        await websocket.send(json.dumps({"type": "session.end"}))
-        await reader_task
-
-
-async def collect_gateway_events(websocket, recorder: SessionRecorder) -> None:
-    while True:
-        try:
-            raw_message = await websocket.recv()
-        except websockets.ConnectionClosed:
-            return
-        event = json.loads(raw_message)
-        recorder.record(event)
-
-
-async def wait_for_session_ready(recorder: SessionRecorder, *, timeout_seconds: float) -> bool:
-    ready_task = asyncio.create_task(recorder.ready.wait())
-    done_task = asyncio.create_task(recorder.done.wait())
-    try:
-        done, pending = await asyncio.wait(
-            {ready_task, done_task},
-            timeout=timeout_seconds,
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-    finally:
-        for task in (ready_task, done_task):
-            if not task.done():
-                task.cancel()
-
-    if ready_task in done and ready_task.result():
-        return True
-    return False
-
-
 def save_output_wav(output_path: Path, recorder: SessionRecorder) -> None:
     if not recorder.assistant_audio_bytes:
         return
@@ -257,10 +177,7 @@ async def main_async() -> None:
     recorder = SessionRecorder()
     requested_modalities = [value.strip() for value in args.modalities.split(",") if value.strip()]
 
-    if args.direct:
-        await run_direct(args, audio_bytes, recorder)
-    else:
-        await run_gateway(args, audio_bytes, recorder)
+    await run_direct(args, audio_bytes, recorder)
 
     snapshot = recorder.metrics.snapshot()
     save_output_wav(args.output, recorder)
@@ -268,7 +185,7 @@ async def main_async() -> None:
     save_json(
         args.metrics,
         {
-            "mode": "direct" if args.direct else "gateway",
+            "mode": "direct",
             "speaker": args.speaker,
             "modalities": args.modalities,
             "chunk_ms": args.chunk_ms,
@@ -277,7 +194,7 @@ async def main_async() -> None:
     )
 
     summary = {
-        "mode": "direct" if args.direct else "gateway",
+        "mode": "direct",
         "speaker": args.speaker,
         "modalities": requested_modalities,
         "chunk_ms": args.chunk_ms,

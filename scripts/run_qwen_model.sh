@@ -33,7 +33,7 @@ fi
 
 "$VENV_PATH/bin/python" "$REPO_ROOT/scripts/patch_vllm_qwen3_omni_initial_codec_chunk.py" --venv-path "$VENV_PATH"
 "$VENV_PATH/bin/python" "$REPO_ROOT/scripts/patch_vllm_realtime_segment_duration.py" --venv-path "$VENV_PATH"
-export VLLM_QWEN_REALTIME_SEGMENT_DURATION_S="${VLLM_QWEN_REALTIME_SEGMENT_DURATION_S:-5.0}"
+export VLLM_QWEN_REALTIME_SEGMENT_DURATION_S="${VLLM_QWEN_REALTIME_SEGMENT_DURATION_S:-2.0}"
 
 extra_flags=()
 if [[ -n "${QWEN_VLLM_FLAGS:-}" ]]; then

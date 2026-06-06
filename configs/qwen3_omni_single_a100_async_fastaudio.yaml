@@ -4,10 +4,10 @@ connectors:
   connector_of_shared_memory:
     name: SharedMemoryConnector
     extra:
-      # Keep the first chunk and the steady cadence aligned at 2 frames so
-      # the browser does not drain between the first and second audio deltas.
-      codec_chunk_frames: 2
-      initial_codec_chunk_frames: 2
+      # Emit smaller codec chunks so the second audio delta lands well before
+      # the first chunk drains on the LiveKit track path.
+      codec_chunk_frames: 1
+      initial_codec_chunk_frames: 1
       codec_left_context_frames: 25
 
 stages:

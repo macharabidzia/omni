@@ -1,0 +1,89 @@
+{
+  "status": "warning",
+  "input_path": "/workspace/omni/tmp/playwright-live-check/after-codec1-queue240-batch/run3.wav",
+  "sample_rate": 48000,
+  "duration_ms": 9216.0,
+  "active_region": {
+    "start_ms": 4434.77,
+    "end_ms": 8961.44,
+    "duration_ms": 4526.69
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 1,
+  "longest_edge_silence_ms": 54.21,
+  "edge_silence_runs": [
+    {
+      "start_ms_in_active": 15.5,
+      "end_ms_in_active": 69.69,
+      "length_ms": 54.21,
+      "start_ms_absolute": 4450.27,
+      "end_ms_absolute": 4504.46,
+      "pre_peak_abs": 10,
+      "post_peak_abs": 9
+    }
+  ],
+  "internal_silence_runs_ge_threshold": 4,
+  "longest_internal_silence_ms": 30.15,
+  "internal_silence_runs": [
+    {
+      "start_ms_in_active": 69.77,
+      "end_ms_in_active": 92.71,
+      "length_ms": 22.96,
+      "start_ms_absolute": 4504.54,
+      "end_ms_absolute": 4527.48,
+      "pre_peak_abs": 9,
+      "post_peak_abs": 36
+    },
+    {
+      "start_ms_in_active": 2546.35,
+      "end_ms_in_active": 2570.23,
+      "length_ms": 23.9,
+      "start_ms_absolute": 6981.12,
+      "end_ms_absolute": 7005.0,
+      "pre_peak_abs": 12,
+      "post_peak_abs": 12
+    },
+    {
+      "start_ms_in_active": 3380.19,
+      "end_ms_in_active": 3410.15,
+      "length_ms": 29.98,
+      "start_ms_absolute": 7814.96,
+      "end_ms_absolute": 7844.92,
+      "pre_peak_abs": 38,
+      "post_peak_abs": 29
+    },
+    {
+      "start_ms_in_active": 3589.58,
+      "end_ms_in_active": 3619.71,
+      "length_ms": 30.15,
+      "start_ms_absolute": 8024.35,
+      "end_ms_absolute": 8054.48,
+      "pre_peak_abs": 84,
+      "post_peak_abs": 89
+    }
+  ],
+  "suspicious_internal_silence_runs_ge_threshold": 1,
+  "longest_suspicious_internal_silence_ms": 30.15,
+  "suspicious_internal_silence_runs": [
+    {
+      "start_ms_in_active": 3589.58,
+      "end_ms_in_active": 3619.71,
+      "length_ms": 30.15,
+      "start_ms_absolute": 8024.35,
+      "end_ms_absolute": 8054.48,
+      "pre_peak_abs": 84,
+      "post_peak_abs": 89
+    }
+  ],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 226,
+    "max": 2682,
+    "p95": 1332
+  },
+  "warnings": [
+    "suspicious internal silence run 30.15 ms exceeded 20.0 ms"
+  ]
+}

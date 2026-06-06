@@ -1,0 +1,26 @@
+{
+  "mode": "direct",
+  "speaker": "Chelsie",
+  "modalities": "text,audio",
+  "chunk_ms": 20,
+  "timestamps": {
+    "t_session_start": 0.0,
+    "t_microphone_started": 26.58,
+    "t_first_audio_chunk_sent": 26.73,
+    "t_audio_commit_sent": 47.33,
+    "t_first_transcript_delta": 2041.77,
+    "t_first_text_delta": null,
+    "t_first_audio_delta_received": 4413.62,
+    "t_first_audio_played": 4413.62,
+    "t_response_done": 9534.09,
+    "t_barge_in": null
+  },
+  "metrics": {
+    "mic_to_first_transcript_ms": 2015.18,
+    "commit_to_first_transcript_ms": 1994.44,
+    "commit_to_first_text_ms": null,
+    "commit_to_first_audio_delta_ms": 4366.29,
+    "commit_to_first_audio_played_ms": 4366.29,
+    "full_response_ms": 9486.77
+  }
+}

@@ -1,0 +1,100 @@
+[
+  {
+    "iteration": 1,
+    "counts": {
+      "session.ready": 1,
+      "local.capture.live": 1,
+      "metrics.update": 5,
+      "local.speech.detected": 1,
+      "local.turn.started": 1,
+      "local.turn.silence": 1,
+      "local.turn.commit": 1,
+      "transcript.delta": 11,
+      "assistant.audio.delta": 21,
+      "local.playback.queue": 9,
+      "local.playback.started": 1,
+      "local.playback.underrun": 1,
+      "local.playback.drain": 1
+    },
+    "lastAudio": 51,
+    "firstUnderrun": 52,
+    "firstDrain": 53,
+    "underrunAfterLastAudio": true,
+    "drainAfterLastAudio": true,
+    "metrics": [
+      {
+        "label": "Mic to Transcript",
+        "value": "3597.3 ms"
+      },
+      {
+        "label": "Commit to Transcript",
+        "value": "156.3 ms"
+      },
+      {
+        "label": "Commit to Text",
+        "value": "--"
+      },
+      {
+        "label": "Commit to Audio Delta",
+        "value": "423.5 ms"
+      },
+      {
+        "label": "Commit to Audio Played",
+        "value": "622.4 ms"
+      },
+      {
+        "label": "Full Response",
+        "value": "--"
+      }
+    ]
+  },
+  {
+    "iteration": 2,
+    "counts": {
+      "session.ready": 1,
+      "local.capture.live": 1,
+      "metrics.update": 5,
+      "local.speech.detected": 1,
+      "local.turn.started": 1,
+      "local.turn.silence": 1,
+      "local.turn.commit": 1,
+      "transcript.delta": 14,
+      "assistant.audio.delta": 28,
+      "local.playback.queue": 7,
+      "local.playback.started": 1,
+      "local.playback.underrun": 1,
+      "local.playback.drain": 1
+    },
+    "lastAudio": 58,
+    "firstUnderrun": 60,
+    "firstDrain": 61,
+    "underrunAfterLastAudio": true,
+    "drainAfterLastAudio": true,
+    "metrics": [
+      {
+        "label": "Mic to Transcript",
+        "value": "3676.2 ms"
+      },
+      {
+        "label": "Commit to Transcript",
+        "value": "155.8 ms"
+      },
+      {
+        "label": "Commit to Text",
+        "value": "--"
+      },
+      {
+        "label": "Commit to Audio Delta",
+        "value": "431.7 ms"
+      },
+      {
+        "label": "Commit to Audio Played",
+        "value": "618.1 ms"
+      },
+      {
+        "label": "Full Response",
+        "value": "--"
+      }
+    ]
+  }
+]

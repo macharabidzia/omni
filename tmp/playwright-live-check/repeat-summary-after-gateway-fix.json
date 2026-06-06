@@ -1,0 +1,83 @@
+[
+  {
+    "iteration": 1,
+    "counts": {
+      "session.ready": 1,
+      "local.capture.live": 1,
+      "metrics.update": 5,
+      "local.speech.detected": 1,
+      "local.turn.started": 1,
+      "local.turn.silence": 1,
+      "local.turn.commit": 1,
+      "transcript.delta": 6,
+      "assistant.audio.delta": 9,
+      "local.playback.queue": 5,
+      "local.playback.started": 1,
+      "local.playback.underrun": 1,
+      "local.playback.drain": 1
+    },
+    "metrics": {
+      "Mic to Transcript": "3624.5 ms",
+      "Commit to Transcript": "174.3 ms",
+      "Commit to Text": "--",
+      "Commit to Audio Delta": "443.3 ms",
+      "Commit to Audio Played": "630.7 ms",
+      "Full Response": "--"
+    },
+    "underrunAfterLastAudio": true
+  },
+  {
+    "iteration": 2,
+    "counts": {
+      "session.ready": 1,
+      "local.capture.live": 1,
+      "metrics.update": 5,
+      "local.speech.detected": 1,
+      "local.turn.started": 1,
+      "local.turn.silence": 1,
+      "local.turn.commit": 1,
+      "transcript.delta": 6,
+      "assistant.audio.delta": 12,
+      "local.playback.queue": 8,
+      "local.playback.started": 1,
+      "local.playback.underrun": 1,
+      "local.playback.drain": 1
+    },
+    "metrics": {
+      "Mic to Transcript": "3634.7 ms",
+      "Commit to Transcript": "125.0 ms",
+      "Commit to Text": "--",
+      "Commit to Audio Delta": "377.8 ms",
+      "Commit to Audio Played": "553.2 ms",
+      "Full Response": "--"
+    },
+    "underrunAfterLastAudio": true
+  },
+  {
+    "iteration": 3,
+    "counts": {
+      "session.ready": 1,
+      "local.capture.live": 1,
+      "metrics.update": 5,
+      "local.speech.detected": 1,
+      "local.turn.started": 1,
+      "local.turn.silence": 1,
+      "local.turn.commit": 1,
+      "transcript.delta": 16,
+      "assistant.audio.delta": 36,
+      "local.playback.queue": 14,
+      "local.playback.started": 1,
+      "local.playback.underrun": 1,
+      "local.playback.drain": 1
+    },
+    "metrics": {
+      "Mic to Transcript": "3692.8 ms",
+      "Commit to Transcript": "152.2 ms",
+      "Commit to Text": "--",
+      "Commit to Audio Delta": "411.4 ms",
+      "Commit to Audio Played": "609.6 ms",
+      "Full Response": "--"
+    },
+    "underrunAfterLastAudio": true
+  }
+]

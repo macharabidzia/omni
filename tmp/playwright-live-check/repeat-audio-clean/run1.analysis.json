@@ -1,0 +1,22 @@
+{
+  "status": "warning",
+  "input_path": "/workspace/omni/tmp/playwright-live-check/repeat-audio-clean/run1.webm",
+  "sample_rate": 48000,
+  "duration_ms": 9300.0,
+  "active_region": {
+    "start_ms": 3993.96,
+    "end_ms": 8295.62,
+    "duration_ms": 4301.69
+  },
+  "internal_silence_runs_ge_threshold": 1,
+  "longest_internal_silence_ms": 24.12,
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 215,
+    "max": 1885,
+    "p95": 1196
+  },
+  "warnings": [
+    "internal silence run 24.12 ms exceeded 20.0 ms"
+  ]
+}

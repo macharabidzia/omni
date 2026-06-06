@@ -1,26 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CaptureWorkletController } from "./audio/capture-worklet";
-import { PlaybackWorkletController } from "./audio/playback-worklet";
 import { CallControls } from "./components/CallControls";
 import { MetricsHud } from "./components/MetricsHud";
 import { SpeakerSelector } from "./components/SpeakerSelector";
 import { TranscriptPanel } from "./components/TranscriptPanel";
-import { RealtimeClient } from "./realtime/client";
+import type { RealtimeClient } from "./realtime/client";
 import type { GatewayInboundEvent, GatewayMetrics, Speaker } from "./realtime/events";
 
 type DebugEvent = GatewayInboundEvent | { type: string; [key: string]: unknown };
 
-const INPUT_SAMPLE_RATE = 16000;
-const CHUNK_MS = 20;
 const LIVE_SPEECH_LEVEL_THRESHOLD = 0.015;
-const LIVE_SILENCE_COMMIT_MS = 450;
+const LIVE_BARGE_IN_LEVEL_THRESHOLD = 0.03;
+const LIVE_SPEECH_RESUME_LEVEL_THRESHOLD = 0.0225;
+const LIVE_SILENCE_COMMIT_MS = resolveNumberQueryParam("silenceCommitMs", 300);
 const LIVE_MIN_SPEECH_CHUNKS = 2;
-const LIVE_PREROLL_CHUNKS = 8;
 const LIVE_POST_PLAYBACK_REARM_MS = 180;
-const PLAYBACK_DEBUG_QUEUE_EVENT_MIN_STEP_MS = 40;
+const AUDIO_CHUNK_DEBUG_ENABLED = resolveBooleanQueryParam("transportDebug", false);
+const AUDIO_CHUNK_NEAR_ZERO_ABS = 8;
 const DEBUG_EVENT_LIMIT = 200;
-const DEBUG_AUDIO_FLUSH_DELAY_MS = 120;
+const DEBUG_EVENT_FLUSH_MS = 120;
 const GATEWAY_METRIC_KEYS: (keyof GatewayMetrics)[] = [
   "mic_to_first_transcript_ms",
   "commit_to_first_transcript_ms",
@@ -35,14 +33,6 @@ function resolveGatewayHttpUrl(): string {
     return import.meta.env.VITE_GATEWAY_HTTP_URL;
   }
   return window.location.origin;
-}
-
-function resolveGatewayWsUrl(): string {
-  if (import.meta.env.VITE_GATEWAY_WS_URL) {
-    return import.meta.env.VITE_GATEWAY_WS_URL;
-  }
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws/realtime`;
 }
 
 function metricsEqual(left: GatewayMetrics, right: GatewayMetrics): boolean {
@@ -61,41 +51,35 @@ export default function App() {
   const [gatewayReady, setGatewayReady] = useState("checking");
   const [assistantPlaying, setAssistantPlaying] = useState(false);
 
-  const captureRef = useRef<CaptureWorkletController | null>(null);
-  const playbackRef = useRef<PlaybackWorkletController | null>(null);
   const clientRef = useRef<RealtimeClient | null>(null);
+  const realtimeClientCtorRef = useRef<Promise<typeof import("./realtime/client")> | null>(null);
+  const liveCaptureActiveRef = useRef(false);
+  const turnActiveRef = useRef(false);
+  const assistantResponseActiveRef = useRef(false);
+  const assistantPlaybackActiveRef = useRef(false);
+  const candidateSpeechChunkCountRef = useRef(0);
+  const speechChunkCountRef = useRef(0);
+  const commitInFlightRef = useRef(false);
+  const bargeInRequestedRef = useRef(false);
+  const speechRearmAtRef = useRef(0);
+  const silenceLoggedThisTurnRef = useRef(false);
+  const silenceRecoveryChunkCountRef = useRef(0);
+  const silenceCommitTimerRef = useRef<number | null>(null);
   const commitAtRef = useRef<number | null>(null);
   const localAudioPlayedMetricRef = useRef<number | null>(null);
   const debugEventsRef = useRef<DebugEvent[]>([]);
   const debugFlushTimerRef = useRef<number | null>(null);
-  const silenceCommitTimerRef = useRef<number | null>(null);
-  const liveCaptureActiveRef = useRef(false);
-  const uploadTurnActiveRef = useRef(false);
-  const commitInFlightRef = useRef(false);
-  const assistantResponseActiveRef = useRef(false);
-  const pendingSpeechTurnRef = useRef(false);
-  const speechChunkCountRef = useRef(0);
-  const candidateSpeechChunkCountRef = useRef(0);
-  const preRollChunksRef = useRef<string[]>([]);
-  const queuedCommitRef = useRef(false);
-  const bargeInRequestedRef = useRef(false);
-  const lastPlaybackQueueMsRef = useRef<number | null>(null);
-  const assistantPlaybackActiveRef = useRef(false);
-  const assistantPlaybackQueuedMsRef = useRef(0);
-  const speechRearmAtRef = useRef(0);
-  const bargeInChunkCountRef = useRef(0);
-  const bargeInChunksRef = useRef<string[]>([]);
-  const silenceLoggedThisTurnRef = useRef(false);
 
   useEffect(() => {
     void refreshGatewayReady();
     return () => {
-      if (debugFlushTimerRef.current !== null) {
-        window.clearTimeout(debugFlushTimerRef.current);
-      }
       if (silenceCommitTimerRef.current !== null) {
         window.clearTimeout(silenceCommitTimerRef.current);
       }
+      if (debugFlushTimerRef.current !== null) {
+        window.clearTimeout(debugFlushTimerRef.current);
+      }
+      void clientRef.current?.close();
     };
   }, []);
 
@@ -115,100 +99,9 @@ export default function App() {
       setGatewayReady(status);
       return status;
     } catch {
-      setGatewayReady("qwen_unreachable");
-      return "qwen_unreachable";
+      setGatewayReady("failed");
+      return "failed";
     }
-  }
-
-  async function ensureCapture(): Promise<void> {
-    if (captureRef.current) {
-      return;
-    }
-
-    captureRef.current = new CaptureWorkletController(INPUT_SAMPLE_RATE, CHUNK_MS, {
-      onChunk: ({ audioBase64, level }) => {
-        handleCapturedChunk(audioBase64, level);
-      },
-      onStarted: () => {
-        setErrorText("");
-      },
-    });
-
-    await captureRef.current.start();
-  }
-
-  async function ensurePlayback(): Promise<void> {
-    if (playbackRef.current) {
-      return;
-    }
-
-    playbackRef.current = new PlaybackWorkletController({
-      onStarted: () => {
-        setAssistantPlaying(true);
-        assistantPlaybackActiveRef.current = true;
-        if (!uploadTurnActiveRef.current) {
-          clearSilenceCommitTimer();
-          candidateSpeechChunkCountRef.current = 0;
-          preRollChunksRef.current = [];
-        }
-        resetBargeInDetection();
-        appendLocalDebugEvent("local.playback.started");
-        if (commitAtRef.current !== null && localAudioPlayedMetricRef.current === null) {
-          localAudioPlayedMetricRef.current = performance.now() - commitAtRef.current;
-          setGatewayMetrics((current) => ({ ...current }));
-        }
-      },
-      onDrained: () => {
-        setAssistantPlaying(false);
-        assistantResponseActiveRef.current = false;
-        bargeInRequestedRef.current = false;
-        assistantPlaybackActiveRef.current = false;
-        assistantPlaybackQueuedMsRef.current = 0;
-        if (!uploadTurnActiveRef.current) {
-          clearSilenceCommitTimer();
-          candidateSpeechChunkCountRef.current = 0;
-          preRollChunksRef.current = [];
-        }
-        resetBargeInDetection();
-        speechRearmAtRef.current = performance.now() + LIVE_POST_PLAYBACK_REARM_MS;
-        appendLocalDebugEvent("local.playback.drain");
-        if (queuedCommitRef.current && pendingSpeechTurnRef.current) {
-          void maybeCommitTurn();
-        }
-      },
-      onUnderrun: ({ queuedMs }) => {
-        appendLocalDebugEvent("local.playback.underrun", { queued_ms: queuedMs });
-      },
-      onQueueChanged: ({ queuedMs }) => {
-        assistantPlaybackQueuedMsRef.current = queuedMs;
-        const previous = lastPlaybackQueueMsRef.current;
-        if (previous === null || Math.abs(previous - queuedMs) >= PLAYBACK_DEBUG_QUEUE_EVENT_MIN_STEP_MS || queuedMs === 0) {
-          lastPlaybackQueueMsRef.current = queuedMs;
-          appendLocalDebugEvent("local.playback.queue", { queued_ms: queuedMs });
-        }
-      },
-      onCleared: () => {
-        assistantResponseActiveRef.current = false;
-        bargeInRequestedRef.current = false;
-        assistantPlaybackActiveRef.current = false;
-        assistantPlaybackQueuedMsRef.current = 0;
-        lastPlaybackQueueMsRef.current = 0;
-        if (!uploadTurnActiveRef.current) {
-          clearSilenceCommitTimer();
-          candidateSpeechChunkCountRef.current = 0;
-          preRollChunksRef.current = [];
-        }
-        resetBargeInDetection();
-        speechRearmAtRef.current = performance.now() + LIVE_POST_PLAYBACK_REARM_MS;
-        setAssistantPlaying(false);
-        appendLocalDebugEvent("local.playback.clear");
-        if (queuedCommitRef.current && pendingSpeechTurnRef.current) {
-          void maybeCommitTurn();
-        }
-      },
-    });
-
-    await playbackRef.current.start();
   }
 
   async function startSession(): Promise<void> {
@@ -222,62 +115,68 @@ export default function App() {
     resetRealtimeState();
 
     const readyStatus = await refreshGatewayReady();
-    if (readyStatus !== "qwen_ready") {
-      setErrorText(`Gateway ready state is ${readyStatus}. Wait for Qwen to finish loading before starting a session.`);
+    if (readyStatus !== "ready") {
+      setErrorText(`Control plane ready state is ${readyStatus}. Wait for Qwen and the LiveKit worker to be ready.`);
       setSessionState("idle");
       return;
     }
 
     setSessionState("connecting");
+    const { RealtimeClient } = await loadRealtimeClientModule();
+    const client = new RealtimeClient({
+      baseUrl: resolveGatewayHttpUrl(),
+      onEvent: handleGatewayEvent,
+      onClose: handleSessionClosed,
+      onError: (message) => setErrorText(message),
+      onDebugEvent: appendDebugEvent,
+      onLocalAudioLevel: handleLocalAudioLevel,
+      onAssistantPlaybackStarted: handleAssistantPlaybackStarted,
+      onAssistantPlaybackDrained: handleAssistantPlaybackDrained,
+    });
 
     try {
-      await ensureCapture();
-      await ensurePlayback();
-
-      const client = new RealtimeClient({
-        url: resolveGatewayWsUrl(),
-        onEvent: handleGatewayEvent,
-        onClose: handleSessionClosed,
-        onError: (message) => setErrorText(message),
-      });
-      await client.connect();
+      await client.connect(speaker);
       clientRef.current = client;
-      client.send({
-        type: "session.start",
-        speaker,
-        modalities: ["text", "audio"],
-        input_sample_rate: INPUT_SAMPLE_RATE,
-        output_audio: true,
-      });
     } catch (error) {
+      await client.close();
       const message = error instanceof Error ? error.message : "Failed to start session.";
       setErrorText(message);
       setSessionState("idle");
     }
   }
 
+  async function loadRealtimeClientModule(): Promise<typeof import("./realtime/client")> {
+    if (realtimeClientCtorRef.current === null) {
+      realtimeClientCtorRef.current = import("./realtime/client");
+    }
+    return await realtimeClientCtorRef.current;
+  }
+
   async function stopSession(): Promise<void> {
-    captureRef.current?.setTransmitting(false);
-    resetRealtimeState();
-    setLiveMicActive(false);
-    clientRef.current?.send({ type: "session.end" });
-    clientRef.current?.close();
+    clearSilenceCommitTimer();
+    liveCaptureActiveRef.current = false;
+    const client = clientRef.current;
     clientRef.current = null;
-    await captureRef.current?.stop();
-    await playbackRef.current?.stop();
-    captureRef.current = null;
-    playbackRef.current = null;
+    if (client) {
+      try {
+        await client.send({ type: "client.session.close" });
+      } catch {
+        // Ignore shutdown races.
+      }
+      await client.close();
+    }
+    resetRealtimeState();
     setSessionState("idle");
+    setLiveMicActive(false);
     setAssistantPlaying(false);
   }
 
   function handleGatewayEvent(event: GatewayInboundEvent): void {
-    appendDebugEvent(event);
+    appendGatewayDebugEvent(event);
 
     if (event.type === "session.ready") {
       setSessionState("ready");
       liveCaptureActiveRef.current = true;
-      captureRef.current?.setTransmitting(true);
       setLiveMicActive(true);
       appendLocalDebugEvent("local.capture.live");
       return;
@@ -294,19 +193,21 @@ export default function App() {
     }
 
     if (event.type === "assistant.audio.delta") {
-      assistantResponseActiveRef.current = true;
-      bargeInRequestedRef.current = false;
-      playbackRef.current?.enqueue(event.audio_base64, event.sample_rate);
+      void clientRef.current?.enqueueAssistantAudio(event);
       return;
     }
 
     if (event.type === "assistant.done") {
       assistantResponseActiveRef.current = false;
       bargeInRequestedRef.current = false;
-      playbackRef.current?.finalizePending();
-      if (queuedCommitRef.current && pendingSpeechTurnRef.current) {
-        void maybeCommitTurn();
-      }
+      clientRef.current?.finalizeAssistantAudio();
+      return;
+    }
+
+    if (event.type === "assistant.interrupted") {
+      assistantResponseActiveRef.current = false;
+      bargeInRequestedRef.current = false;
+      clientRef.current?.interruptAssistantAudio();
       return;
     }
 
@@ -318,48 +219,140 @@ export default function App() {
     if (event.type === "error") {
       assistantResponseActiveRef.current = false;
       bargeInRequestedRef.current = false;
+      clientRef.current?.interruptAssistantAudio();
       setErrorText(`${event.code}: ${event.message}`);
-      if (queuedCommitRef.current && pendingSpeechTurnRef.current) {
-        void maybeCommitTurn();
+    }
+  }
+
+  function handleAssistantPlaybackStarted(): void {
+    setAssistantPlaying(true);
+    assistantPlaybackActiveRef.current = true;
+    appendLocalDebugEvent("local.playback.started");
+    if (commitAtRef.current !== null && localAudioPlayedMetricRef.current === null) {
+      localAudioPlayedMetricRef.current = performance.now() - commitAtRef.current;
+      setGatewayMetrics((current) => ({ ...current }));
+    }
+  }
+
+  function handleAssistantPlaybackDrained(): void {
+    setAssistantPlaying(false);
+    assistantPlaybackActiveRef.current = false;
+    speechRearmAtRef.current = performance.now() + LIVE_POST_PLAYBACK_REARM_MS;
+    appendLocalDebugEvent("local.playback.drain");
+  }
+
+  function handleLocalAudioLevel(level: number): void {
+    if (!liveCaptureActiveRef.current || !clientRef.current) {
+      return;
+    }
+
+    if (performance.now() < speechRearmAtRef.current) {
+      if (level < LIVE_SPEECH_LEVEL_THRESHOLD) {
+        candidateSpeechChunkCountRef.current = 0;
       }
+      return;
+    }
+
+    const speechThreshold =
+      assistantResponseActiveRef.current || assistantPlaybackActiveRef.current
+        ? LIVE_BARGE_IN_LEVEL_THRESHOLD
+        : LIVE_SPEECH_LEVEL_THRESHOLD;
+    const isSpeech = level >= speechThreshold;
+    if (isSpeech) {
+      if (assistantResponseActiveRef.current || assistantPlaybackActiveRef.current) {
+        cancelResponse();
+      }
+
+      if (!turnActiveRef.current) {
+        candidateSpeechChunkCountRef.current += 1;
+        if (candidateSpeechChunkCountRef.current === 1) {
+          appendLocalDebugEvent("local.speech.detected", {
+            level: roundLevel(level),
+          });
+        }
+        if (candidateSpeechChunkCountRef.current >= LIVE_MIN_SPEECH_CHUNKS) {
+          void startSpeechTurn();
+        }
+      } else {
+        speechChunkCountRef.current += 1;
+        if (silenceCommitTimerRef.current !== null) {
+          if (level < LIVE_SPEECH_RESUME_LEVEL_THRESHOLD) {
+            return;
+          }
+          silenceRecoveryChunkCountRef.current += 1;
+          if (silenceRecoveryChunkCountRef.current >= LIVE_MIN_SPEECH_CHUNKS) {
+            appendLocalDebugEvent("local.turn.resume", {
+              level: roundLevel(level),
+            });
+            clearSilenceCommitTimer();
+          }
+          return;
+        }
+      }
+      silenceRecoveryChunkCountRef.current = 0;
+      clearSilenceCommitTimer();
+      return;
+    }
+
+    if (!turnActiveRef.current) {
+      candidateSpeechChunkCountRef.current = 0;
+      return;
+    }
+
+    silenceRecoveryChunkCountRef.current = 0;
+    if (speechChunkCountRef.current < LIVE_MIN_SPEECH_CHUNKS) {
+      return;
+    }
+
+    scheduleSilenceCommit();
+  }
+
+  async function startSpeechTurn(): Promise<void> {
+    if (!clientRef.current || turnActiveRef.current) {
+      return;
+    }
+
+    turnActiveRef.current = true;
+    silenceLoggedThisTurnRef.current = false;
+    silenceRecoveryChunkCountRef.current = 0;
+    candidateSpeechChunkCountRef.current = 0;
+    speechChunkCountRef.current = LIVE_MIN_SPEECH_CHUNKS;
+    appendLocalDebugEvent("local.turn.started");
+
+    try {
+      await clientRef.current.send({ type: "client.speech.start" });
+    } catch (error) {
+      turnActiveRef.current = false;
+      const message = error instanceof Error ? error.message : "Failed to start speech turn.";
+      setErrorText(message);
     }
   }
 
   async function maybeCommitTurn(): Promise<void> {
-    if (!clientRef.current) {
-      return;
-    }
-    if (!pendingSpeechTurnRef.current) {
-      queuedCommitRef.current = false;
-      return;
-    }
-    if (commitInFlightRef.current || assistantResponseActiveRef.current) {
-      queuedCommitRef.current = true;
+    if (!clientRef.current || !turnActiveRef.current || commitInFlightRef.current) {
       return;
     }
 
     clearSilenceCommitTimer();
-    queuedCommitRef.current = false;
     commitInFlightRef.current = true;
 
     try {
       assistantResponseActiveRef.current = true;
       bargeInRequestedRef.current = false;
-      uploadTurnActiveRef.current = false;
       commitAtRef.current = performance.now();
+      speechRearmAtRef.current = commitAtRef.current + 500;
       localAudioPlayedMetricRef.current = null;
+      clientRef.current.resetAssistantPlaybackMonitor();
       appendLocalDebugEvent("local.turn.commit", {
         speech_chunks: speechChunkCountRef.current,
       });
-      clientRef.current.send({ type: "audio.commit" });
-      pendingSpeechTurnRef.current = false;
+      await clientRef.current.send({ type: "client.speech.commit" });
+      turnActiveRef.current = false;
       speechChunkCountRef.current = 0;
       candidateSpeechChunkCountRef.current = 0;
-      preRollChunksRef.current = [];
     } catch (error) {
       assistantResponseActiveRef.current = false;
-      queuedCommitRef.current = true;
-      const message = error instanceof Error ? error.message : "Failed to commit audio.";
+      const message = error instanceof Error ? error.message : "Failed to commit speech turn.";
       setErrorText(message);
     } finally {
       commitInFlightRef.current = false;
@@ -371,107 +364,9 @@ export default function App() {
       return;
     }
     bargeInRequestedRef.current = true;
+    assistantResponseActiveRef.current = false;
     appendLocalDebugEvent("local.turn.barge_in");
-    playbackRef.current?.clear();
-    lastPlaybackQueueMsRef.current = 0;
-    setAssistantPlaying(false);
-    clientRef.current.send({ type: "response.cancel" });
-  }
-
-  function handleCapturedChunk(audioBase64: string, level: number): void {
-    if (!liveCaptureActiveRef.current || !clientRef.current) {
-      return;
-    }
-
-    if (!uploadTurnActiveRef.current && isAssistantOutputBlocking()) {
-      handleSuppressedChunk(audioBase64, level);
-      return;
-    }
-
-    const isSpeech = level >= LIVE_SPEECH_LEVEL_THRESHOLD;
-    if (!uploadTurnActiveRef.current) {
-      pushChunkWithLimit(preRollChunksRef.current, audioBase64, LIVE_PREROLL_CHUNKS);
-    }
-
-    if (isSpeech) {
-      let startedThisChunk = false;
-      if (assistantResponseActiveRef.current) {
-        cancelResponse();
-      }
-      if (!uploadTurnActiveRef.current) {
-        candidateSpeechChunkCountRef.current += 1;
-        if (candidateSpeechChunkCountRef.current === 1) {
-          appendLocalDebugEvent("local.speech.detected", {
-            level: roundLevel(level),
-          });
-        }
-        if (candidateSpeechChunkCountRef.current >= LIVE_MIN_SPEECH_CHUNKS) {
-          startLiveTurnUpload();
-          startedThisChunk = true;
-        }
-      }
-
-      if (uploadTurnActiveRef.current) {
-        if (!startedThisChunk) {
-          sendAudioChunk(audioBase64);
-        }
-        pendingSpeechTurnRef.current = true;
-        speechChunkCountRef.current += 1;
-      }
-      clearSilenceCommitTimer();
-      return;
-    }
-
-    if (!uploadTurnActiveRef.current) {
-      candidateSpeechChunkCountRef.current = 0;
-      return;
-    }
-
-    sendAudioChunk(audioBase64);
-
-    if (!pendingSpeechTurnRef.current || speechChunkCountRef.current < LIVE_MIN_SPEECH_CHUNKS) {
-      return;
-    }
-
-    scheduleSilenceCommit();
-  }
-
-  function startLiveTurnUpload(): void {
-    if (uploadTurnActiveRef.current) {
-      return;
-    }
-    uploadTurnActiveRef.current = true;
-    pendingSpeechTurnRef.current = true;
-    silenceLoggedThisTurnRef.current = false;
-    speechChunkCountRef.current = LIVE_MIN_SPEECH_CHUNKS - 1;
-    candidateSpeechChunkCountRef.current = 0;
-
-    const preRollChunks = preRollChunksRef.current;
-    preRollChunksRef.current = [];
-    appendLocalDebugEvent("local.turn.started", {
-      preroll_chunks: preRollChunks.length,
-    });
-    for (const chunk of preRollChunks) {
-      sendAudioChunk(chunk);
-    }
-  }
-
-  function sendAudioChunk(audioBase64: string): void {
-    if (!clientRef.current) {
-      return;
-    }
-    try {
-      clientRef.current.send({
-        type: "audio.append",
-        audio_base64: audioBase64,
-        sample_rate: INPUT_SAMPLE_RATE,
-        channels: 1,
-        format: "pcm16",
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to stream microphone audio.";
-      setErrorText(message);
-    }
+    void clientRef.current.send({ type: "client.interrupt" });
   }
 
   function scheduleSilenceCommit(): void {
@@ -482,9 +377,10 @@ export default function App() {
       silenceLoggedThisTurnRef.current = true;
       appendLocalDebugEvent("local.turn.silence");
     }
+    silenceRecoveryChunkCountRef.current = 0;
     silenceCommitTimerRef.current = window.setTimeout(() => {
       silenceCommitTimerRef.current = null;
-      queuedCommitRef.current = true;
+      appendLocalDebugEvent("local.turn.commit_timer_fired");
       void maybeCommitTurn();
     }, LIVE_SILENCE_COMMIT_MS);
   }
@@ -500,44 +396,16 @@ export default function App() {
   function resetRealtimeState(): void {
     clearSilenceCommitTimer();
     liveCaptureActiveRef.current = false;
-    uploadTurnActiveRef.current = false;
-    commitInFlightRef.current = false;
+    turnActiveRef.current = false;
     assistantResponseActiveRef.current = false;
-    pendingSpeechTurnRef.current = false;
-    speechChunkCountRef.current = 0;
-    candidateSpeechChunkCountRef.current = 0;
-    preRollChunksRef.current = [];
-    queuedCommitRef.current = false;
-    bargeInRequestedRef.current = false;
-    lastPlaybackQueueMsRef.current = null;
     assistantPlaybackActiveRef.current = false;
-    assistantPlaybackQueuedMsRef.current = 0;
+    candidateSpeechChunkCountRef.current = 0;
+    speechChunkCountRef.current = 0;
+    commitInFlightRef.current = false;
+    bargeInRequestedRef.current = false;
     speechRearmAtRef.current = 0;
     silenceLoggedThisTurnRef.current = false;
-    resetBargeInDetection();
-  }
-
-  function isAssistantOutputBlocking(): boolean {
-    return (
-      assistantResponseActiveRef.current ||
-      assistantPlaybackActiveRef.current ||
-      assistantPlaybackQueuedMsRef.current > 0 ||
-      performance.now() < speechRearmAtRef.current
-    );
-  }
-
-  function handleSuppressedChunk(audioBase64: string, level: number): void {
-    void audioBase64;
-    void level;
-    clearSilenceCommitTimer();
-    candidateSpeechChunkCountRef.current = 0;
-    preRollChunksRef.current = [];
-    resetBargeInDetection();
-  }
-
-  function resetBargeInDetection(): void {
-    bargeInChunkCountRef.current = 0;
-    bargeInChunksRef.current = [];
+    silenceRecoveryChunkCountRef.current = 0;
   }
 
   function handleSessionClosed(): void {
@@ -566,24 +434,17 @@ export default function App() {
     if (nextEvents.length > DEBUG_EVENT_LIMIT) {
       nextEvents.splice(0, nextEvents.length - DEBUG_EVENT_LIMIT);
     }
-
-    if (event.type === "assistant.audio.delta") {
-      scheduleDebugEventFlush();
-      return;
-    }
-
-    flushDebugEvents();
+    scheduleDebugEventFlush();
   }
 
   function scheduleDebugEventFlush(): void {
     if (debugFlushTimerRef.current !== null) {
       return;
     }
-
     debugFlushTimerRef.current = window.setTimeout(() => {
       debugFlushTimerRef.current = null;
       setDebugEvents([...debugEventsRef.current]);
-    }, DEBUG_AUDIO_FLUSH_DELAY_MS);
+    }, DEBUG_EVENT_FLUSH_MS);
   }
 
   function flushDebugEvents(): void {
@@ -604,7 +465,31 @@ export default function App() {
   }
 
   function appendLocalDebugEvent(type: string, payload: Record<string, unknown> = {}): void {
-    appendDebugEvent({ type, ...payload });
+    appendDebugEvent({
+      type,
+      perf_now_ms: Math.round(performance.now() * 100) / 100,
+      ...payload,
+    });
+  }
+
+  function appendGatewayDebugEvent(event: GatewayInboundEvent): void {
+    if (event.type === "assistant.audio.delta") {
+      const audioChunkDebug =
+        AUDIO_CHUNK_DEBUG_ENABLED && (event.sample_rate ?? 0) > 0
+          ? analyzeAudioBase64Chunk(event.audio_base64, event.sample_rate ?? null)
+          : {};
+      appendDebugEvent({
+        type: event.type,
+        perf_now_ms: Math.round(performance.now() * 100) / 100,
+        sample_rate: event.sample_rate,
+        channels: event.channels,
+        format: event.format,
+        audio_base64_length: event.audio_base64.length,
+        ...audioChunkDebug,
+      });
+      return;
+    }
+    appendDebugEvent(event);
   }
 
   return (
@@ -613,7 +498,7 @@ export default function App() {
         <div>
           <h1>Realtime AI</h1>
           <p className="status-line">
-            Gateway: {gatewayReady} | Session: {sessionState}
+            Ready: {gatewayReady} | Session: {sessionState} | Playback: {assistantPlaying ? "active" : "idle"}
           </p>
         </div>
         <div className="header-controls">
@@ -631,7 +516,7 @@ export default function App() {
       <CallControls
         sessionActive={sessionState === "ready"}
         connecting={sessionState === "connecting"}
-        startDisabled={sessionState !== "idle" || gatewayReady !== "qwen_ready"}
+        startDisabled={sessionState !== "idle" || gatewayReady !== "ready"}
         liveMicActive={liveMicActive}
         onStart={() => void startSession()}
         onStop={() => void stopSession()}
@@ -671,9 +556,113 @@ function roundLevel(level: number): number {
   return Math.round(level * 10000) / 10000;
 }
 
-function pushChunkWithLimit(buffer: string[], audioBase64: string, limit: number): void {
-  buffer.push(audioBase64);
-  if (buffer.length > limit) {
-    buffer.splice(0, buffer.length - limit);
+function analyzeAudioBase64Chunk(
+  audioBase64: string,
+  sampleRate: number | null,
+): Record<string, number> {
+  const pcm16Bytes = decodeBase64(audioBase64);
+  if (pcm16Bytes === null || pcm16Bytes.length < 2 || pcm16Bytes.length % 2 !== 0) {
+    return {};
   }
+
+  const sampleCount = pcm16Bytes.length / 2;
+  let peakAbs = 0;
+  let sumSquares = 0;
+  let nearZeroCount = 0;
+  let leadingNearZeroCount = 0;
+  let trailingNearZeroCount = 0;
+  let longestNearZeroRun = 0;
+  let currentNearZeroRun = 0;
+
+  for (let index = 0; index < sampleCount; index += 1) {
+    const byteOffset = index * 2;
+    let sample = pcm16Bytes[byteOffset] | (pcm16Bytes[byteOffset + 1] << 8);
+    if (sample >= 0x8000) {
+      sample -= 0x10000;
+    }
+
+    const absSample = Math.abs(sample);
+    peakAbs = Math.max(peakAbs, absSample);
+    sumSquares += sample * sample;
+
+    const isNearZero = absSample <= AUDIO_CHUNK_NEAR_ZERO_ABS;
+    if (!isNearZero) {
+      if (currentNearZeroRun > longestNearZeroRun) {
+        longestNearZeroRun = currentNearZeroRun;
+      }
+      currentNearZeroRun = 0;
+      continue;
+    }
+
+    nearZeroCount += 1;
+    currentNearZeroRun += 1;
+    if (index === leadingNearZeroCount) {
+      leadingNearZeroCount += 1;
+    }
+  }
+
+  if (currentNearZeroRun > longestNearZeroRun) {
+    longestNearZeroRun = currentNearZeroRun;
+  }
+  trailingNearZeroCount = currentNearZeroRun;
+
+  const durationMs = sampleRate && sampleRate > 0 ? (sampleCount / sampleRate) * 1000 : 0;
+  const rms = Math.sqrt(sumSquares / sampleCount);
+  return {
+    audio_chunk_duration_ms: roundMetric(durationMs),
+    audio_chunk_sample_count: sampleCount,
+    audio_chunk_peak_abs: roundMetric(peakAbs / 32768),
+    audio_chunk_rms: roundMetric(rms / 32768),
+    audio_chunk_near_zero_pct: roundMetric((nearZeroCount / sampleCount) * 100),
+    audio_chunk_leading_near_zero_ms: roundMetric((leadingNearZeroCount / sampleCount) * durationMs),
+    audio_chunk_trailing_near_zero_ms: roundMetric((trailingNearZeroCount / sampleCount) * durationMs),
+    audio_chunk_longest_near_zero_run_ms: roundMetric((longestNearZeroRun / sampleCount) * durationMs),
+  };
+}
+
+function decodeBase64(value: string): Uint8Array | null {
+  try {
+    const binary = window.atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+function roundMetric(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+function resolveBooleanQueryParam(name: string, fallback: boolean): boolean {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+  const raw = new URLSearchParams(window.location.search).get(name);
+  if (raw === null) {
+    return fallback;
+  }
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "1" || normalized === "true") {
+    return true;
+  }
+  if (normalized === "0" || normalized === "false") {
+    return false;
+  }
+  return fallback;
+}
+
+function resolveNumberQueryParam(name: string, fallback: number): number {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+  const raw = new URLSearchParams(window.location.search).get(name);
+  if (!raw) {
+    return fallback;
+  }
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
 }

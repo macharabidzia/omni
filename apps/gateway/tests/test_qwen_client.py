@@ -102,7 +102,7 @@ def test_parse_event_uses_string_error_message() -> None:
     assert event.message == "The /v1/realtime API is not supported."
 
 
-def test_parse_event_ignores_non_terminal_audio_done_events() -> None:
+def test_parse_event_treats_transcription_done_as_terminal_response() -> None:
     client = QwenRealtimeClient(
         model="qwen",
         url="ws://qwen/v1/realtime",
@@ -111,10 +111,34 @@ def test_parse_event_ignores_non_terminal_audio_done_events() -> None:
         output_sample_rate=24000,
         max_ws_message_bytes=1024,
     )
+    client.awaiting_response = True
 
-    assert client._parse_event({"type": "response.audio.done"}) is None
-    assert client._parse_event({"type": "transcription.done"}) is None
-
-    event = client._parse_event({"type": "response.done"})
+    event = client._parse_event({"type": "transcription.done"})
     assert event is not None
     assert event.kind == "response_done"
+    assert client.awaiting_response is False
+
+    assert client._parse_event({"type": "response.audio.done"}) is None
+
+
+def test_qwen_client_starts_generation_only_on_explicit_commit() -> None:
+    websocket = FakeWebSocket([])
+    client = QwenRealtimeClient(
+        model="qwen",
+        url="ws://qwen/v1/realtime",
+        request_timeout_seconds=1.0,
+        response_timeout_seconds=1.0,
+        output_sample_rate=24000,
+        max_ws_message_bytes=1024,
+    )
+    client.websocket = websocket
+
+    asyncio.run(client.append_audio("aGVsbG8="))
+    asyncio.run(client.commit_audio())
+
+    sent_payloads = [json.loads(payload) for payload in websocket.sent]
+    assert sent_payloads == [
+        {"type": "input_audio_buffer.append", "audio": "aGVsbG8="},
+        {"type": "input_audio_buffer.commit", "final": False},
+        {"type": "input_audio_buffer.commit", "final": True},
+    ]

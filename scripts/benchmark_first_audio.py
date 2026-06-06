@@ -11,10 +11,14 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Benchmark first-response latency across chunk sizes and speakers.")
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--direct", action="store_true")
-    mode.add_argument("--gateway", action="store_true")
+    parser = argparse.ArgumentParser(
+        description="Benchmark direct Qwen first-response latency across chunk sizes and speakers."
+    )
+    parser.add_argument(
+        "--direct",
+        action="store_true",
+        help="Retained for compatibility. Direct Qwen mode is the only supported mode.",
+    )
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--runs", type=int, default=5)
     parser.add_argument("--chunk-ms-list", default="20,40,80,120,200")
@@ -23,7 +27,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default=None)
     parser.add_argument("--send-delay-ms", type=float, default=None)
     parser.add_argument("--simulate-realtime-upload", action="store_true")
-    parser.add_argument("--gateway-url", default=None)
     parser.add_argument("--qwen-url", default=None)
     parser.add_argument("--request-timeout-seconds", type=float, default=30.0)
     parser.add_argument("--response-timeout-seconds", type=float, default=90.0)
@@ -84,7 +87,7 @@ def main() -> None:
                     command = [
                         sys.executable,
                         str(args.smoke_script),
-                        "--direct" if args.direct else "--gateway",
+                        "--direct",
                         "--input",
                         str(args.input),
                         "--chunk-ms",
@@ -106,17 +109,15 @@ def main() -> None:
                         "--output",
                         str(output_wav_path),
                     ]
-                    if args.direct and args.qwen_url:
+                    if args.qwen_url:
                         command.extend(["--qwen-url", args.qwen_url])
                     if args.model:
                         command.extend(["--model", args.model])
-                    if args.gateway and args.gateway_url:
-                        command.extend(["--gateway-url", args.gateway_url])
                     subprocess.run(command, check=True)
 
                     metrics_payload = json.loads(metrics_path.read_text(encoding="utf-8"))
                     row = {
-                        "mode": "direct" if args.direct else "gateway",
+                        "mode": "direct",
                         "chunk_ms": chunk_ms,
                         "send_delay_ms": send_delay_ms,
                         "speaker": speaker,
@@ -173,7 +174,7 @@ def main() -> None:
                 sample_count = len(first_response_values)
                 summary_rows.append(
                     {
-                        "mode": "direct" if args.direct else "gateway",
+                        "mode": "direct",
                         "chunk_ms": chunk_ms,
                         "send_delay_ms": send_delay_values,
                         "speaker": speaker,

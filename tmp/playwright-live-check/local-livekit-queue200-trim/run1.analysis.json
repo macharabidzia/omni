@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "input_path": "tmp/playwright-live-check/local-livekit-queue200-trim/run1.wav",
+  "sample_rate": 48000,
+  "duration_ms": 7424.0,
+  "active_region": {
+    "start_ms": 4096.56,
+    "end_ms": 7220.08,
+    "duration_ms": 3123.54
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 0,
+  "longest_edge_silence_ms": 0.0,
+  "edge_silence_runs": [],
+  "internal_silence_runs_ge_threshold": 0,
+  "longest_internal_silence_ms": 0.0,
+  "internal_silence_runs": [],
+  "suspicious_internal_silence_runs_ge_threshold": 0,
+  "longest_suspicious_internal_silence_ms": 0.0,
+  "suspicious_internal_silence_runs": [],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 156,
+    "max": 2279,
+    "p95": 1305
+  },
+  "warnings": []
+}

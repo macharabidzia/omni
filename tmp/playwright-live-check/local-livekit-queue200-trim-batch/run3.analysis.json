@@ -1,0 +1,79 @@
+{
+  "status": "warning",
+  "input_path": "tmp/playwright-live-check/local-livekit-queue200-trim-batch/run3.wav",
+  "sample_rate": 48000,
+  "duration_ms": 9045.33,
+  "active_region": {
+    "start_ms": 4192.54,
+    "end_ms": 8837.56,
+    "duration_ms": 4645.04
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 0,
+  "longest_edge_silence_ms": 0.0,
+  "edge_silence_runs": [],
+  "internal_silence_runs_ge_threshold": 4,
+  "longest_internal_silence_ms": 70.21,
+  "internal_silence_runs": [
+    {
+      "start_ms_in_active": 715.65,
+      "end_ms_in_active": 737.38,
+      "length_ms": 21.75,
+      "start_ms_absolute": 4908.19,
+      "end_ms_absolute": 4929.92,
+      "pre_peak_abs": 51,
+      "post_peak_abs": 10
+    },
+    {
+      "start_ms_in_active": 978.06,
+      "end_ms_in_active": 1048.25,
+      "length_ms": 70.21,
+      "start_ms_absolute": 5170.6,
+      "end_ms_absolute": 5240.79,
+      "pre_peak_abs": 12,
+      "post_peak_abs": 9
+    },
+    {
+      "start_ms_in_active": 1048.33,
+      "end_ms_in_active": 1085.17,
+      "length_ms": 36.85,
+      "start_ms_absolute": 5240.88,
+      "end_ms_absolute": 5277.71,
+      "pre_peak_abs": 9,
+      "post_peak_abs": 782
+    },
+    {
+      "start_ms_in_active": 3191.58,
+      "end_ms_in_active": 3220.48,
+      "length_ms": 28.92,
+      "start_ms_absolute": 7384.12,
+      "end_ms_absolute": 7413.02,
+      "pre_peak_abs": 33,
+      "post_peak_abs": 50
+    }
+  ],
+  "suspicious_internal_silence_runs_ge_threshold": 1,
+  "longest_suspicious_internal_silence_ms": 28.92,
+  "suspicious_internal_silence_runs": [
+    {
+      "start_ms_in_active": 3191.58,
+      "end_ms_in_active": 3220.48,
+      "length_ms": 28.92,
+      "start_ms_absolute": 7384.12,
+      "end_ms_absolute": 7413.02,
+      "pre_peak_abs": 33,
+      "post_peak_abs": 50
+    }
+  ],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 232,
+    "max": 1998,
+    "p95": 831
+  },
+  "warnings": [
+    "suspicious internal silence run 28.92 ms exceeded 20.0 ms"
+  ]
+}

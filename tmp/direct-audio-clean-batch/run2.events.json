@@ -1,0 +1,12 @@
+[
+  {
+    "type": "session.ready",
+    "mode": "direct"
+  },
+  {
+    "type": "error",
+    "code": "processing_error",
+    "message": "EngineCore encountered an issue. See stack trace (above) for the root cause.",
+    "t_ms": 899.53
+  }
+]

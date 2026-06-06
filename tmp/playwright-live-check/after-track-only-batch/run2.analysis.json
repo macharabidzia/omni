@@ -1,0 +1,77 @@
+{
+  "status": "ok",
+  "input_path": "tmp/playwright-live-check/after-track-only-batch/run2.wav",
+  "sample_rate": 48000,
+  "duration_ms": 8874.67,
+  "active_region": {
+    "start_ms": 4456.12,
+    "end_ms": 8673.88,
+    "duration_ms": 4217.77
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 1,
+  "longest_edge_silence_ms": 55.15,
+  "edge_silence_runs": [
+    {
+      "start_ms_in_active": 15.58,
+      "end_ms_in_active": 70.71,
+      "length_ms": 55.15,
+      "start_ms_absolute": 4471.71,
+      "end_ms_absolute": 4526.83,
+      "pre_peak_abs": 10,
+      "post_peak_abs": 10
+    }
+  ],
+  "internal_silence_runs_ge_threshold": 4,
+  "longest_internal_silence_ms": 44.96,
+  "internal_silence_runs": [
+    {
+      "start_ms_in_active": 70.88,
+      "end_ms_in_active": 99.02,
+      "length_ms": 28.17,
+      "start_ms_absolute": 4527.0,
+      "end_ms_absolute": 4555.15,
+      "pre_peak_abs": 10,
+      "post_peak_abs": 9328
+    },
+    {
+      "start_ms_in_active": 3451.27,
+      "end_ms_in_active": 3473.04,
+      "length_ms": 21.79,
+      "start_ms_absolute": 7907.4,
+      "end_ms_absolute": 7929.17,
+      "pre_peak_abs": 13,
+      "post_peak_abs": 10
+    },
+    {
+      "start_ms_in_active": 3476.83,
+      "end_ms_in_active": 3521.77,
+      "length_ms": 44.96,
+      "start_ms_absolute": 7932.96,
+      "end_ms_absolute": 7977.9,
+      "pre_peak_abs": 10,
+      "post_peak_abs": 9
+    },
+    {
+      "start_ms_in_active": 3521.83,
+      "end_ms_in_active": 3544.29,
+      "length_ms": 22.48,
+      "start_ms_absolute": 7977.96,
+      "end_ms_absolute": 8000.42,
+      "pre_peak_abs": 9,
+      "post_peak_abs": 11
+    }
+  ],
+  "suspicious_internal_silence_runs_ge_threshold": 0,
+  "longest_suspicious_internal_silence_ms": 0.0,
+  "suspicious_internal_silence_runs": [],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 210,
+    "max": 4449,
+    "p95": 1357
+  },
+  "warnings": []
+}

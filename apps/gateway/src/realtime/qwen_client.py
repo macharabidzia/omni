@@ -56,6 +56,7 @@ class QwenRealtimeClient:
         self.speaker = "Ethan"
         self.output_audio = True
         self.input_stream_started = False
+        self.awaiting_response = False
 
     async def connect(self) -> None:
         if self.websocket is not None:
@@ -92,6 +93,7 @@ class QwenRealtimeClient:
         self.speaker = speaker
         self.output_audio = output_audio
         self.input_stream_started = False
+        self.awaiting_response = False
 
         session_update = {
             "type": "session.update",
@@ -104,9 +106,9 @@ class QwenRealtimeClient:
             return
         await self._send({"type": "input_audio_buffer.commit", "final": False})
         self.input_stream_started = True
+        self.awaiting_response = True
 
     async def append_audio(self, pcm16_base64: str) -> None:
-        await self._ensure_input_stream_started()
         await self._send(
             {
                 "type": "input_audio_buffer.append",
@@ -146,7 +148,19 @@ class QwenRealtimeClient:
                     message=f"Timed out waiting for Qwen response: {exc}",
                 )
                 return
-            except websockets.ConnectionClosed:
+            except websockets.ConnectionClosed as exc:
+                if self.awaiting_response:
+                    self.input_stream_started = False
+                    self.awaiting_response = False
+                    yield QwenEvent(
+                        kind="error",
+                        payload={},
+                        code="QWEN_CONNECTION_CLOSED",
+                        message=(
+                            "Qwen realtime websocket closed before a terminal response event: "
+                            f"{exc}"
+                        ),
+                    )
                 return
 
             if isinstance(raw_message, bytes):
@@ -199,18 +213,20 @@ class QwenRealtimeClient:
         if raw_type in {
             "response.done",
             "response.completed",
-        }:
-            self.input_stream_started = False
-            return QwenEvent(kind="response_done", payload=payload)
-
-        if raw_type in {
-            "response.audio.done",
             "transcription.done",
         }:
+            if not self.awaiting_response:
+                return None
+            self.input_stream_started = False
+            self.awaiting_response = False
+            return QwenEvent(kind="response_done", payload=payload)
+
+        if raw_type == "response.audio.done":
             return None
 
         if raw_type == "error":
             self.input_stream_started = False
+            self.awaiting_response = False
             return QwenEvent(
                 kind="error",
                 payload=payload,
@@ -242,6 +258,9 @@ def _extract_audio_base64(payload: dict) -> str | None:
 
 def _extract_audio_sample_rate(payload: dict) -> int | None:
     value = payload.get("sample_rate")
+    if isinstance(value, int):
+        return value
+    value = payload.get("sample_rate_hz")
     if isinstance(value, int):
         return value
     audio = payload.get("audio")

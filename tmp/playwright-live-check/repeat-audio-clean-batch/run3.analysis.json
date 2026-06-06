@@ -1,0 +1,25 @@
+{
+  "status": "warning",
+  "input_path": "/workspace/omni/tmp/playwright-live-check/repeat-audio-clean-batch/run3.webm",
+  "sample_rate": 48000,
+  "duration_ms": 9000.0,
+  "active_region": {
+    "start_ms": 3903.96,
+    "end_ms": 7979.08,
+    "duration_ms": 4075.15
+  },
+  "edge_padding_ms": 60.0,
+  "edge_silence_runs_ge_threshold": 0,
+  "longest_edge_silence_ms": 0.0,
+  "internal_silence_runs_ge_threshold": 1,
+  "longest_internal_silence_ms": 21.5,
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 203,
+    "max": 5716,
+    "p95": 1403
+  },
+  "warnings": [
+    "internal silence run 21.5 ms exceeded 20.0 ms"
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "url": "http://127.0.0.1:5173",
+  "fakeAudioPath": "/tmp/test.wav",
+  "waitError": "page.waitForFunction: Timeout 15000ms exceeded.",
+  "statusLine": "Ready: ready | Session: ready | Playback: idle",
+  "livePill": "Mic Live",
+  "transcript": "Transcript deltas will appear here.",
+  "assistantText": "Assistant text deltas will appear here.",
+  "errorText": null,
+  "debugEvents": [
+    {
+      "type": "local.livekit.connect_target",
+      "requested_url": "ws://185.62.58.164:7880",
+      "resolved_url": "ws://185.62.58.164:7880"
+    },
+    {
+      "type": "local.livekit.track_subscribed",
+      "participant_identity": "omni-worker",
+      "participant_sid": "PA_a3DJm2HgRTiM",
+      "track_sid": "TR_AMKeb6Nx9QfgFR",
+      "track_name": "assistant",
+      "track_source": "microphone",
+      "kind": "audio"
+    },
+    {
+      "type": "local.livekit.track_playback_ignored",
+      "track_sid": "TR_AMKeb6Nx9QfgFR",
+      "kind": "audio"
+    },
+    {
+      "type": "local.livekit.connected",
+      "room_name": "omni-room",
+      "participant_identity": "browser-0bf6cf949f7d",
+      "remote_participant_count": 1,
+      "can_playback_audio": true
+    },
+    {
+      "type": "local.livekit.track_sync_found",
+      "participant_identity": "omni-worker",
+      "participant_sid": "PA_a3DJm2HgRTiM",
+      "track_sid": "TR_AMKeb6Nx9QfgFR",
+      "track_name": "assistant",
+      "track_source": "microphone"
+    },
+    {
+      "type": "local.livekit.track_playback_ignored",
+      "track_sid": "TR_AMKeb6Nx9QfgFR",
+      "kind": "audio"
+    },
+    {
+      "type": "session.ready",
+      "session_id": "e80f2b77-ea45-48b3-ac6f-b5c6b738e69d"
+    },
+    {
+      "type": "local.capture.live",
+      "perf_now_ms": 3897.9
+    },
+    {
+      "type": "local.speech.detected",
+      "perf_now_ms": 3907,
+      "level": 0.0663
+    },
+    {
+      "type": "local.turn.started",
+      "perf_now_ms": 3927.1
+    },
+    {
+      "type": "local.turn.silence",
+      "perf_now_ms": 7367.2
+    }
+  ],
+  "debugEventTypes": [
+    "local.livekit.connect_target",
+    "local.livekit.track_subscribed",
+    "local.livekit.track_playback_ignored",
+    "local.livekit.connected",
+    "local.livekit.track_sync_found",
+    "local.livekit.track_playback_ignored",
+    "session.ready",
+    "local.capture.live",
+    "local.speech.detected",
+    "local.turn.started",
+    "local.turn.silence"
+  ],
+  "metrics": [
+    {
+      "label": "Mic to Transcript",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Transcript",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Text",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Audio Delta",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Audio Played",
+      "value": "--"
+    },
+    {
+      "label": "Full Response",
+      "value": "--"
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: disconnected -> connecting {room: , roomID: undefined, participant: , participantID: }"
+    },
+    {
+      "type": "info",
+      "text": "signal connecting to ws://185.62.58.164:7880/rtc/v1?access_token=%3Credacted%3E&join_request=CAESyA0fiwgAAAAAAAAD7VvbjuM2EkUH2EXQgAPsPOWxfoBtlkhdyIEf-jK9CZIZGDuX7OOqJbpbGOuyEt125xuSD8jfLijbY7VFdtLZWSDY8M0-LNZRHVZJ8gF8-tWXJy_-GpyhOMOv__avkxdffHkS_PLzyelf6sVCtS9--vnkfkYnp_WMQERjEUUxchEwlgQY8ggC-PYNfDvngEF8Rs_oGU5OuxmZnOoZBTo5TWdqo8u0IelyWa9JWWxUbtCyK3LSqTKtdJFJgB9evzXwbVuvGnnx_s3V96-AAkIADDiEEE1Oy1m6yosaBLy_mk_fff92-o938-nb8w_za0BEiBgIoJAAMkCkgEE0Oc1mu-uj_dX1V9TqpkwbafbUzaqb8oRSOg0GSxGDVuWWBQF_j4NgavABSmF--fr9MZoY9PwYRQaXb0YgUtBqqZq7ulJE3atKb8mHMUE0itmHLEq9racsqkYXpZohfbnqVFHdpFW-UNkMP4VFRh2cIuI2eWaqsomUNWRx02fVbVp1Td1qkmWHI5UIq7aShdIL2aRtWnay1Q25y1u10bLr2oz0B0aW6l4tB_sCuNO6kdPper0-W6ubVmdndXs7VZtGtUWpKt1ND5mm6U1HOlXlxBQ2SMOGacxV9EmKfJq36UKTu3pZqpa0ZZZqcqhgXeSKZBlRG62qrqirjlAcZOVPFpWrTpZF38Gd0qtGpplu0q7rW7rI5VY6ld3X1fLBfC4yRVaLNr2V0WaZ75FmnUvV_hCsqtcfxXfvv5n_s7v69-J6_XDx-qI_qKK6VW3TFpWW3V1KgjACfi4plfGFZJeSJvLVlQyo-cBQxpEMuKSv5GUkrwNJA3nOJY3lVSgvr6UI5Xkgr4RMIpmcm69XiUlyTuU1yotYskjy8_2l1Y02okjdFtnHpfrUCuVq8-lz2xU_Kj-QfiD_-AOJfiD9QPqB_OMMZPDnGsj7Ilf2gRQRiBhEAkIAUgpIEVgILAIWA0sAKQOkHJDGgNR8F4DIATEExAgQY0BMgAngFDgCD4Az4Bx4CDwCHgNPAFEABmbUEbh4ctpFBB_myVTQx1MlYmj1Zgwn8GEuxrCwRpsCbeGmaFs8C63hLLJHx_boxHEtDL4JIm5Z4I4NsWuDi0E4NqCDAUPXBnvF5vAdG-yXxBxXxKk1nKMjPLCHOxTl9nJ5COcfcAzba-WxPdqhPYr-yTTCA3ulZjBWy2ahsjGDgMVSbRYqI5QdVvtnhIghbfRMRAckgaatF8VSkSKfDSLFNjI5PIYoHYYGgwXsY3FAxMJh7OEhxaI-lIUHJB5GsgOebCPjAQ-D_pFD0u6hLJVuH7a_z1U-w5dNmn1UuvgxNbc5Uta5MuAu83Zbkc94QCkuBin57tLZAIufR0N_A02yoxlWIz5DNeoRDe6rEQMs_AzVHNFsDxExHGDPFM1WTf5YNNyJhgfR2DM1sxXzmIXTbZsdFOP4X1ey4I85gp6DH8aAP7OTLXUcc2yPnh_6mO8Pvsg3s3CfYEZf6kK1g0nn29Pkh8PksXUnjnZuD4gPmjqguzMb6GnubE1atGRdVHm9NvcJerhn_cprqojgtq5vSavKmyP8-O11sJRlJSyK9git0uyjBYJmWTyCEwdl4qZMrJTJmDKxUpp7q5XTLLhIzZqF1cDHtHvsmJeFdloWOllZaCNl4YhzB40oYwdl7KaMrZTxmDJ2qMtc6rIn1GV2dZlFXebgddRqFty81moNPOZ11StcvOIJXmHnFRZeYedFRzuZBScvWhvKwCNetLeUefg4eJ_QGe06o0VntOvMHDIzt8rMKjIba8zsEnO0U_Lxj_nBkoWS44hyB40oHcPD3bPDraPDx5PD7YPDHX3E3W3ErV3Ex03E7T3EHS3E3R3ErQ3Ex_3D7e3DHe3Dx-2zN2aeNDF0vVh0Sk8-uyGDrKdlt00je2eA1G2hKt2_oEz-18ZN-LwimmX6UK80ydUyfRikiZ6XZltnVldaVZroh2YoSPx7cumiLKrbQZbkeVmyelm3pGvSbHgpv9nW2p8l_dUN5nunW5WW5PHWp33Bfmv_oqdyMsphddX6l1XvqnlXzbtq3lXzrpp31byr5l0176p5V827at5V866ad9WOcO-qeVfNu2reVfOu2lOuGp94V827at5V866ad9W8q-ZdNe-qeVfNu2reVfOumnfVvKvmXTXvqnlXzbtq3lV7nqvWv3L-eVy1tGmWRdZPzc5buzLm2tvLd3PYnj_JU51md2lVmT8B21wvq47R_4t2XaYbYu4KMtz9QCjTDSlV16W3ihgdZRAFyPnk9OuT_wAVMqcdsUYAAA%3D%3D {room: undefined, roomID: undefined, participant: undefined, participantID: undefined, reconnect: undefined}"
+    },
+    {
+      "type": "info",
+      "text": "signal connected {room: undefined, roomID: undefined, participant: undefined, participantID: undefined}"
+    },
+    {
+      "type": "info",
+      "text": "connected to Livekit Server edition: 0, version: 1.12.0, protocol: 17, region: , nodeId: ND_UxJXdxFXDkhN, debugInfo: , agentProtocol: 1 {room: omni-room, roomID: RM_N4apgfcfsHPN, participant: browser-0bf6cf949f7d, participantID: PA_PZdnHBgVgiQB}"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: connecting -> connected {room: omni-room, roomID: RM_N4apgfcfsHPN, participant: browser-0bf6cf949f7d, participantID: PA_PZdnHBgVgiQB}"
+    }
+  ],
+  "pageErrors": []
+}

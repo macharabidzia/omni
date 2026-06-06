@@ -1,0 +1,18 @@
+[
+  {
+    "type": "session.ready",
+    "mode": "direct"
+  },
+  {
+    "type": "error",
+    "code": "model_not_found",
+    "message": "The model `Qwen/Qwen3-Omni-30B-A3B-Instruct` does not exist.",
+    "t_ms": 29.88
+  },
+  {
+    "type": "error",
+    "code": "model_not_validated",
+    "message": "Model not validated. Make sure to validate the model by sending a session.update event.",
+    "t_ms": 30.08
+  }
+]

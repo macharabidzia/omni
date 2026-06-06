@@ -1,0 +1,70 @@
+{
+  "status": "warning",
+  "input_path": "tmp/playwright-live-check/local-livekit-queue240-trim/run1.wav",
+  "sample_rate": 48000,
+  "duration_ms": 9045.33,
+  "active_region": {
+    "start_ms": 4132.42,
+    "end_ms": 8787.04,
+    "duration_ms": 4654.65
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 0,
+  "longest_edge_silence_ms": 0.0,
+  "edge_silence_runs": [],
+  "internal_silence_runs_ge_threshold": 2,
+  "longest_internal_silence_ms": 29.08,
+  "internal_silence_runs": [
+    {
+      "start_ms_in_active": 2781.96,
+      "end_ms_in_active": 2810.67,
+      "length_ms": 28.73,
+      "start_ms_absolute": 6914.38,
+      "end_ms_absolute": 6943.08,
+      "pre_peak_abs": 55,
+      "post_peak_abs": 64
+    },
+    {
+      "start_ms_in_active": 3691.54,
+      "end_ms_in_active": 3720.6,
+      "length_ms": 29.08,
+      "start_ms_absolute": 7823.96,
+      "end_ms_absolute": 7853.02,
+      "pre_peak_abs": 112,
+      "post_peak_abs": 111
+    }
+  ],
+  "suspicious_internal_silence_runs_ge_threshold": 2,
+  "longest_suspicious_internal_silence_ms": 29.08,
+  "suspicious_internal_silence_runs": [
+    {
+      "start_ms_in_active": 2781.96,
+      "end_ms_in_active": 2810.67,
+      "length_ms": 28.73,
+      "start_ms_absolute": 6914.38,
+      "end_ms_absolute": 6943.08,
+      "pre_peak_abs": 55,
+      "post_peak_abs": 64
+    },
+    {
+      "start_ms_in_active": 3691.54,
+      "end_ms_in_active": 3720.6,
+      "length_ms": 29.08,
+      "start_ms_absolute": 7823.96,
+      "end_ms_absolute": 7853.02,
+      "pre_peak_abs": 112,
+      "post_peak_abs": 111
+    }
+  ],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 232,
+    "max": 4802,
+    "p95": 1395
+  },
+  "warnings": [
+    "suspicious internal silence run 29.08 ms exceeded 20.0 ms"
+  ]
+}

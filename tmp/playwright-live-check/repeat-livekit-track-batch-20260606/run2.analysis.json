@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "input_path": "/workspace/omni/tmp/playwright-live-check/repeat-livekit-track-batch-20260606/run2.wav",
+  "sample_rate": 48000,
+  "duration_ms": 9216.0,
+  "active_region": {
+    "start_ms": 4568.77,
+    "end_ms": 8252.0,
+    "duration_ms": 3683.25
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 1,
+  "longest_edge_silence_ms": 35.04,
+  "internal_silence_runs_ge_threshold": 0,
+  "longest_internal_silence_ms": 0.0,
+  "suspicious_internal_silence_runs_ge_threshold": 0,
+  "longest_suspicious_internal_silence_ms": 0.0,
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 184,
+    "max": 3690,
+    "p95": 1882
+  },
+  "warnings": []
+}

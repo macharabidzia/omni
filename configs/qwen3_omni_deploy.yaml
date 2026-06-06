@@ -26,7 +26,6 @@ services:
     port: 3000
     env:
       VITE_GATEWAY_HTTP_URL: http://localhost:8080
-      VITE_GATEWAY_WS_URL: ws://localhost:8080/ws/realtime
 runpod:
   ssh:
     host: 195.26.233.65

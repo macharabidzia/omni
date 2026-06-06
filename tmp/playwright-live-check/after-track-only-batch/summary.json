@@ -1,0 +1,65 @@
+{
+  "runs": [
+    {
+      "run": 1,
+      "status": "ok",
+      "suspicious_internal_silence_ms": 0,
+      "longest_internal_silence_ms": 31.42,
+      "commit_to_audio_delta": "379.5 ms",
+      "commit_to_audio_played": "854.2 ms",
+      "full_response": "4012.0 ms",
+      "first_delta_gap_ms": 5.3,
+      "max_inter_delta_gap_ms": 143.3
+    },
+    {
+      "run": 2,
+      "status": "ok",
+      "suspicious_internal_silence_ms": 0,
+      "longest_internal_silence_ms": 44.96,
+      "commit_to_audio_delta": "338.5 ms",
+      "commit_to_audio_played": "796.4 ms",
+      "full_response": "4522.3 ms",
+      "first_delta_gap_ms": 4,
+      "max_inter_delta_gap_ms": 144.9
+    },
+    {
+      "run": 3,
+      "status": "ok",
+      "suspicious_internal_silence_ms": 0,
+      "longest_internal_silence_ms": 0,
+      "commit_to_audio_delta": "353.3 ms",
+      "commit_to_audio_played": "833.9 ms",
+      "full_response": "4176.9 ms",
+      "first_delta_gap_ms": 4.9,
+      "max_inter_delta_gap_ms": 143.9
+    },
+    {
+      "run": 4,
+      "status": "ok",
+      "suspicious_internal_silence_ms": 0,
+      "longest_internal_silence_ms": 24.27,
+      "commit_to_audio_delta": "361.0 ms",
+      "commit_to_audio_played": "834.5 ms",
+      "full_response": "4565.4 ms",
+      "first_delta_gap_ms": 5.5,
+      "max_inter_delta_gap_ms": 142.7
+    },
+    {
+      "run": 5,
+      "status": "ok",
+      "suspicious_internal_silence_ms": 0,
+      "longest_internal_silence_ms": 29.29,
+      "commit_to_audio_delta": "385.2 ms",
+      "commit_to_audio_played": "852.5 ms",
+      "full_response": "4580.3 ms",
+      "first_delta_gap_ms": 6,
+      "max_inter_delta_gap_ms": 142.4
+    }
+  ],
+  "aggregates": {
+    "ok_runs": 5,
+    "warning_runs": 0,
+    "p95_commit_to_audio_played_ms": 854.2,
+    "p95_commit_to_audio_delta_ms": 385.2
+  }
+}

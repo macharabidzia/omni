@@ -1,24 +1,4 @@
 export type Speaker = "Ethan" | "Chelsie" | "Aiden";
-export type SessionMode = "text" | "text,audio";
-
-export type BrowserOutboundEvent =
-  | {
-      type: "session.start";
-      speaker: Speaker;
-      modalities: string[];
-      input_sample_rate: number;
-      output_audio: boolean;
-    }
-  | {
-      type: "audio.append";
-      audio_base64: string;
-      sample_rate: number;
-      channels: number;
-      format: "pcm16";
-    }
-  | { type: "audio.commit" }
-  | { type: "response.cancel" }
-  | { type: "session.end" };
 
 export type GatewayMetrics = {
   mic_to_first_transcript_ms?: number | null;
@@ -36,11 +16,11 @@ export type GatewayInboundEvent =
   | {
       type: "assistant.audio.delta";
       audio_base64: string;
-      sample_rate: number;
-      channels: number;
-      format: "pcm16";
+      sample_rate?: number | null;
+      channels?: number | null;
+      format?: string | null;
     }
   | { type: "assistant.done" }
+  | { type: "assistant.interrupted" }
   | { type: "metrics.update"; metrics: GatewayMetrics; timestamps?: Record<string, number | null> }
   | { type: "error"; code: string; message: string };
-

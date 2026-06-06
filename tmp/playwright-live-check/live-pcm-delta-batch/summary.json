@@ -1,0 +1,50 @@
+[
+  {
+    "run": 1,
+    "waitError": null,
+    "assistant_done": true,
+    "assistant_audio_deltas": 36,
+    "playback_started": 1,
+    "playback_drained": 1,
+    "commit_to_transcript": "148.3 ms",
+    "commit_to_audio_delta": "412.9 ms",
+    "commit_to_audio_played": "1053.1 ms",
+    "full_response": "5417.5 ms",
+    "analysis_status": "ok",
+    "internal_silence_runs": 0,
+    "suspicious_internal_silence_runs": 0,
+    "clipped_samples": 0
+  },
+  {
+    "run": 2,
+    "waitError": null,
+    "assistant_done": true,
+    "assistant_audio_deltas": 33,
+    "playback_started": 1,
+    "playback_drained": 1,
+    "commit_to_transcript": "149.6 ms",
+    "commit_to_audio_delta": "420.6 ms",
+    "commit_to_audio_played": "1072.3 ms",
+    "full_response": "5076.6 ms",
+    "analysis_status": "ok",
+    "internal_silence_runs": 0,
+    "suspicious_internal_silence_runs": 0,
+    "clipped_samples": 0
+  },
+  {
+    "run": 3,
+    "waitError": null,
+    "assistant_done": true,
+    "assistant_audio_deltas": 25,
+    "playback_started": 1,
+    "playback_drained": 1,
+    "commit_to_transcript": "188.4 ms",
+    "commit_to_audio_delta": "459.3 ms",
+    "commit_to_audio_played": "1103.6 ms",
+    "full_response": "3947.2 ms",
+    "analysis_status": "ok",
+    "internal_silence_runs": 0,
+    "suspicious_internal_silence_runs": 0,
+    "clipped_samples": 0
+  }
+]

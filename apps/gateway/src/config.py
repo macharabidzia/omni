@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +27,44 @@ class Settings(BaseSettings):
     )
 
     gateway_port: int = Field(default=8080, alias="GATEWAY_PORT")
+    cors_allow_origins: tuple[str, ...] = Field(default=(), alias="CORS_ALLOW_ORIGINS")
+    livekit_url: str = Field(default="", alias="LIVEKIT_URL")
+    livekit_api_key: str = Field(default="", alias="LIVEKIT_API_KEY")
+    livekit_api_secret: str = Field(default="", alias="LIVEKIT_API_SECRET")
+    livekit_room: str = Field(default="omni-room", alias="LIVEKIT_ROOM")
+    livekit_agent_id: str = Field(default="omni-worker", alias="LIVEKIT_AGENT_ID")
+    livekit_browser_identity_prefix: str = Field(
+        default="browser",
+        alias="LIVEKIT_BROWSER_IDENTITY_PREFIX",
+    )
+    livekit_control_topic: str = Field(
+        default="omni.control",
+        alias="LIVEKIT_CONTROL_TOPIC",
+    )
+    livekit_token_ttl_seconds: int = Field(
+        default=3600,
+        alias="LIVEKIT_TOKEN_TTL_SECONDS",
+    )
+    livekit_input_sample_rate: int = Field(
+        default=16000,
+        alias="LIVEKIT_INPUT_SAMPLE_RATE",
+    )
+    livekit_output_sample_rate: int = Field(
+        default=48000,
+        alias="LIVEKIT_OUTPUT_SAMPLE_RATE",
+    )
+    livekit_output_frame_ms: int = Field(
+        default=20,
+        alias="LIVEKIT_OUTPUT_FRAME_MS",
+    )
+    livekit_output_queue_ms: int = Field(
+        default=60,
+        alias="LIVEKIT_OUTPUT_QUEUE_MS",
+    )
+    livekit_preroll_frames: int = Field(
+        default=8,
+        alias="LIVEKIT_PREROLL_FRAMES",
+    )
     qwen_model: str = Field(
         default="Qwen/Qwen3-Omni-30B-A3B-Instruct",
         alias="QWEN_MODEL",
@@ -65,6 +103,17 @@ class Settings(BaseSettings):
         default=64,
         alias="QWEN_TEXT_MAX_COMPLETION_TOKENS",
     )
+
+    @field_validator("cors_allow_origins", mode="before")
+    @classmethod
+    def _parse_cors_allow_origins(cls, value: object) -> tuple[str, ...]:
+        if value is None:
+            return ()
+        if isinstance(value, str):
+            return tuple(origin.strip() for origin in value.split(",") if origin.strip())
+        if isinstance(value, (list, tuple)):
+            return tuple(str(origin).strip() for origin in value if str(origin).strip())
+        raise TypeError("CORS_ALLOW_ORIGINS must be a comma-separated string or list of origins.")
 
 
 @lru_cache

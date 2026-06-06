@@ -1,0 +1,149 @@
+[
+  {
+    "iteration": 1,
+    "counts": {
+      "session.ready": 1,
+      "local.capture.live": 1,
+      "metrics.update": 5,
+      "local.speech.detected": 1,
+      "local.turn.started": 1,
+      "local.turn.silence": 1,
+      "local.turn.commit": 1,
+      "transcript.delta": 16,
+      "assistant.audio.delta": 26,
+      "local.playback.queue": 8,
+      "local.playback.started": 1,
+      "local.playback.underrun": 1,
+      "local.playback.drain": 1
+    },
+    "lastAudio": 59,
+    "firstUnderrun": 61,
+    "firstDrain": 62,
+    "underrunAfterLastAudio": true,
+    "drainAfterLastAudio": true,
+    "metrics": [
+      {
+        "label": "Mic to Transcript",
+        "value": "3675.8 ms"
+      },
+      {
+        "label": "Commit to Transcript",
+        "value": "147.1 ms"
+      },
+      {
+        "label": "Commit to Text",
+        "value": "--"
+      },
+      {
+        "label": "Commit to Audio Delta",
+        "value": "426.5 ms"
+      },
+      {
+        "label": "Commit to Audio Played",
+        "value": "598.9 ms"
+      },
+      {
+        "label": "Full Response",
+        "value": "--"
+      }
+    ]
+  },
+  {
+    "iteration": 2,
+    "counts": {
+      "session.ready": 1,
+      "local.capture.live": 1,
+      "metrics.update": 5,
+      "local.speech.detected": 1,
+      "local.turn.started": 1,
+      "local.turn.silence": 1,
+      "local.turn.commit": 1,
+      "transcript.delta": 11,
+      "assistant.audio.delta": 23,
+      "local.playback.queue": 8,
+      "local.playback.started": 1,
+      "local.playback.underrun": 1,
+      "local.playback.drain": 1
+    },
+    "lastAudio": 52,
+    "firstUnderrun": 53,
+    "firstDrain": 54,
+    "underrunAfterLastAudio": true,
+    "drainAfterLastAudio": true,
+    "metrics": [
+      {
+        "label": "Mic to Transcript",
+        "value": "3658.5 ms"
+      },
+      {
+        "label": "Commit to Transcript",
+        "value": "147.1 ms"
+      },
+      {
+        "label": "Commit to Text",
+        "value": "--"
+      },
+      {
+        "label": "Commit to Audio Delta",
+        "value": "411.6 ms"
+      },
+      {
+        "label": "Commit to Audio Played",
+        "value": "598.1 ms"
+      },
+      {
+        "label": "Full Response",
+        "value": "--"
+      }
+    ]
+  },
+  {
+    "iteration": 3,
+    "counts": {
+      "session.ready": 1,
+      "local.capture.live": 1,
+      "metrics.update": 5,
+      "local.speech.detected": 1,
+      "local.turn.started": 1,
+      "local.turn.silence": 1,
+      "local.turn.commit": 1,
+      "transcript.delta": 16,
+      "assistant.audio.delta": 35,
+      "local.playback.queue": 11,
+      "local.playback.started": 1,
+      "local.playback.underrun": 1,
+      "local.playback.drain": 1
+    },
+    "lastAudio": 72,
+    "firstUnderrun": 73,
+    "firstDrain": 74,
+    "underrunAfterLastAudio": true,
+    "drainAfterLastAudio": true,
+    "metrics": [
+      {
+        "label": "Mic to Transcript",
+        "value": "3630.4 ms"
+      },
+      {
+        "label": "Commit to Transcript",
+        "value": "140.1 ms"
+      },
+      {
+        "label": "Commit to Text",
+        "value": "--"
+      },
+      {
+        "label": "Commit to Audio Delta",
+        "value": "417.5 ms"
+      },
+      {
+        "label": "Commit to Audio Played",
+        "value": "628.7 ms"
+      },
+      {
+        "label": "Full Response",
+        "value": "--"
+      }
+    ]
+  }
+]
