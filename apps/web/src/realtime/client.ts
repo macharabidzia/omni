@@ -40,6 +40,7 @@ export class RealtimeClient {
   private controlTopic = "omni.control";
   private microphoneStream: MediaStream | null = null;
   private assistantAudioTransport: "unknown" | "track" | "packet" | "delta" = "unknown";
+  private assistantRemoteTrack: RemoteTrack | null = null;
   private assistantTrackSid: string | null = null;
   private assistantTrackStream: MediaStream | null = null;
   private assistantTrackPlaybackActive = false;
@@ -297,6 +298,7 @@ export class RealtimeClient {
   async close(): Promise<void> {
     this.audioPacketDebugCount = 0;
     this.assistantAudioTransport = "unknown";
+    this.assistantRemoteTrack = null;
     this.assistantTrackSid = null;
     this.assistantTrackStream = null;
     this.assistantTrackPlaybackActive = false;
@@ -382,6 +384,7 @@ export class RealtimeClient {
     }
 
     const stream = track.mediaStream ?? new MediaStream([track.mediaStreamTrack]);
+    this.assistantRemoteTrack = track;
     this.assistantTrackSid = resolvedTrackSid;
     this.assistantTrackStream = stream;
     this.assistantAudioTransport = "track";
@@ -400,6 +403,7 @@ export class RealtimeClient {
       audio_track_count: stream.getAudioTracks().length,
       perf_now_ms: round(performance.now()),
     });
+    void this.emitAssistantTrackStats("subscribed");
   }
 
   private handleTrackUnsubscribed(track: RemoteTrack, trackSid?: string): void {
