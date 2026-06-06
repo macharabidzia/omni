@@ -32,7 +32,7 @@ const AUDIO_PACKET_HEADER_BYTES = 6;
 const ASSISTANT_TRACK_NAME = "assistant";
 const ASSISTANT_TRACK_ACTIVITY_THRESHOLD = 0.002;
 const ASSISTANT_TRACK_DRAIN_MS = 120;
-const ASSISTANT_TRACK_PLAYOUT_DELAY_MS = resolveNumberQueryParam("playoutDelayMs", 80);
+const ASSISTANT_TRACK_PLAYOUT_DELAY_MS = resolveNumberQueryParam("playoutDelayMs", 90);
 const LIVEKIT_WEB_AUDIO_MIX = resolveBooleanQueryParam("webAudioMix", true);
 
 export class RealtimeClient {
