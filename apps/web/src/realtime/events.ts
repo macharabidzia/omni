@@ -5,6 +5,7 @@ export type GatewayMetrics = {
   commit_to_first_transcript_ms?: number | null;
   commit_to_first_text_ms?: number | null;
   commit_to_first_audio_delta_ms?: number | null;
+  commit_to_first_livekit_egress_ms?: number | null;
   commit_to_first_audio_played_ms?: number | null;
   full_response_ms?: number | null;
 };

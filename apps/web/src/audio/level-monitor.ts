@@ -89,6 +89,24 @@ export class AudioLevelMonitor {
     this.lastActiveAt = 0;
   }
 
+  captureStream(): MediaStream | null {
+    const audioElement = this.audioElement;
+    if (!audioElement) {
+      return null;
+    }
+    const firefoxElement = audioElement as HTMLAudioElement & {
+      captureStream?: () => MediaStream;
+      mozCaptureStream?: () => MediaStream;
+    };
+    if (typeof firefoxElement.captureStream === "function") {
+      return firefoxElement.captureStream();
+    }
+    if (typeof firefoxElement.mozCaptureStream === "function") {
+      return firefoxElement.mozCaptureStream();
+    }
+    return null;
+  }
+
   rearm(): void {
     this.lastActiveAt = 0;
     this.active = false;

@@ -1,0 +1,79 @@
+2026-06-06 18:08:48,143 INFO __main__ LiveKit worker config livekit_url=ws://185.62.58.164:7880 api_key_present=True api_secret_present=True room=omni-room agent_id=omni-worker
+/workspace/omni/.venv-qwen/lib/python3.12/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 9 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+  return self._jws.encode(
+Nvidia Decoder is supported.
+2026-06-06 18:08:49,106 INFO livekit livekit_api::signal_client::signal_stream:104:livekit_api::signal_client::signal_stream - connecting to ws://185.62.58.164:7880/rtc?sdk=python&os=Ubuntu&os_version=24.4.0&device_model=AS+-4124GO-NART%2B&protocol=17&client_protocol=1&auto_subscribe=1&adaptive_stream=0&version=1.1.10&capabilities=CAP_PACKET_TRAILER
+2026-06-06 18:08:51,148 INFO __main__ LiveKit worker connected room=omni-room
+2026-06-06 18:08:51,301 INFO __main__ LiveKit worker published assistant track sample_rate=48000 frame_ms=20 queue_ms=60
+2026-06-06 18:09:14,391 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:09:14,709 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:09:14,993 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d committing 22 audio chunks (14080 bytes) to Qwen
+2026-06-06 18:09:15,510 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:09:17,733 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d committing 112 audio chunks (71680 bytes) to Qwen
+2026-06-06 18:09:22,346 ERROR src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d upstream Qwen error code=processing_error message=EngineCore encountered an issue. See stack trace (above) for the root cause.
+2026-06-06 18:09:23,949 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:09:24,593 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d committing 40 audio chunks (25600 bytes) to Qwen
+2026-06-06 18:09:27,332 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d committing 159 audio chunks (101760 bytes) to Qwen
+2026-06-06 18:09:34,192 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d committing 199 audio chunks (127360 bytes) to Qwen
+2026-06-06 18:09:36,932 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d committing 318 audio chunks (203520 bytes) to Qwen
+2026-06-06 18:09:43,792 INFO src.realtime.session Session b0608985-48a0-488e-bde1-417e3a12a34d committing 358 audio chunks (229120 bytes) to Qwen
+2026-06-06 18:21:56,656 INFO src.realtime.session Session 5f1e0e90-6ddf-4a81-af0d-c49c9fbf1840 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:21:56,967 INFO src.realtime.session Session 5f1e0e90-6ddf-4a81-af0d-c49c9fbf1840 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:21:57,299 INFO src.realtime.session Session 5f1e0e90-6ddf-4a81-af0d-c49c9fbf1840 committing 25 audio chunks (16000 bytes) to Qwen
+2026-06-06 18:21:57,937 INFO src.realtime.session Session 5f1e0e90-6ddf-4a81-af0d-c49c9fbf1840 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:22:00,039 INFO src.realtime.session Session 5f1e0e90-6ddf-4a81-af0d-c49c9fbf1840 committing 112 audio chunks (71680 bytes) to Qwen
+2026-06-06 18:22:00,625 INFO src.realtime.session Session 5f1e0e90-6ddf-4a81-af0d-c49c9fbf1840 received first assistant audio delta
+2026-06-06 18:22:03,618 INFO src.realtime.session Session 5f1e0e90-6ddf-4a81-af0d-c49c9fbf1840 response done assistant_audio_chunks=45
+2026-06-06 18:22:48,336 INFO src.realtime.session Session 4a93e8c0-ed6d-4b29-b924-18f264695286 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:22:48,652 INFO src.realtime.session Session 4a93e8c0-ed6d-4b29-b924-18f264695286 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:22:51,810 INFO src.realtime.session Session 4a93e8c0-ed6d-4b29-b924-18f264695286 committing 166 audio chunks (106240 bytes) to Qwen
+2026-06-06 18:22:52,180 INFO src.realtime.session Session 4a93e8c0-ed6d-4b29-b924-18f264695286 received first assistant audio delta
+2026-06-06 18:22:55,835 INFO src.realtime.session Session 4a93e8c0-ed6d-4b29-b924-18f264695286 response done assistant_audio_chunks=54
+2026-06-06 18:23:26,259 INFO src.realtime.session Session 67f9b8fd-5787-4554-a3cd-4e337632ffe9 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:23:26,578 INFO src.realtime.session Session 67f9b8fd-5787-4554-a3cd-4e337632ffe9 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:23:29,734 INFO src.realtime.session Session 67f9b8fd-5787-4554-a3cd-4e337632ffe9 committing 165 audio chunks (105600 bytes) to Qwen
+2026-06-06 18:23:30,090 INFO src.realtime.session Session 67f9b8fd-5787-4554-a3cd-4e337632ffe9 received first assistant audio delta
+2026-06-06 18:23:34,373 INFO src.realtime.session Session 67f9b8fd-5787-4554-a3cd-4e337632ffe9 response done assistant_audio_chunks=65
+2026-06-06 18:23:40,102 INFO src.realtime.session Session 9520c8f3-ddb8-4fa8-a954-bfa6d3541721 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:23:40,421 INFO src.realtime.session Session 9520c8f3-ddb8-4fa8-a954-bfa6d3541721 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:23:43,527 INFO src.realtime.session Session 9520c8f3-ddb8-4fa8-a954-bfa6d3541721 committing 164 audio chunks (104960 bytes) to Qwen
+2026-06-06 18:23:43,896 INFO src.realtime.session Session 9520c8f3-ddb8-4fa8-a954-bfa6d3541721 received first assistant audio delta
+2026-06-06 18:23:48,860 INFO src.realtime.session Session 9520c8f3-ddb8-4fa8-a954-bfa6d3541721 response done assistant_audio_chunks=74
+2026-06-06 18:23:49,661 INFO src.realtime.session Session 9520c8f3-ddb8-4fa8-a954-bfa6d3541721 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:23:54,511 INFO src.realtime.session Session 0e6c4294-17fc-4491-b2bf-f13e06f047f3 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:23:54,826 INFO src.realtime.session Session 0e6c4294-17fc-4491-b2bf-f13e06f047f3 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:23:57,998 INFO src.realtime.session Session 0e6c4294-17fc-4491-b2bf-f13e06f047f3 committing 166 audio chunks (106240 bytes) to Qwen
+2026-06-06 18:23:58,372 INFO src.realtime.session Session 0e6c4294-17fc-4491-b2bf-f13e06f047f3 received first assistant audio delta
+2026-06-06 18:24:02,241 INFO src.realtime.session Session 0e6c4294-17fc-4491-b2bf-f13e06f047f3 response done assistant_audio_chunks=57
+2026-06-06 18:24:07,926 INFO src.realtime.session Session 0983811e-4c90-40ce-b8df-530066715de9 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:24:08,241 INFO src.realtime.session Session 0983811e-4c90-40ce-b8df-530066715de9 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:24:11,412 INFO src.realtime.session Session 0983811e-4c90-40ce-b8df-530066715de9 committing 166 audio chunks (106240 bytes) to Qwen
+2026-06-06 18:24:11,764 INFO src.realtime.session Session 0983811e-4c90-40ce-b8df-530066715de9 received first assistant audio delta
+2026-06-06 18:24:17,520 INFO src.realtime.session Session 0983811e-4c90-40ce-b8df-530066715de9 response done assistant_audio_chunks=91
+2026-06-06 18:24:17,561 INFO src.realtime.session Session 0983811e-4c90-40ce-b8df-530066715de9 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:24:23,041 INFO src.realtime.session Session cf3c3015-a008-43ee-869e-a914cd46ac92 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:24:23,356 INFO src.realtime.session Session cf3c3015-a008-43ee-869e-a914cd46ac92 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:24:26,525 INFO src.realtime.session Session cf3c3015-a008-43ee-869e-a914cd46ac92 committing 166 audio chunks (106240 bytes) to Qwen
+2026-06-06 18:24:26,890 INFO src.realtime.session Session cf3c3015-a008-43ee-869e-a914cd46ac92 received first assistant audio delta
+2026-06-06 18:24:31,981 INFO src.realtime.session Session cf3c3015-a008-43ee-869e-a914cd46ac92 response done assistant_audio_chunks=77
+2026-06-06 18:24:32,757 INFO src.realtime.session Session cf3c3015-a008-43ee-869e-a914cd46ac92 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:31:21,345 INFO src.realtime.session Session c33a75a7-e00e-41b5-abc5-7f1201ab35db started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:31:21,658 INFO src.realtime.session Session c33a75a7-e00e-41b5-abc5-7f1201ab35db received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:31:24,830 INFO src.realtime.session Session c33a75a7-e00e-41b5-abc5-7f1201ab35db committing 166 audio chunks (106240 bytes) to Qwen
+2026-06-06 18:31:25,223 INFO src.realtime.session Session c33a75a7-e00e-41b5-abc5-7f1201ab35db received first assistant audio delta
+2026-06-06 18:31:29,247 INFO src.realtime.session Session c33a75a7-e00e-41b5-abc5-7f1201ab35db response done assistant_audio_chunks=62
+2026-06-06 18:31:31,529 INFO src.realtime.session Session 440611da-9dab-4017-85f2-ed72419b40a3 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:31:31,846 INFO src.realtime.session Session 440611da-9dab-4017-85f2-ed72419b40a3 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:31:34,991 INFO src.realtime.session Session 440611da-9dab-4017-85f2-ed72419b40a3 committing 165 audio chunks (105600 bytes) to Qwen
+2026-06-06 18:31:35,342 INFO src.realtime.session Session 440611da-9dab-4017-85f2-ed72419b40a3 received first assistant audio delta
+2026-06-06 18:31:40,537 INFO src.realtime.session Session 440611da-9dab-4017-85f2-ed72419b40a3 response done assistant_audio_chunks=80
+2026-06-06 18:31:41,789 INFO src.realtime.session Session adfb5f65-fb97-4980-98ef-6341cfa03576 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:31:42,104 INFO src.realtime.session Session adfb5f65-fb97-4980-98ef-6341cfa03576 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:31:45,266 INFO src.realtime.session Session adfb5f65-fb97-4980-98ef-6341cfa03576 committing 166 audio chunks (106240 bytes) to Qwen
+2026-06-06 18:31:45,639 INFO src.realtime.session Session adfb5f65-fb97-4980-98ef-6341cfa03576 received first assistant audio delta
+2026-06-06 18:31:49,629 INFO src.realtime.session Session adfb5f65-fb97-4980-98ef-6341cfa03576 response done assistant_audio_chunks=62
+2026-06-06 18:31:52,137 INFO src.realtime.session Session 90fb92ac-fb5f-479f-9e81-789b6b19cbbf started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 18:31:52,458 INFO src.realtime.session Session 90fb92ac-fb5f-479f-9e81-789b6b19cbbf received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 18:31:55,632 INFO src.realtime.session Session 90fb92ac-fb5f-479f-9e81-789b6b19cbbf committing 166 audio chunks (106240 bytes) to Qwen
+2026-06-06 18:31:55,978 INFO src.realtime.session Session 90fb92ac-fb5f-479f-9e81-789b6b19cbbf received first assistant audio delta
+2026-06-06 18:31:59,615 INFO src.realtime.session Session 90fb92ac-fb5f-479f-9e81-789b6b19cbbf response done assistant_audio_chunks=56

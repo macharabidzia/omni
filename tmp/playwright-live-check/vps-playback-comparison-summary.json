@@ -1,0 +1,41 @@
+{
+  "vps-playback-default-batch5": {
+    "ok_runs": 1,
+    "warning_runs": 4,
+    "suspicious_runs": 4,
+    "max_suspicious_ms": 38.71
+  },
+  "vps-playback-pl60-batch5": {
+    "ok_runs": 4,
+    "warning_runs": 1,
+    "suspicious_runs": 1,
+    "max_suspicious_ms": 29.92
+  },
+  "vps-playback-pl80-batch3": {
+    "ok_runs": 5,
+    "warning_runs": 0,
+    "suspicious_runs": 0,
+    "max_suspicious_ms": 0.0
+  },
+  "vps-playback-default80-batch5": {
+    "ok_runs": 4,
+    "warning_runs": 1,
+    "suspicious_runs": 1,
+    "max_suspicious_ms": 20.67,
+    "p95_delta": 364.2,
+    "p95_egress": 436.4,
+    "p95_played": 809.8
+  },
+  "vps-playback-pl100-batch3": {
+    "ok_runs": 1,
+    "warning_runs": 2,
+    "suspicious_runs": 2,
+    "max_suspicious_ms": 29.73
+  },
+  "vps-playback-pl80-nomix-batch3": {
+    "ok_runs": 0,
+    "warning_runs": 3,
+    "suspicious_runs": 3,
+    "max_suspicious_ms": 26.12
+  }
+}

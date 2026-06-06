@@ -24,6 +24,7 @@ const GATEWAY_METRIC_KEYS: (keyof GatewayMetrics)[] = [
   "commit_to_first_transcript_ms",
   "commit_to_first_text_ms",
   "commit_to_first_audio_delta_ms",
+  "commit_to_first_livekit_egress_ms",
   "commit_to_first_audio_played_ms",
   "full_response_ms",
 ];

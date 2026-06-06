@@ -1,0 +1,40 @@
+{
+  "status": "ok",
+  "input_path": "/workspace/omni/tmp/playwright-live-check/vps-playback-pl80-batch3/run1.wav",
+  "sample_rate": 48000,
+  "duration_ms": 9045.33,
+  "active_region": {
+    "start_ms": 3939.0,
+    "end_ms": 8845.23,
+    "duration_ms": 4906.25
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 1,
+  "longest_edge_silence_ms": 20.5,
+  "edge_silence_runs": [
+    {
+      "start_ms_in_active": 45.17,
+      "end_ms_in_active": 65.65,
+      "length_ms": 20.5,
+      "start_ms_absolute": 3984.17,
+      "end_ms_absolute": 4004.65,
+      "pre_peak_abs": 4596,
+      "post_peak_abs": 7412
+    }
+  ],
+  "internal_silence_runs_ge_threshold": 0,
+  "longest_internal_silence_ms": 0.0,
+  "internal_silence_runs": [],
+  "suspicious_internal_silence_runs_ge_threshold": 0,
+  "longest_suspicious_internal_silence_ms": 0.0,
+  "suspicious_internal_silence_runs": [],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 245,
+    "max": 3602,
+    "p95": 1926
+  },
+  "warnings": []
+}

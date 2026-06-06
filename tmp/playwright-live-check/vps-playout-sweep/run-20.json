@@ -1,0 +1,561 @@
+{
+  "url": "http://127.0.0.1:5173/?playoutDelayMs=20",
+  "fakeAudioPath": "/workspace/omni/tmp/fake_mic_turn.wav",
+  "waitError": null,
+  "statusLine": "Ready: ready | Session: ready | Playback: active",
+  "livePill": "Mic Live",
+  "transcript": "Hello! Yes, I can provide short-latency responses. As Qwen-OHi there! How can I assist you today?",
+  "assistantText": "Assistant text deltas will appear here.",
+  "errorText": null,
+  "debugEvents": [
+    {
+      "type": "local.livekit.connect_target",
+      "requested_url": "ws://185.62.58.164:7880",
+      "resolved_url": "ws://185.62.58.164:7880"
+    },
+    {
+      "type": "local.livekit.track_subscribed",
+      "participant_identity": "omni-worker",
+      "participant_sid": "PA_6xwroJqxKmFV",
+      "track_sid": "TR_AMHwQqNs73xmUF",
+      "track_name": "assistant",
+      "track_source": "microphone",
+      "kind": "audio"
+    },
+    {
+      "type": "local.livekit.track_playout_delay_configured",
+      "track_sid": "TR_AMHwQqNs73xmUF",
+      "requested_delay_ms": 20,
+      "effective_delay_ms": 20
+    },
+    {
+      "type": "local.livekit.track_subscribed",
+      "participant_identity": "browser-8051429817e7",
+      "participant_sid": "PA_s4SCngF8d6dk",
+      "track_sid": "TR_AMkJhogjrkWtbU",
+      "track_name": "",
+      "track_source": "microphone",
+      "kind": "audio"
+    },
+    {
+      "type": "local.livekit.track_ignored",
+      "track_sid": "TR_AMkJhogjrkWtbU",
+      "track_name": "",
+      "kind": "audio"
+    },
+    {
+      "type": "local.livekit.connected",
+      "room_name": "omni-room",
+      "participant_identity": "browser-6f0b701153ed",
+      "remote_participant_count": 2,
+      "can_playback_audio": true
+    },
+    {
+      "type": "local.livekit.track_playback_attached",
+      "ready_state": 4,
+      "paused": false
+    },
+    {
+      "type": "local.livekit.track_playback_started",
+      "perf_now_ms": 3239.1
+    },
+    {
+      "type": "local.livekit.track_playback_enabled",
+      "track_sid": "TR_AMHwQqNs73xmUF",
+      "kind": "audio",
+      "audio_track_count": 1,
+      "perf_now_ms": 3239.1
+    },
+    {
+      "type": "local.livekit.track_sync_found",
+      "participant_identity": "omni-worker",
+      "participant_sid": "PA_6xwroJqxKmFV",
+      "track_sid": "TR_AMHwQqNs73xmUF",
+      "track_name": "assistant",
+      "track_source": "microphone"
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "session.start",
+      "reliable": true,
+      "sequence": 1,
+      "perf_now_ms": 3471.7
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "session.start",
+      "reliable": true,
+      "sequence": 1,
+      "perf_now_ms": 3530.1,
+      "duration_ms": 58.4
+    },
+    {
+      "type": "session.ready",
+      "session_id": "440611da-9dab-4017-85f2-ed72419b40a3"
+    },
+    {
+      "type": "local.capture.live",
+      "perf_now_ms": 3837.2
+    },
+    {
+      "type": "local.speech.detected",
+      "perf_now_ms": 3844.1,
+      "level": 0.4571
+    },
+    {
+      "type": "local.turn.started",
+      "perf_now_ms": 3854
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 2,
+      "perf_now_ms": 3854.1
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 2,
+      "perf_now_ms": 3854.5,
+      "duration_ms": 0.4
+    },
+    {
+      "type": "local.turn.silence",
+      "perf_now_ms": 3954.1
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 4194,
+      "level": 0.0481
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5074,
+      "level": 0.1657
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5604,
+      "level": 0.0574
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5684,
+      "level": 0.1485
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5804,
+      "level": 0.0233
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5854,
+      "level": 0.0816
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 6124,
+      "level": 0.1441
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 6274,
+      "level": 0.0856
+    },
+    {
+      "type": "local.turn.commit_timer_fired",
+      "perf_now_ms": 6999.4
+    },
+    {
+      "type": "local.turn.commit",
+      "perf_now_ms": 6999.7,
+      "speech_chunks": 240
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 3,
+      "perf_now_ms": 6999.7
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 3,
+      "perf_now_ms": 7000.1,
+      "duration_ms": 0.4
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": null,
+        "commit_to_first_transcript_ms": null,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": null,
+        "commit_to_first_livekit_egress_ms": null,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 323.79,
+        "t_first_audio_chunk_sent": 323.79,
+        "t_audio_commit_sent": null,
+        "t_first_transcript_delta": null,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": null,
+        "t_first_livekit_egress": null,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": null,
+        "commit_to_first_transcript_ms": null,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": null,
+        "commit_to_first_livekit_egress_ms": null,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 323.79,
+        "t_first_audio_chunk_sent": 323.79,
+        "t_audio_commit_sent": 3469.09,
+        "t_first_transcript_delta": null,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": null,
+        "t_first_livekit_egress": null,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "transcript.delta",
+      "text": "Hello"
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": 3298.85,
+        "commit_to_first_transcript_ms": 153.54,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": null,
+        "commit_to_first_livekit_egress_ms": null,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 323.79,
+        "t_first_audio_chunk_sent": 323.79,
+        "t_audio_commit_sent": 3469.09,
+        "t_first_transcript_delta": 3622.63,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": null,
+        "t_first_livekit_egress": null,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "transcript.delta",
+      "text": "!"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " Yes"
+    },
+    {
+      "type": "transcript.delta",
+      "text": ","
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": 3298.85,
+        "commit_to_first_transcript_ms": 153.54,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": 350.39,
+        "commit_to_first_livekit_egress_ms": null,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 323.79,
+        "t_first_audio_chunk_sent": 323.79,
+        "t_audio_commit_sent": 3469.09,
+        "t_first_transcript_delta": 3622.63,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": 3819.48,
+        "t_first_livekit_egress": null,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "transcript.delta",
+      "text": " I"
+    },
+    {
+      "type": "local.livekit.track_audio_active",
+      "level": 0
+    },
+    {
+      "type": "local.playback.started",
+      "perf_now_ms": 7789.4
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": 3298.85,
+        "commit_to_first_transcript_ms": 153.54,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": 350.39,
+        "commit_to_first_livekit_egress_ms": 425.11,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 323.79,
+        "t_first_audio_chunk_sent": 323.79,
+        "t_audio_commit_sent": 3469.09,
+        "t_first_transcript_delta": 3622.63,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": 3819.48,
+        "t_first_livekit_egress": 3894.2,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "transcript.delta",
+      "text": " can"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " provide"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " short"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "-lat"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "ency"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " responses"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "."
+    },
+    {
+      "type": "transcript.delta",
+      "text": " As"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " Q"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "wen"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "-O"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "Hi"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " there"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "!"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " How"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " can"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " I"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " assist"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " you"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " today"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "?"
+    }
+  ],
+  "debugEventTypes": [
+    "local.livekit.connect_target",
+    "local.livekit.track_subscribed",
+    "local.livekit.track_playout_delay_configured",
+    "local.livekit.track_subscribed",
+    "local.livekit.track_ignored",
+    "local.livekit.connected",
+    "local.livekit.track_playback_attached",
+    "local.livekit.track_playback_started",
+    "local.livekit.track_playback_enabled",
+    "local.livekit.track_sync_found",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "session.ready",
+    "local.capture.live",
+    "local.speech.detected",
+    "local.turn.started",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "local.turn.silence",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.commit_timer_fired",
+    "local.turn.commit",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "metrics.update",
+    "metrics.update",
+    "transcript.delta",
+    "metrics.update",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "metrics.update",
+    "transcript.delta",
+    "local.livekit.track_audio_active",
+    "local.playback.started",
+    "metrics.update",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta"
+  ],
+  "metrics": [
+    {
+      "label": "Mic to Transcript",
+      "value": "3298.8 ms"
+    },
+    {
+      "label": "Commit to Transcript",
+      "value": "153.5 ms"
+    },
+    {
+      "label": "Commit to Text",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Audio Delta",
+      "value": "350.4 ms"
+    },
+    {
+      "label": "Commit to LK Egress",
+      "value": "425.1 ms"
+    },
+    {
+      "label": "Commit to Audio Played",
+      "value": "789.8 ms"
+    },
+    {
+      "label": "Full Response",
+      "value": "--"
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: disconnected -> connecting {room: , roomID: undefined, participant: , participantID: }"
+    },
+    {
+      "type": "info",
+      "text": "signal connecting to ws://185.62.58.164:7880/rtc/v1?access_token=%3Credacted%3E&join_request=CAESyg0fiwgAAAAAAAAD7Vtdb-M2FkUKbFEY8AKdpz7eP8CYV6Q-yIEfUs-kncXMbHbno-jbKhLlaMf6qETHTn9D-wP6bxeS7bFikWnTnQWKLd-Sw8t7eA_vlZQDZPLXL86efO6dozjHr77819mTz7448375-WzylyrLVPPkp5_Pbud0OqnmBHyfM-Tc8znnPgZhEFLw4MVreHHFAb3wnJ7Tc5xO2jmZTvScAp1O4rna6iKuSbxaVRtS5FuVdmjR5ilpVRGXOk8kwHev3nTwsqnWtfz63etnL58DBQQPGHDwIZhOinm8TvMKBLx7djV7-_LN7J9vr2ZvLt5fXQIiQsBAAIUIkAEiBfSC6SSZ789H-9P1J2p0XcS17PZU9bqd8YhSOvMGSwGDRqWGBQHfhJ436_ABSuFq8erdKRp16MUpigwWr0cgUtBqpeqbqlRE3apS78iHMV4wijmEZIXe1VPkZa3zQs2RPl23Ki-v4zLNVDLHj2FBpw7OEHGXPOmqMomU1CS77rPqJi7bumo0SZLjlUqEdVPKXOlM1nETF61sdE1u0kZttWzbJiH9hZGVulWrwT4PbrSu5Wy22WzON-q60cl51SxnalurJi9UqdvZMdMsvm5Jq8qUdIUN0rBhmu4UfZI8naVNnGlyU60K1ZCmSGJNjhVs8lSRJCFqq1XZ5lXZEoqDrPzBolLVyiLvO7hVel3LONF13LZ9S-ep3EmnktuqXN11P-eJIuusiZfy5ffJ4oDUm1R-8_d33719HV4uf1h-v978Y12oV__-9sXfeqGyvFyqpm7yUsv2JiaeH8All4tABkxSlIvnMvRlxKXwZCAkRvJyISNPYiAFk_RSXgqJVF5QGQq5CCVnEj359YXkl9JbyGdCsh5_7kvvUkYoKTscrap1J4rUTZ58WKmPrVCstx9_btr8R-UG0g3kH38g0Q2kG0g3kH-cgfT-XAN5m6fKPJAiABGCiEAIQEoBKQLzgQXAQmARIGWAlAPSEJB2vwtA5IDoA2IAiCEgRsAEcAocgXvAGXAO3AceAA-BR4AoAL1u1BG4eHDaRQDvr6KZoPenSoTQ6O0YjuD9lRjDwhjdFWgK74o2xTPfGM4Cc3Rojo4sZ2HwrRdwwwK3bAhtG2wMwrIBLQzo2zaYK-4u37LBfCRmORGnxnCOlnDPHG5RlJvL5T5cvMcxbK6Vh-Zoi_Yo-jfTCPfMlXaDsV7VmUrGDAKyldpmKiGUHVf7d4QIIa71XARHJIK6qbJ8pUiezgeRYhcZHV9DlA5DvcEC9rE4IGL-MPb4kmJBH8r8IxIOI9kRj3aR4YCHQf_KIXF7VxRKN3e7v89VOsendZx8UDr_Me4ec6SoUtWB-8y7bXk65x6lmA1S8v3R2QALH0dDfwNNtKcZViM-QTXqHg0eqhEDzP8E1ZzQ7C4R0R9gjxTNVE16XzTci4ZH0dgjNTMVc5-F012bHRXj-F9XkvH7HF7PwY9jwB_ZyYY6Tjl2V8-PfcwPF5-n27l_SDCnT3WumsGk891t8uNl8tC4E0c7dxfEB03t0f2dDfTsnmx1nDdkk5dptemeE_T4zPqVz1QRwLKqlqRRxfUJfvr1OlhKkgKyvDlByzj5YICgXuX34MhCGdkpIyNlNKaMjJTds9XI2S3YSLs1A2sHn9IesFNe5ptpmW9lZb6JlPkjzj00ogwtlKGdMjRShmPK0KIus6nLHlCXmdVlBnWZhddSa7dg5zVW28FjXlu9wsYrHuAVZl5h4BVmXrS0U7dg5UVjQ3XwiBfNLdW9fCy8D-iMZp3RoDOadWYWmZldZWYUmY01ZmaJOZop-fiP-cGSgZLjiHIPjSgtw8Pts8ONo8PHk8PNg8MtfcTtbcSNXcTHTcTNPcQtLcTtHcSNDcTH_cPN7cMt7cPH7XMwZh40MXSVZa3S009uyCDradmyrmXvDJCqyVWp-w-U6f_auPEfV0S9iu-qtSapWsV3gzTB49Ls6kyqUqtSE31XDwUJf08unRd5uRxkiR6XJalWVUPaOk6GR_nNttbhLumvbuh-b3Wj4oLc3_qwL9hv7T_0VEpGOYyuWv-x6lw156o5V825as5Vc66ac9Wcq-ZcNeeqOVfNuWrOVXOu2gnuXDXnqjlXzblqzlV7yFXjU-eqOVfNuWrOVXOumnPVnKvmXDXnqjlXzblqzlVzrppz1Zyr5lw156o5V825ao9z1fpPzj-PqxbX9SpP-qnZe2vPOnPtzeLtFezun6SxjpObuCy7fwI2uV5GHYP_F-3aRNekeypIf_8HQhFvSaHaNl4q0ukovcBDzqeTr87-A-hMrdixRgAA {room: undefined, roomID: undefined, participant: undefined, participantID: undefined, reconnect: undefined}"
+    },
+    {
+      "type": "info",
+      "text": "signal connected {room: undefined, roomID: undefined, participant: undefined, participantID: undefined}"
+    },
+    {
+      "type": "info",
+      "text": "connected to Livekit Server edition: 0, version: 1.12.0, protocol: 17, region: , nodeId: ND_UxJXdxFXDkhN, debugInfo: , agentProtocol: 1 {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-6f0b701153ed, participantID: PA_wuPdRYWzgfXR}"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: connecting -> connected {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-6f0b701153ed, participantID: PA_wuPdRYWzgfXR}"
+    }
+  ],
+  "pageErrors": []
+}

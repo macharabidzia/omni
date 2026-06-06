@@ -1,0 +1,115 @@
+{
+  "status": "warning",
+  "input_path": "/workspace/omni/tmp/playwright-live-check/vps-playback-default-batch5/run2.wav",
+  "sample_rate": 48000,
+  "duration_ms": 8789.33,
+  "active_region": {
+    "start_ms": 3965.31,
+    "end_ms": 8618.98,
+    "duration_ms": 4653.69
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 0,
+  "longest_edge_silence_ms": 0.0,
+  "edge_silence_runs": [],
+  "internal_silence_runs_ge_threshold": 7,
+  "longest_internal_silence_ms": 105.31,
+  "internal_silence_runs": [
+    {
+      "start_ms_in_active": 799.81,
+      "end_ms_in_active": 821.35,
+      "length_ms": 21.56,
+      "start_ms_absolute": 4765.12,
+      "end_ms_absolute": 4786.67,
+      "pre_peak_abs": 14,
+      "post_peak_abs": 9
+    },
+    {
+      "start_ms_in_active": 834.06,
+      "end_ms_in_active": 854.62,
+      "length_ms": 20.58,
+      "start_ms_absolute": 4799.38,
+      "end_ms_absolute": 4819.94,
+      "pre_peak_abs": 11,
+      "post_peak_abs": 2763
+    },
+    {
+      "start_ms_in_active": 3050.25,
+      "end_ms_in_active": 3074.88,
+      "length_ms": 24.65,
+      "start_ms_absolute": 7015.56,
+      "end_ms_absolute": 7040.19,
+      "pre_peak_abs": 37,
+      "post_peak_abs": 2875
+    },
+    {
+      "start_ms_in_active": 3411.96,
+      "end_ms_in_active": 3450.65,
+      "length_ms": 38.71,
+      "start_ms_absolute": 7377.27,
+      "end_ms_absolute": 7415.96,
+      "pre_peak_abs": 50,
+      "post_peak_abs": 64
+    },
+    {
+      "start_ms_in_active": 3510.19,
+      "end_ms_in_active": 3532.96,
+      "length_ms": 22.79,
+      "start_ms_absolute": 7475.5,
+      "end_ms_absolute": 7498.27,
+      "pre_peak_abs": 21,
+      "post_peak_abs": 18
+    },
+    {
+      "start_ms_in_active": 3570.6,
+      "end_ms_in_active": 3591.12,
+      "length_ms": 20.54,
+      "start_ms_absolute": 7535.92,
+      "end_ms_absolute": 7556.44,
+      "pre_peak_abs": 15,
+      "post_peak_abs": 14
+    },
+    {
+      "start_ms_in_active": 3790.69,
+      "end_ms_in_active": 3895.98,
+      "length_ms": 105.31,
+      "start_ms_absolute": 7756.0,
+      "end_ms_absolute": 7861.29,
+      "pre_peak_abs": 12,
+      "post_peak_abs": 2724
+    }
+  ],
+  "suspicious_internal_silence_runs_ge_threshold": 2,
+  "longest_suspicious_internal_silence_ms": 38.71,
+  "suspicious_internal_silence_runs": [
+    {
+      "start_ms_in_active": 3050.25,
+      "end_ms_in_active": 3074.88,
+      "length_ms": 24.65,
+      "start_ms_absolute": 7015.56,
+      "end_ms_absolute": 7040.19,
+      "pre_peak_abs": 37,
+      "post_peak_abs": 2875
+    },
+    {
+      "start_ms_in_active": 3411.96,
+      "end_ms_in_active": 3450.65,
+      "length_ms": 38.71,
+      "start_ms_absolute": 7377.27,
+      "end_ms_absolute": 7415.96,
+      "pre_peak_abs": 50,
+      "post_peak_abs": 64
+    }
+  ],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 232,
+    "max": 2672,
+    "p95": 1221
+  },
+  "warnings": [
+    "suspicious internal silence run 38.71 ms exceeded 20.0 ms"
+  ]
+}

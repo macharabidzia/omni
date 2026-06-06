@@ -1,0 +1,1318 @@
+{
+  "url": "http://127.0.0.1:5173/?silenceCommitMs=220",
+  "fakeAudioPath": "/workspace/omni/tmp/fake_mic_turn.wav",
+  "waitError": "page.waitForFunction: Timeout 30000ms exceeded.",
+  "captureSize": 2875436,
+  "captureMimeType": "audio/wav",
+  "statusLine": "Ready: ready | Session: idle | Playback: idle",
+  "livePill": "Mic Idle",
+  "errorText": "QWEN_APPEND_FAILED: Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)",
+  "debugEvents": [
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 24735.2,
+      "level": 0.0421
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 24815.2,
+      "level": 0.1338
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 24985.2,
+      "level": 0.0854
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 25255.2,
+      "level": 0.1612
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 25405.2,
+      "level": 0.0961
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.commit_timer_fired",
+      "perf_now_ms": 26049.5
+    },
+    {
+      "type": "local.turn.commit",
+      "perf_now_ms": 26049.6,
+      "speech_chunks": 179
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 14,
+      "perf_now_ms": 26049.6
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 14,
+      "perf_now_ms": 26049.9,
+      "duration_ms": 0.3
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_COMMIT_FAILED",
+      "message": "Failed to commit audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.speech.detected",
+      "perf_now_ms": 32255.2,
+      "level": 0.0172
+    },
+    {
+      "type": "local.turn.started",
+      "perf_now_ms": 32265.3
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 15,
+      "perf_now_ms": 32265.3
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 15,
+      "perf_now_ms": 32265.6,
+      "duration_ms": 0.2
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.silence",
+      "perf_now_ms": 32685.2
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.commit_timer_fired",
+      "perf_now_ms": 32909.5
+    },
+    {
+      "type": "local.turn.commit",
+      "perf_now_ms": 32909.5,
+      "speech_chunks": 43
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 16,
+      "perf_now_ms": 32909.5
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 16,
+      "perf_now_ms": 32909.8,
+      "duration_ms": 0.3
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_COMMIT_FAILED",
+      "message": "Failed to commit audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.speech.detected",
+      "perf_now_ms": 33415.3,
+      "level": 0.1448
+    },
+    {
+      "type": "local.turn.started",
+      "perf_now_ms": 33425.3
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 17,
+      "perf_now_ms": 33425.3
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 17,
+      "perf_now_ms": 33425.6,
+      "duration_ms": 0.3
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.silence",
+      "perf_now_ms": 33775.2
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 33805.2,
+      "level": 0.1281
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_APPEND_FAILED",
+      "message": "Failed to forward audio to Qwen: received 1012 (service restart); then sent 1012 (service restart)"
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.session.close",
+      "reliable": true,
+      "sequence": 18,
+      "perf_now_ms": 34081.6
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.session.close",
+      "reliable": true,
+      "sequence": 18,
+      "perf_now_ms": 34081.8,
+      "duration_ms": 0.2
+    },
+    {
+      "type": "local.livekit.track_unsubscribed",
+      "participant_identity": "omni-worker",
+      "participant_sid": "PA_6xwroJqxKmFV",
+      "track_sid": "TR_AMHwQqNs73xmUF",
+      "track_name": "assistant",
+      "track_source": "microphone",
+      "kind": "audio"
+    }
+  ],
+  "debugEventTypes": [
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.resume",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.resume",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.resume",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.resume",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.resume",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.commit_timer_fired",
+    "local.turn.commit",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.speech.detected",
+    "local.turn.started",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.silence",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.commit_timer_fired",
+    "local.turn.commit",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.speech.detected",
+    "local.turn.started",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.turn.silence",
+    "error",
+    "error",
+    "local.turn.resume",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "local.livekit.track_unsubscribed"
+  ],
+  "metrics": [
+    {
+      "label": "Mic to Transcript",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Transcript",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Text",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Audio Delta",
+      "value": "--"
+    },
+    {
+      "label": "Commit to LK Egress",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Audio Played",
+      "value": "--"
+    },
+    {
+      "label": "Full Response",
+      "value": "--"
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: disconnected -> connecting {room: , roomID: undefined, participant: , participantID: }"
+    },
+    {
+      "type": "info",
+      "text": "signal connecting to ws://185.62.58.164:7880/rtc/v1?access_token=%3Credacted%3E&join_request=CAESyg0fiwgAAAAAAAAD7Vtdb-M2FkUK7KIw4AKdpz7e9wFjXpH6IAd-yMfMboF2YOzMpMA-rSJRjjDWByQ6duY3bH_A_ttCsj1WLDJturNAseVbcnh5D-_hvZJygEy--frsxV-9cxTn-N23_zp78dXXZ95_fj6b_KXKMtW8-PfPZ_dzOp1UcwLM80WEAfM8DDwfg4B54MH3b-H7BQf0wnN6Ts9xOmnnZDrRcwp0OonnaquLuCbxalVtSJFvVdqhRZunpFVFXOo8kQA__fiug5dNta7l5Ye31z-8BgoIHjDg4EMwnRTzeJ3mFQj4cL2Yvf_h3ewf7xezdxc3izeAiBAwEEAhAmSASAG9YDpJ5vvz0f50_YkaXRdxLbs9Vb1uZzyilM68wVLAoFGpYUHA30LPm3X4AKWwuPrxwykadejFKYoMrt6OQKSg1UrVd1WpiLpXpd6RD2O8YBRzCMkKvaunyMta54WaI321blVe3sZlmqlkjp_Dgk4dnCHiLnnSVWUSKalJdttn1U1ctnXVaJIkxyuVCOumlLnSmazjJi5a2eia3KWN2mrZtk1C-gsjK3WvVoN9HtxpXcvZbLPZnG_UbaOT86pZztS2Vk1eqFK3s2OmWXzbklaVKekKG6RhwzTdKfokeTpLmzjT5K5aFaohTZHEmhwr2OSpIklC1Farss2rsiUUB1n5k0WlqpVF3ndwq_S6lnGi67ht-5bOU7mTTiX3Vbl66H7OE0XWWRMv5cvZS--A1JtUXkTvf_r46cP2nwV-UvlVuLi63ty8rLP-ovJyqZq6yUst27uYeH4Al6EU15JSyd9IEcnXQgaRpKH0fHn1RtJIRigvA3kZSp9LzuWbS-lfSxSS-vLytURfUpQeyitfsgvJIun7MqTSu5IelZQdjlbVuhNF6iZPPq7U51Yo1tvPPzdt_km5gXQD-ccfSHQD6QbSDeQfZyC9P9dA3uepMg-kCECEICIQApBSQIrAfGABsBBYBEgZIOWANASk3e8CEDkg-oAYAGIIiBEwAZwCR-AecAacA_eBB8BD4BEgCkCvG3UELp6cdhHAzSKaCfp4qkQIjd6O4QhuFmIMC2N0V6ApvCvaFM98YzgLzNGhOTqynIXB372AGxa4ZUNo22BjEJYNaGFA37bBXHF3-ZYN5iMxy4k4NYZztIR75nCLotxcLvfh4gbHsLlWHpqjLdqj6N9MI9wzV9oNxnpVZyoZMwjIVmqbqYRQdlzt3xEihLjWcxEckQjqpsrylSJ5Oh9Eil1kdHwNUToM9QYL2MfigIj5w9jjS4oFfSjzj0g4jGRHPNpFhgMeBv0rh8TtQ1Eo3Tzs_j5X6Rxf1XHyUen8U9w95khRpaoD95l32_J0zj1KMRuk5PujswEWPo-G_gaaaE8zrEZ8gWrUIxo8VCMGmP8Fqjmh2V0ioj_AnimaqZr0sWi4Fw2PorFnamYq5jELp7s2OyrG8b-uJOOPObyegx_HgD-zkw11nHLsrp4f-5gfLj5Pt3P_kGBOX-lcNYNJ57vb5MfL5KFxJ4527i6ID5rao_s7G-jZPdnqOG_IJi_TatM9J-jxmfUrn6kigGVVLUmjitsT_PTrdbCUJAVkeXOClnHy0QBBvcofwZGFMrJTRkbKaEwZGSm7Z6uRs1uwkXZrBtYOPqU9YKe8zDfTMt_KynwTKfNHnHtoRBlaKEM7ZWikDMeUoUVdZlOXPaEuM6vLDOoyC6-l1m7BzmustoPHvLZ6hY1XPMErzLzCwCvMvGhpp27ByovGhurgES-aW6p7-Vh4n9AZzTqjQWc068wsMjO7yswoMhtrzMwSczRT8vEf84MlAyXHEeUeGlFahofbZ4cbR4ePJ4ebB4db-ojb24gbu4iPm4ibe4hbWojbO4gbG4iP-4eb24db2oeP2-dgzDxpYugqy1qlp1_ckEHW07JlXcveGSBVk6tS9x8o0_-1ceM_r4h6FT9Ua01StYofBmmC56XZ1ZlUpValJvqhHgoS_p5cOi_ycjnIEj0vS1Ktqoa0dZwMj_Kbba3DXdJf3dD93upGxQV5vPVpX7Df2n_oqZSMchhdtf5j1blqzlVzrppz1Zyr5lw156o5V825as5Vc66ac9Wcq-ZctRPcuWrOVXOumnPVnKv2lKvGp85Vc66ac9Wcq-ZcNeeqOVfNuWrOVXOumnPVnKvmXDXnqjlXzblqzlVzrppz1Z7nqvWfnH8eVy2u61We9FOz99auO3Pt3dX7Bezun6SxjpO7uCy7fwI2uV5GHYP_F-3aRNekeypIf_8HQhFvSaHaNl4q0ukovcBDzqeT785-AWnTD2qxRgAA {room: undefined, roomID: undefined, participant: undefined, participantID: undefined, reconnect: undefined}"
+    },
+    {
+      "type": "info",
+      "text": "signal connected {room: undefined, roomID: undefined, participant: undefined, participantID: undefined}"
+    },
+    {
+      "type": "info",
+      "text": "connected to Livekit Server edition: 0, version: 1.12.0, protocol: 17, region: , nodeId: ND_UxJXdxFXDkhN, debugInfo: , agentProtocol: 1 {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-7d9515fef02e, participantID: PA_VWhZVbBEMZYr}"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: connecting -> connected {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-7d9515fef02e, participantID: PA_VWhZVbBEMZYr}"
+    },
+    {
+      "type": "warning",
+      "text": "The ScriptProcessorNode is deprecated. Use AudioWorkletNode instead. (https://bit.ly/audio-worklet)"
+    },
+    {
+      "type": "info",
+      "text": "disconnect from room {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-7d9515fef02e, participantID: PA_VWhZVbBEMZYr}"
+    },
+    {
+      "type": "info",
+      "text": "unpublishing track {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-7d9515fef02e, participantID: PA_VWhZVbBEMZYr, trackID: TR_AMJX7qQgKsvzLC}"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: connected -> disconnected {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-7d9515fef02e, participantID: PA_VWhZVbBEMZYr}"
+    }
+  ],
+  "pageErrors": []
+}

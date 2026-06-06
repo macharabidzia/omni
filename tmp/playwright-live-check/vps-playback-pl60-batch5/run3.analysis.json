@@ -1,0 +1,52 @@
+{
+  "status": "warning",
+  "input_path": "/workspace/omni/tmp/playwright-live-check/vps-playback-pl60-batch5/run3.wav",
+  "sample_rate": 48000,
+  "duration_ms": 8789.33,
+  "active_region": {
+    "start_ms": 3907.9,
+    "end_ms": 8587.69,
+    "duration_ms": 4679.81
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 0,
+  "longest_edge_silence_ms": 0.0,
+  "edge_silence_runs": [],
+  "internal_silence_runs_ge_threshold": 1,
+  "longest_internal_silence_ms": 29.92,
+  "internal_silence_runs": [
+    {
+      "start_ms_in_active": 3672.52,
+      "end_ms_in_active": 3702.42,
+      "length_ms": 29.92,
+      "start_ms_absolute": 7580.42,
+      "end_ms_absolute": 7610.31,
+      "pre_peak_abs": 64,
+      "post_peak_abs": 80
+    }
+  ],
+  "suspicious_internal_silence_runs_ge_threshold": 1,
+  "longest_suspicious_internal_silence_ms": 29.92,
+  "suspicious_internal_silence_runs": [
+    {
+      "start_ms_in_active": 3672.52,
+      "end_ms_in_active": 3702.42,
+      "length_ms": 29.92,
+      "start_ms_absolute": 7580.42,
+      "end_ms_absolute": 7610.31,
+      "pre_peak_abs": 64,
+      "post_peak_abs": 80
+    }
+  ],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 233,
+    "max": 4496,
+    "p95": 1731
+  },
+  "warnings": [
+    "suspicious internal silence run 29.92 ms exceeded 20.0 ms"
+  ]
+}

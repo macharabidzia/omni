@@ -1,0 +1,2079 @@
+{
+  "url": "http://127.0.0.1:5173/?transportDebug=1",
+  "fakeAudioPath": "/workspace/omni/tmp/fake_mic_turn.wav",
+  "waitError": null,
+  "captureSize": 1613868,
+  "captureMimeType": "audio/wav",
+  "statusLine": "Ready: ready | Session: idle | Playback: idle",
+  "livePill": "Mic Idle",
+  "errorText": "EMPTY_AUDIO: No audio buffered for realtime commit.",
+  "debugEvents": [
+    {
+      "type": "local.livekit.track_playback_attached",
+      "ready_state": 4,
+      "paused": false
+    },
+    {
+      "type": "local.livekit.track_playback_started",
+      "perf_now_ms": 3338
+    },
+    {
+      "type": "local.livekit.track_playback_enabled",
+      "track_sid": "TR_AMsTDB6ERk6VGE",
+      "kind": "audio",
+      "audio_track_count": 1,
+      "perf_now_ms": 3338
+    },
+    {
+      "type": "local.livekit.track_sync_found",
+      "participant_identity": "omni-worker",
+      "participant_sid": "PA_fQVgTBWgGoPr",
+      "track_sid": "TR_AMsTDB6ERk6VGE",
+      "track_name": "assistant",
+      "track_source": "microphone"
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "session.start",
+      "reliable": true,
+      "sequence": 1,
+      "perf_now_ms": 3558
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "session.start",
+      "reliable": true,
+      "sequence": 1,
+      "perf_now_ms": 3614.1,
+      "duration_ms": 56.1
+    },
+    {
+      "type": "session.ready",
+      "session_id": "845e8c23-90a1-4e5a-be67-af45f17a6ecf"
+    },
+    {
+      "type": "local.capture.live",
+      "perf_now_ms": 3977.3
+    },
+    {
+      "type": "local.speech.detected",
+      "perf_now_ms": 3983.6,
+      "level": 0.4144
+    },
+    {
+      "type": "local.turn.started",
+      "perf_now_ms": 3993.5
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 2,
+      "perf_now_ms": 3993.5
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 2,
+      "perf_now_ms": 3994,
+      "duration_ms": 0.5
+    },
+    {
+      "type": "local.turn.silence",
+      "perf_now_ms": 4053.4
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 4293.3,
+      "level": 0.0481
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5173.3,
+      "level": 0.1657
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5703.3,
+      "level": 0.0574
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5783.3,
+      "level": 0.1485
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5903.3,
+      "level": 0.0233
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 5953.3,
+      "level": 0.0816
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 6223.4,
+      "level": 0.1441
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 6373.3,
+      "level": 0.0856
+    },
+    {
+      "type": "local.turn.commit_timer_fired",
+      "perf_now_ms": 7098.2
+    },
+    {
+      "type": "local.turn.commit",
+      "perf_now_ms": 7098.4,
+      "speech_chunks": 236
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 3,
+      "perf_now_ms": 7098.5
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 3,
+      "perf_now_ms": 7098.9,
+      "duration_ms": 0.4
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": null,
+        "commit_to_first_transcript_ms": null,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": null,
+        "commit_to_first_livekit_egress_ms": null,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 380.24,
+        "t_first_audio_chunk_sent": 380.24,
+        "t_audio_commit_sent": null,
+        "t_first_transcript_delta": null,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": null,
+        "t_first_livekit_egress": null,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": null,
+        "commit_to_first_transcript_ms": null,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": null,
+        "commit_to_first_livekit_egress_ms": null,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 380.24,
+        "t_first_audio_chunk_sent": 380.24,
+        "t_audio_commit_sent": 3485.37,
+        "t_first_transcript_delta": null,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": null,
+        "t_first_livekit_egress": null,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "transcript.delta",
+      "text": "Sure"
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": 3280.3,
+        "commit_to_first_transcript_ms": 175.17,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": null,
+        "commit_to_first_livekit_egress_ms": null,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 380.24,
+        "t_first_audio_chunk_sent": 380.24,
+        "t_audio_commit_sent": 3485.37,
+        "t_first_transcript_delta": 3660.54,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": null,
+        "t_first_livekit_egress": null,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "transcript.delta",
+      "text": "!"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " Here"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "'s"
+    },
+    {
+      "type": "local.livekit.track_audio_active",
+      "level": 0.03
+    },
+    {
+      "type": "local.playback.started",
+      "perf_now_ms": 7930.6
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 7942.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 92.161,
+      "audio_chunk_leading_near_zero_ms": 0.083,
+      "audio_chunk_trailing_near_zero_ms": 11.708,
+      "audio_chunk_longest_near_zero_run_ms": 11.833
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": 3280.3,
+        "commit_to_first_transcript_ms": 175.17,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": 389.43,
+        "commit_to_first_livekit_egress_ms": null,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 380.24,
+        "t_first_audio_chunk_sent": 380.24,
+        "t_audio_commit_sent": 3485.37,
+        "t_first_transcript_delta": 3660.54,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": 3874.8,
+        "t_first_livekit_egress": null,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": null
+      }
+    },
+    {
+      "type": "transcript.delta",
+      "text": " a"
+    },
+    {
+      "type": "local.turn.barge_in",
+      "perf_now_ms": 13233.4
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.interrupt",
+      "reliable": true,
+      "sequence": 4,
+      "perf_now_ms": 13233.5
+    },
+    {
+      "type": "local.speech.detected",
+      "perf_now_ms": 13233.6,
+      "level": 0.0358
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.interrupt",
+      "reliable": true,
+      "sequence": 4,
+      "perf_now_ms": 13233.9,
+      "duration_ms": 0.4
+    },
+    {
+      "type": "local.turn.started",
+      "perf_now_ms": 13243.3
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 5,
+      "perf_now_ms": 13243.3
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 5,
+      "perf_now_ms": 13243.4,
+      "duration_ms": 0.1
+    },
+    {
+      "type": "local.turn.silence",
+      "perf_now_ms": 13653.3
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 13933.4,
+      "level": 0.1598
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 14263.3,
+      "level": 0.1176
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 14653.3,
+      "level": 0.0382
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 14773.3,
+      "level": 0.1281
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 14943.3,
+      "level": 0.0347
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 15313.3,
+      "level": 0.037
+    },
+    {
+      "type": "local.turn.resume",
+      "perf_now_ms": 15383.3,
+      "level": 0.1346
+    },
+    {
+      "type": "error",
+      "code": "QWEN_CANCEL_FAILED",
+      "message": "Failed to restart Qwen session after cancel: Qwen websocket has not been connected."
+    },
+    {
+      "type": "local.playback.drain",
+      "perf_now_ms": 15544.4
+    },
+    {
+      "type": "assistant.interrupted"
+    },
+    {
+      "type": "local.turn.commit_timer_fired",
+      "perf_now_ms": 15768.2
+    },
+    {
+      "type": "local.turn.commit",
+      "perf_now_ms": 15768.3,
+      "speech_chunks": 185
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 6,
+      "perf_now_ms": 15768.3
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 6,
+      "perf_now_ms": 15768.6,
+      "duration_ms": 0.3
+    },
+    {
+      "type": "local.turn.barge_in",
+      "perf_now_ms": 16273.3
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.interrupt",
+      "reliable": true,
+      "sequence": 7,
+      "perf_now_ms": 16273.4
+    },
+    {
+      "type": "local.speech.detected",
+      "perf_now_ms": 16273.7,
+      "level": 0.1506
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.interrupt",
+      "reliable": true,
+      "sequence": 7,
+      "perf_now_ms": 16273.9,
+      "duration_ms": 0.5
+    },
+    {
+      "type": "local.turn.started",
+      "perf_now_ms": 16283.3
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 8,
+      "perf_now_ms": 16283.3
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.start",
+      "reliable": true,
+      "sequence": 8,
+      "perf_now_ms": 16283.6,
+      "duration_ms": 0.3
+    },
+    {
+      "type": "local.turn.silence",
+      "perf_now_ms": 16393.3
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": 3280.3,
+        "commit_to_first_transcript_ms": 175.17,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": 389.43,
+        "commit_to_first_livekit_egress_ms": 458.01,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": null
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 380.24,
+        "t_first_audio_chunk_sent": 380.24,
+        "t_audio_commit_sent": 3485.37,
+        "t_first_transcript_delta": 3660.54,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": 3874.8,
+        "t_first_livekit_egress": 3943.38,
+        "t_first_audio_played": null,
+        "t_response_done": null,
+        "t_barge_in": 9621.1
+      }
+    },
+    {
+      "type": "transcript.delta",
+      "text": "Hello"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "!"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " Sure"
+    },
+    {
+      "type": "transcript.delta",
+      "text": ","
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 16438.1,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 93.48,
+      "audio_chunk_leading_near_zero_ms": 0.125,
+      "audio_chunk_trailing_near_zero_ms": 3.583,
+      "audio_chunk_longest_near_zero_run_ms": 12.667
+    },
+    {
+      "type": "transcript.delta",
+      "text": " here"
+    },
+    {
+      "type": "local.livekit.track_audio_active",
+      "level": 0
+    },
+    {
+      "type": "local.playback.started",
+      "perf_now_ms": 16558.3
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 16581.8,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.359,
+      "audio_chunk_rms": 0.066,
+      "audio_chunk_near_zero_pct": 0.44,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.083
+    },
+    {
+      "type": "transcript.delta",
+      "text": "'s"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 16588.5,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.49,
+      "audio_chunk_rms": 0.161,
+      "audio_chunk_near_zero_pct": 0.26,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "error",
+      "code": "QWEN_CANCEL_FAILED",
+      "message": "Failed to restart Qwen session after cancel: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "local.playback.drain",
+      "perf_now_ms": 16588.6
+    },
+    {
+      "type": "assistant.interrupted"
+    },
+    {
+      "type": "local.turn.commit_timer_fired",
+      "perf_now_ms": 16698.2
+    },
+    {
+      "type": "local.turn.commit",
+      "perf_now_ms": 16698.2,
+      "speech_chunks": 12
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 9,
+      "perf_now_ms": 16698.3
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.speech.commit",
+      "reliable": true,
+      "sequence": 9,
+      "perf_now_ms": 16698.8,
+      "duration_ms": 0.5
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "QWEN_STALE_SESSION_RESET_FAILED",
+      "message": "Failed to reset stale Qwen session before new turn: cannot call recv while another coroutine is already running recv or recv_streaming"
+    },
+    {
+      "type": "error",
+      "code": "EMPTY_AUDIO",
+      "message": "No audio buffered for realtime commit."
+    },
+    {
+      "type": "transcript.delta",
+      "text": " a"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " short"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " and"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " sweet"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " one"
+    },
+    {
+      "type": "transcript.delta",
+      "text": ":\n\n"
+    },
+    {
+      "type": "transcript.delta",
+      "text": "\""
+    },
+    {
+      "type": "transcript.delta",
+      "text": "Life"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17035.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.02,
+      "audio_chunk_rms": 0.003,
+      "audio_chunk_near_zero_pct": 30.312,
+      "audio_chunk_leading_near_zero_ms": 0.958,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 1.167
+    },
+    {
+      "type": "transcript.delta",
+      "text": " is"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " short"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17132.6,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.027,
+      "audio_chunk_rms": 0.003,
+      "audio_chunk_near_zero_pct": 39.427,
+      "audio_chunk_leading_near_zero_ms": 0.083,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 1.708
+    },
+    {
+      "type": "local.livekit.track_audio_active",
+      "level": 0.01
+    },
+    {
+      "type": "local.playback.started",
+      "perf_now_ms": 17158.2
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17183.3,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.024,
+      "audio_chunk_rms": 0.002,
+      "audio_chunk_near_zero_pct": 48.281,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0.042,
+      "audio_chunk_longest_near_zero_run_ms": 3.458
+    },
+    {
+      "type": "transcript.delta",
+      "text": "Sure"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17256,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.025,
+      "audio_chunk_rms": 0.002,
+      "audio_chunk_near_zero_pct": 44.948,
+      "audio_chunk_leading_near_zero_ms": 0.417,
+      "audio_chunk_trailing_near_zero_ms": 0.042,
+      "audio_chunk_longest_near_zero_run_ms": 2.333
+    },
+    {
+      "type": "transcript.delta",
+      "text": "!"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17315,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.019,
+      "audio_chunk_rms": 0.002,
+      "audio_chunk_near_zero_pct": 41.719,
+      "audio_chunk_leading_near_zero_ms": 0.083,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 1.708
+    },
+    {
+      "type": "transcript.delta",
+      "text": " Here"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17435.3,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.021,
+      "audio_chunk_rms": 0.003,
+      "audio_chunk_near_zero_pct": 12.656,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.292
+    },
+    {
+      "type": "transcript.delta",
+      "text": "'s"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17474.6,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.006,
+      "audio_chunk_rms": 0.002,
+      "audio_chunk_near_zero_pct": 9.597,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.292
+    },
+    {
+      "type": "transcript.delta",
+      "text": " a"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " short"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17576.4,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.019,
+      "audio_chunk_rms": 0.003,
+      "audio_chunk_near_zero_pct": 13.333,
+      "audio_chunk_leading_near_zero_ms": 0.208,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.458
+    },
+    {
+      "type": "transcript.delta",
+      "text": " and"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17655.9,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.016,
+      "audio_chunk_rms": 0.003,
+      "audio_chunk_near_zero_pct": 18.438,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 1
+    },
+    {
+      "type": "transcript.delta",
+      "text": " sweet"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17714.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.233,
+      "audio_chunk_rms": 0.04,
+      "audio_chunk_near_zero_pct": 0.729,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "transcript.delta",
+      "text": " one"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17799.3,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.348,
+      "audio_chunk_rms": 0.072,
+      "audio_chunk_near_zero_pct": 0.365,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "transcript.delta",
+      "text": ":\n\n"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 17855.6,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.49,
+      "audio_chunk_rms": 0.184,
+      "audio_chunk_near_zero_pct": 0.26,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "transcript.delta",
+      "text": "\""
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18001.3,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.773,
+      "audio_chunk_rms": 0.195,
+      "audio_chunk_near_zero_pct": 0.104,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18035.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.5,
+      "audio_chunk_rms": 0.128,
+      "audio_chunk_near_zero_pct": 0.26,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "transcript.delta",
+      "text": "Life"
+    },
+    {
+      "type": "transcript.delta",
+      "text": " is"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18114.6,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.174,
+      "audio_chunk_rms": 0.052,
+      "audio_chunk_near_zero_pct": 0.573,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.083
+    },
+    {
+      "type": "transcript.delta",
+      "text": " a"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18194.5,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 5120,
+      "audio_chunk_duration_ms": 80,
+      "audio_chunk_sample_count": 1920,
+      "audio_chunk_peak_abs": 0.023,
+      "audio_chunk_rms": 0.003,
+      "audio_chunk_near_zero_pct": 32.344,
+      "audio_chunk_leading_near_zero_ms": 0.042,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 3.667
+    },
+    {
+      "type": "transcript.delta",
+      "text": " journey"
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18253.9,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 41.099,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0.208,
+      "audio_chunk_longest_near_zero_run_ms": 1.792
+    },
+    {
+      "type": "transcript.delta",
+      "text": ","
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18292.8,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0.001,
+      "audio_chunk_near_zero_pct": 29.89,
+      "audio_chunk_leading_near_zero_ms": 0.042,
+      "audio_chunk_trailing_near_zero_ms": 0.083,
+      "audio_chunk_longest_near_zero_run_ms": 1.417
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18373.9,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 43.736,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 1.083,
+      "audio_chunk_longest_near_zero_run_ms": 1.958
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18433.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.002,
+      "audio_chunk_rms": 0.001,
+      "audio_chunk_near_zero_pct": 33.26,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0.083,
+      "audio_chunk_longest_near_zero_run_ms": 0.667
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18473,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.003,
+      "audio_chunk_rms": 0.001,
+      "audio_chunk_near_zero_pct": 21.319,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0.083,
+      "audio_chunk_longest_near_zero_run_ms": 0.417
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18554.7,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.002,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 44.542,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.833
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18573.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.018,
+      "audio_chunk_rms": 0.003,
+      "audio_chunk_near_zero_pct": 20.293,
+      "audio_chunk_leading_near_zero_ms": 0.083,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.833
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18653.9,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.543,
+      "audio_chunk_rms": 0.158,
+      "audio_chunk_near_zero_pct": 0.44,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18709.8,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.73,
+      "audio_chunk_rms": 0.266,
+      "audio_chunk_near_zero_pct": 0,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18753.7,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.383,
+      "audio_chunk_rms": 0.082,
+      "audio_chunk_near_zero_pct": 0.586,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18834.3,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.35,
+      "audio_chunk_rms": 0.107,
+      "audio_chunk_near_zero_pct": 0.073,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18873.6,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.268,
+      "audio_chunk_rms": 0.077,
+      "audio_chunk_near_zero_pct": 0.293,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18934.1,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.498,
+      "audio_chunk_rms": 0.126,
+      "audio_chunk_near_zero_pct": 0.073,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 18973.3,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.539,
+      "audio_chunk_rms": 0.199,
+      "audio_chunk_near_zero_pct": 0.073,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19057.5,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.406,
+      "audio_chunk_rms": 0.113,
+      "audio_chunk_near_zero_pct": 1.392,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.083
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19093.5,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.003,
+      "audio_chunk_rms": 0.001,
+      "audio_chunk_near_zero_pct": 13.26,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.333
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19153.1,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.393,
+      "audio_chunk_rms": 0.128,
+      "audio_chunk_near_zero_pct": 0.586,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.125
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19233.4,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.247,
+      "audio_chunk_rms": 0.106,
+      "audio_chunk_near_zero_pct": 0.44,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.083
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19273.1,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.229,
+      "audio_chunk_rms": 0.072,
+      "audio_chunk_near_zero_pct": 0.513,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19339.7,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.262,
+      "audio_chunk_rms": 0.102,
+      "audio_chunk_near_zero_pct": 0.513,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.083
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19400,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.236,
+      "audio_chunk_rms": 0.067,
+      "audio_chunk_near_zero_pct": 6.227,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.25
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19486.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.132,
+      "audio_chunk_rms": 0.022,
+      "audio_chunk_near_zero_pct": 1.465,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.083
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19528.4,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.293,
+      "audio_chunk_rms": 0.101,
+      "audio_chunk_near_zero_pct": 0.073,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19596.1,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.223,
+      "audio_chunk_rms": 0.077,
+      "audio_chunk_near_zero_pct": 0.293,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19673.7,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.075,
+      "audio_chunk_rms": 0.037,
+      "audio_chunk_near_zero_pct": 0.44,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19722,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.005,
+      "audio_chunk_rms": 0.001,
+      "audio_chunk_near_zero_pct": 24.835,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0.292,
+      "audio_chunk_longest_near_zero_run_ms": 0.542
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19787.1,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 33.919,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 1.542
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19856.4,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 38.022,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 1.708
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 19933.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 40.733,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0.042,
+      "audio_chunk_longest_near_zero_run_ms": 2.667
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20003.4,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.002,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 48.425,
+      "audio_chunk_leading_near_zero_ms": 0.708,
+      "audio_chunk_trailing_near_zero_ms": 3.083,
+      "audio_chunk_longest_near_zero_run_ms": 3.083
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20049.1,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 46.886,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 3.083
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20152.6,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0.001,
+      "audio_chunk_near_zero_pct": 35.165,
+      "audio_chunk_leading_near_zero_ms": 0.542,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 1.292
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20178.9,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 46.74,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 1.5,
+      "audio_chunk_longest_near_zero_run_ms": 1.708
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20273.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.001,
+      "audio_chunk_rms": 0,
+      "audio_chunk_near_zero_pct": 47.912,
+      "audio_chunk_leading_near_zero_ms": 0.083,
+      "audio_chunk_trailing_near_zero_ms": 0.375,
+      "audio_chunk_longest_near_zero_run_ms": 2.125
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20312.1,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.003,
+      "audio_chunk_rms": 0.001,
+      "audio_chunk_near_zero_pct": 37.656,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 1.792
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20379.4,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.443,
+      "audio_chunk_rms": 0.117,
+      "audio_chunk_near_zero_pct": 3.663,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.25
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20462.9,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.605,
+      "audio_chunk_rms": 0.193,
+      "audio_chunk_near_zero_pct": 0.073,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20534.6,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.613,
+      "audio_chunk_rms": 0.175,
+      "audio_chunk_near_zero_pct": 0.147,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20604.2,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.239,
+      "audio_chunk_rms": 0.083,
+      "audio_chunk_near_zero_pct": 0.366,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20663.6,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.105,
+      "audio_chunk_rms": 0.021,
+      "audio_chunk_near_zero_pct": 1.685,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.audio.delta",
+      "perf_now_ms": 20732.5,
+      "sample_rate": 24000,
+      "channels": 1,
+      "format": "pcm16",
+      "audio_base64_length": 3640,
+      "audio_chunk_duration_ms": 56.875,
+      "audio_chunk_sample_count": 1365,
+      "audio_chunk_peak_abs": 0.04,
+      "audio_chunk_rms": 0.009,
+      "audio_chunk_near_zero_pct": 1.538,
+      "audio_chunk_leading_near_zero_ms": 0,
+      "audio_chunk_trailing_near_zero_ms": 0,
+      "audio_chunk_longest_near_zero_run_ms": 0.042
+    },
+    {
+      "type": "assistant.done"
+    },
+    {
+      "type": "metrics.update",
+      "metrics": {
+        "mic_to_first_transcript_ms": 3280.3,
+        "commit_to_first_transcript_ms": 175.17,
+        "commit_to_first_text_ms": null,
+        "commit_to_first_audio_delta_ms": 389.43,
+        "commit_to_first_livekit_egress_ms": 458.01,
+        "commit_to_first_audio_played_ms": null,
+        "full_response_ms": 13335.14
+      },
+      "timestamps": {
+        "t_session_start": 0,
+        "t_microphone_started": 380.24,
+        "t_first_audio_chunk_sent": 380.24,
+        "t_audio_commit_sent": 3485.37,
+        "t_first_transcript_delta": 3660.54,
+        "t_first_text_delta": null,
+        "t_first_audio_delta_received": 3874.8,
+        "t_first_livekit_egress": 3943.38,
+        "t_first_audio_played": null,
+        "t_response_done": 16820.5,
+        "t_barge_in": 9621.1
+      }
+    },
+    {
+      "type": "local.livekit.track_audio_drained",
+      "perf_now_ms": 20997,
+      "silence_ms": 138.8
+    },
+    {
+      "type": "local.playback.drain",
+      "perf_now_ms": 20997.1
+    },
+    {
+      "type": "local.control.send.started",
+      "event_type": "client.session.close",
+      "reliable": true,
+      "sequence": 10,
+      "perf_now_ms": 21050.2
+    },
+    {
+      "type": "local.control.send.resolved",
+      "event_type": "client.session.close",
+      "reliable": true,
+      "sequence": 10,
+      "perf_now_ms": 21050.9,
+      "duration_ms": 0.7
+    },
+    {
+      "type": "local.livekit.track_unsubscribed",
+      "participant_identity": "omni-worker",
+      "participant_sid": "PA_fQVgTBWgGoPr",
+      "track_sid": "TR_AMsTDB6ERk6VGE",
+      "track_name": "assistant",
+      "track_source": "microphone",
+      "kind": "audio"
+    }
+  ],
+  "debugEventTypes": [
+    "local.livekit.track_playback_attached",
+    "local.livekit.track_playback_started",
+    "local.livekit.track_playback_enabled",
+    "local.livekit.track_sync_found",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "session.ready",
+    "local.capture.live",
+    "local.speech.detected",
+    "local.turn.started",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "local.turn.silence",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.commit_timer_fired",
+    "local.turn.commit",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "metrics.update",
+    "metrics.update",
+    "transcript.delta",
+    "metrics.update",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "local.livekit.track_audio_active",
+    "local.playback.started",
+    "assistant.audio.delta",
+    "metrics.update",
+    "transcript.delta",
+    "local.turn.barge_in",
+    "local.control.send.started",
+    "local.speech.detected",
+    "local.control.send.resolved",
+    "local.turn.started",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "local.turn.silence",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "local.turn.resume",
+    "error",
+    "local.playback.drain",
+    "assistant.interrupted",
+    "local.turn.commit_timer_fired",
+    "local.turn.commit",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "local.turn.barge_in",
+    "local.control.send.started",
+    "local.speech.detected",
+    "local.control.send.resolved",
+    "local.turn.started",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "local.turn.silence",
+    "metrics.update",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "local.livekit.track_audio_active",
+    "local.playback.started",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "error",
+    "local.playback.drain",
+    "assistant.interrupted",
+    "local.turn.commit_timer_fired",
+    "local.turn.commit",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "error",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "local.livekit.track_audio_active",
+    "local.playback.started",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "transcript.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.audio.delta",
+    "assistant.done",
+    "metrics.update",
+    "local.livekit.track_audio_drained",
+    "local.playback.drain",
+    "local.control.send.started",
+    "local.control.send.resolved",
+    "local.livekit.track_unsubscribed"
+  ],
+  "metrics": [
+    {
+      "label": "Mic to Transcript",
+      "value": "3280.3 ms"
+    },
+    {
+      "label": "Commit to Transcript",
+      "value": "175.2 ms"
+    },
+    {
+      "label": "Commit to Text",
+      "value": "--"
+    },
+    {
+      "label": "Commit to Audio Delta",
+      "value": "389.4 ms"
+    },
+    {
+      "label": "Commit to LK Egress",
+      "value": "458.0 ms"
+    },
+    {
+      "label": "Commit to Audio Played",
+      "value": "460.0 ms"
+    },
+    {
+      "label": "Full Response",
+      "value": "13335.1 ms"
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: disconnected -> connecting {room: , roomID: undefined, participant: , participantID: }"
+    },
+    {
+      "type": "info",
+      "text": "signal connecting to ws://185.62.58.164:7880/rtc/v1?access_token=%3Credacted%3E&join_request=CAESyw0fiwgAAAAAAAAD7Vtdb-S2FYULtAgMTIDuUx7ve0EPr0h9kIt58NjedoPsZtD96GtliWOrO_qAxPGM8xuSH5B_W1Az3pFHpBO3WyBo-GYfXt7De3ivJB_Ap19_dfLiT8EZijP85s__PHnxh69Ogp9_Ojn9Y71cqvbFjz-d3M3o5LSeEWBRHAXI4hhphCKIkySBAF6_hdcLDhjEZ_SMnuHktJuRyameUaCT03SmtrpMG5KuVvWGlMVW5QYtuyInnSrTSheZBPjHm3cGvmnrdSPnH95efncFFBACYMAhhGhyWs7SdV7UIODD5WL6_rt307-_X0zfnX9cvAJEhIiBAAoJIANEChhEk9Nstj8f7U_Xn6jVTZk20uypm3U35QmldBoMliIGrcotCwL-GgfB1OADlMLi4s2HYzQx6Pkxigwu3o5ApKDVSjW3daWIulOV3pEPY4JoFPMQsiz1rp6yqBpdlGqG9OW6U0V1nVb5UmUz_BwWGXVwioi75JmpyiZS1pDldZ9Vt2nVNXWrSZYdrlQirNtKFkovZZO2adnJVjfkNm_VVsuuazPSXxhZqTu1GuwL4FbrRk6nm83mbKOuW52d1e3NVG0b1RalqnQ3PWSaptcd6VSVE1PYIA0bpjGn6JMU-TRv06Umt_WqVC1pyyzV5FDBpsgVyTKitlpVXVFXHaE4yMqfLCpXnSyLvoM7pdeNTDPdpF3Xt3SRy510Krurq9W9-bnIFFkv2_RGvl-vvn9Amk0uefb9X9ir283Fm_KO3s1ff6u_nf9rMdf9RRXVjWqbtqi07G5TEoQRhFcSuZyfy6u5PE_kuZCvAomh5JeSXsmLSM5DeUHl5ZUMEhkKKebyIpZIZZLI-aXESF7OJaMy4TIMJTuXPJHJlQyYyZCED0erG21Ekbotsk8r9bkVyvX2889tV_yg_ED6gfztDyT6gfQD6QfytzOQwe9rIO-KXNkHUkQgYhAJCAFIKSBFYCGwCFgMLAGkDJByQBoDUvO7AEQOiCEgRoAYA2ICTACnwBF4AJwB58BD4BHwGHgCiAIwMKOOwMWT0y4i-LhIpoI-nioRQ6u3YziBjwsxhoU12hRoCzdF2-JZaA1nkT06tkcnjrMw-FsQccsCd2yIXRtcDMKxAR0MGLo22Cs2l-_YYD8Sc5yIU2s4R0d4YA93KMrt5fIQzj_iGLbXymN7tEN7FP2baYQH9krNYKxXzVJlYwYBy5XaLlVGKDus9u8IEUPa6JmIDkgCTVsvi5UiRT4bRIpdZHJ4DVE6DA0GC9jH4oCIhcPYw0uKRX0oCw9IPIxkBzzZRcYDHgb9K4ek3X1ZKt3e7_4-V_kMXzZp9knp4ofUPOZIWefKgPvMu21FPuMBpbgcpOT7o7MBFj-Phv4KmmRPM6xGfIFq1CMafKhGDLDwC1RzRLO7RMRwgD1TNFs1-WPRcC8aHkRjz9TMVsxjFk53bXZQjON_XcmSP-YIeg5-GAP-zE621HHMsbt6fuhj_nDxRb6dhQ8JZvSlLlQ7mHS-u01-uEweW3fiaOfugvigqQO6v7OBnubJ1qRFSzZFldcb85ygh2fWL3ymighu6vqGtKq8PsKPv14HS1lWwrJoj9AqzT5ZIGhWxSM4cVAmbsrESpmMKRMrpXm2WjnNgovUrFlYDXxM-4Ad87LQTstCJysLbaQsHHHuoRFl7KCM3ZSxlTIeU8YOdZlLXfaEusyuLrOoyxy8jlrNgpvXWq2Bx7yueoWLVzzBK-y8wsIr7LzoaCez4ORFa0MZeMSL9pYyLx8H7xM6o11ntOiMdp2ZQ2bmVplZRWZjjZldYo52Sj7-Y36wZKHkOKLcQyNKx_Bw9-xw6-jw8eRw--BwRx9xdxtxaxfxcRNxew9xRwtxdwdxawPxcf9we_twR_vwcfs8GDNPmhi6Xi47pSdf3JBB1tOym6aRvTNA6rZQle4_UCb_a-MmfF4RzSq9r9ea5GqV3g_SRM9Ls6szqyutKk30fTMUJP5PcumiLKqbQZbkeVmyelW3pGvSbHiUX21rPdwl_cUN5vdOtyotyeOtT_uC_db-Q0_lZJTD6qr1H6veVfOumnfVvKvmXTXvqnlXzbtq3lXzrpp31byr5l0176od4d5V866ad9W8q-ZdtadcNT7xrpp31byr5l0176p5V827at5V866ad9W8q-ZdNe-qeVfNu2reVfOumnfVvKv2PFet_-T8_bhqadOsiqyfmr23dmnMtXcX7xewu3-SpzrNbtOqMv8EbHO9rDpG_y_adZluiHkqyHD_B0KZbkmpui69UcToKIMoQM4np9-c_BttN8VZsUYAAA%3D%3D {room: undefined, roomID: undefined, participant: undefined, participantID: undefined, reconnect: undefined}"
+    },
+    {
+      "type": "info",
+      "text": "signal connected {room: undefined, roomID: undefined, participant: undefined, participantID: undefined}"
+    },
+    {
+      "type": "info",
+      "text": "connected to Livekit Server edition: 0, version: 1.12.0, protocol: 17, region: , nodeId: ND_UxJXdxFXDkhN, debugInfo: , agentProtocol: 1 {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-e60123245e28, participantID: PA_r9LRPJsjUFmF}"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: connecting -> connected {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-e60123245e28, participantID: PA_r9LRPJsjUFmF}"
+    },
+    {
+      "type": "warning",
+      "text": "The ScriptProcessorNode is deprecated. Use AudioWorkletNode instead. (https://bit.ly/audio-worklet)"
+    },
+    {
+      "type": "info",
+      "text": "disconnect from room {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-e60123245e28, participantID: PA_r9LRPJsjUFmF}"
+    },
+    {
+      "type": "info",
+      "text": "unpublishing track {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-e60123245e28, participantID: PA_r9LRPJsjUFmF, trackID: TR_AMCteARPj5VX9W}"
+    },
+    {
+      "type": "info",
+      "text": "connection state changed: connected -> disconnected {room: omni-room, roomID: RM_FjXvdrVPn35b, participant: browser-e60123245e28, participantID: PA_r9LRPJsjUFmF}"
+    }
+  ],
+  "pageErrors": []
+}

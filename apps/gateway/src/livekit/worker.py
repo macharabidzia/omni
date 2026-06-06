@@ -16,7 +16,17 @@ from src.realtime.session import RealtimeSession
 
 logger = logging.getLogger(__name__)
 ASSISTANT_TRACK_NAME = "assistant"
+ASSISTANT_TRACK_MAX_BITRATE = 128_000
 PCM_AUDIO_PACKET_TYPE = 1
+
+
+def build_assistant_track_publish_options() -> rtc.TrackPublishOptions:
+    options = rtc.TrackPublishOptions()
+    options.source = rtc.TrackSource.SOURCE_MICROPHONE
+    options.dtx = False
+    options.red = True
+    options.audio_encoding.max_bitrate = ASSISTANT_TRACK_MAX_BITRATE
+    return options
 
 
 class ParticipantBridgeSession:
@@ -35,69 +45,74 @@ class ParticipantBridgeSession:
         self.preroll_audio = deque(maxlen=settings.livekit_preroll_frames)
         self.turn_active = False
         self.started = False
+        self.control_lock = asyncio.Lock()
         self.audio_task: asyncio.Task | None = None
         self.audio_started_for_turn = False
+        self.livekit_egress_started_for_turn = False
         self.pending_pre_audio_payloads: list[dict] = []
         self.debug_audio_deltas = False
         self.session = RealtimeSession(
             settings=settings,
             emit_event=self._emit_runtime_event,
         )
+        self.audio_publisher.frame_sink = self._handle_published_frame
 
     async def handle_control_message(self, payload: dict) -> None:
-        event_type = payload.get("type")
-        if event_type == "session.start":
-            self.debug_audio_deltas = bool(payload.get("debug_audio_deltas", False))
-            await self.session.start_session(
-                {
-                    "speaker": payload.get("speaker", self.settings.supported_speakers[0]),
-                    "modalities": payload.get("modalities", list(self.settings.default_modalities)),
-                    "input_sample_rate": self.settings.livekit_input_sample_rate,
-                    "output_audio": True,
-                }
+        async with self.control_lock:
+            event_type = payload.get("type")
+            if event_type == "session.start":
+                self.debug_audio_deltas = bool(payload.get("debug_audio_deltas", False))
+                await self.session.start_session(
+                    {
+                        "speaker": payload.get("speaker", self.settings.supported_speakers[0]),
+                        "modalities": payload.get("modalities", list(self.settings.default_modalities)),
+                        "input_sample_rate": self.settings.livekit_input_sample_rate,
+                        "output_audio": True,
+                    }
+                )
+                self.started = True
+                return
+
+            if not self.started:
+                await self._publish_control(
+                    {
+                        "type": "error",
+                        "code": "SESSION_NOT_STARTED",
+                        "message": "Send session.start before speech control events.",
+                    }
+                )
+                return
+
+            if event_type == "client.speech.start":
+                await self._start_turn()
+                return
+
+            if event_type == "client.speech.commit":
+                self.turn_active = False
+                self.preroll_audio.clear()
+                await self.session.commit_audio()
+                return
+
+            if event_type == "client.interrupt":
+                self.turn_active = False
+                self.preroll_audio.clear()
+                self.audio_started_for_turn = False
+                self.livekit_egress_started_for_turn = False
+                self.pending_pre_audio_payloads.clear()
+                await self.audio_publisher.clear()
+                await self.session.cancel_response()
+                await self._publish_control({"type": "assistant.interrupted"})
+                return
+
+            if event_type == "client.session.close":
+                await self.close()
+                return
+
+            logger.debug(
+                "Ignoring unsupported LiveKit control event type=%s participant=%s",
+                event_type,
+                self.participant_identity,
             )
-            self.started = True
-            return
-
-        if not self.started:
-            await self._publish_control(
-                {
-                    "type": "error",
-                    "code": "SESSION_NOT_STARTED",
-                    "message": "Send session.start before speech control events.",
-                }
-            )
-            return
-
-        if event_type == "client.speech.start":
-            await self._start_turn()
-            return
-
-        if event_type == "client.speech.commit":
-            self.turn_active = False
-            self.preroll_audio.clear()
-            await self.session.commit_audio()
-            return
-
-        if event_type == "client.interrupt":
-            self.turn_active = False
-            self.preroll_audio.clear()
-            self.audio_started_for_turn = False
-            self.pending_pre_audio_payloads.clear()
-            await self.audio_publisher.clear()
-            await self.session.cancel_response()
-            await self._publish_control({"type": "assistant.interrupted"})
-            return
-
-        if event_type == "client.session.close":
-            await self.close()
-            return
-
-        logger.debug(
-            "Ignoring unsupported LiveKit control event type=%s participant=%s",
-            event_type,
-            self.participant_identity,
-        )
 
     async def bind_audio_track(self, track: rtc.Track) -> None:
         if self.audio_task is not None:
@@ -133,6 +148,7 @@ class ParticipantBridgeSession:
         self.started = False
         self.preroll_audio.clear()
         self.audio_started_for_turn = False
+        self.livekit_egress_started_for_turn = False
         self.pending_pre_audio_payloads.clear()
         if self.audio_task is not None:
             self.audio_task.cancel()
@@ -150,6 +166,7 @@ class ParticipantBridgeSession:
 
         self.turn_active = True
         self.audio_started_for_turn = False
+        self.livekit_egress_started_for_turn = False
         self.pending_pre_audio_payloads.clear()
         pending_preroll = list(self.preroll_audio)
         self.preroll_audio.clear()
@@ -186,6 +203,12 @@ class ParticipantBridgeSession:
             )
         finally:
             await stream.aclose()
+
+    async def _handle_published_frame(self, _frame_bytes: bytes) -> None:
+        if self.livekit_egress_started_for_turn:
+            return
+        self.livekit_egress_started_for_turn = True
+        self.session.mark_livekit_egress_started()
 
     async def _emit_runtime_event(self, payload: dict) -> None:
         event_type = payload.get("type")
@@ -275,14 +298,16 @@ class LiveKitWorker:
             ASSISTANT_TRACK_NAME,
             self.audio_source,
         )
-        publish_options = rtc.TrackPublishOptions()
-        publish_options.source = rtc.TrackSource.SOURCE_MICROPHONE
+        publish_options = build_assistant_track_publish_options()
         await self.room.local_participant.publish_track(assistant_track, publish_options)
         logger.info(
-            "LiveKit worker published assistant track sample_rate=%s frame_ms=%s queue_ms=%s",
+            "LiveKit worker published assistant track sample_rate=%s frame_ms=%s queue_ms=%s dtx=%s red=%s max_bitrate=%s",
             self.settings.livekit_output_sample_rate,
             self.settings.livekit_output_frame_ms,
             self.settings.livekit_output_queue_ms,
+            publish_options.dtx,
+            publish_options.red,
+            publish_options.audio_encoding.max_bitrate,
         )
 
         await self.stop_event.wait()

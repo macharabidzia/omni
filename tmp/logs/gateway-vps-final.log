@@ -1,0 +1,461 @@
+INFO:     Started server process [50687]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-06-06 18:04:50,257 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+/workspace/omni/.venv-qwen/lib/python3.12/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 9 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+  return self._jws.encode(
+INFO:     127.0.0.1:51970 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:05:04,376 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55842 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:05:04,859 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55850 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:05:05,961 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55860 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55866 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:06:07,261 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60396 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:06:28,075 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:38104 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:06:36,281 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58556 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:06:36,764 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58572 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:06:37,895 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58582 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58588 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:07:21,415 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:51902 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:07:21,905 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:51916 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:07:23,011 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:51928 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46628 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:07:35,572 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55308 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:07:36,053 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55322 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:07:37,145 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55330 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55340 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:07:50,054 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49026 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:07:50,537 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49038 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:07:51,640 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49042 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49044 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:08:32,208 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:34308 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:08:51,890 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49140 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:09:10,884 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36414 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:09:11,369 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36426 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:09:12,443 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36436 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36446 - "POST /livekit/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53070 - "GET /ready HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47534 - "GET /ready HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:57150 - "GET /ready HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:36650 - "GET /ready HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:39404 - "GET /ready HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:42698 - "GET /ready HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:43550 - "GET /ready HTTP/1.1" 503 Service Unavailable
+2026-06-06 18:20:09,751 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39298 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:21:42,339 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40840 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:21:53,117 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33154 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:21:53,602 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48936 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:21:54,687 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48938 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48944 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:22:44,811 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48464 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:22:45,298 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48468 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:22:46,387 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48482 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48488 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:23:22,738 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45486 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:23:23,221 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45492 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:23:24,353 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36896 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36900 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:23:36,584 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58614 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:23:37,075 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58620 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:23:38,175 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58630 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58638 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:23:51,057 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:47182 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:23:51,539 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:47198 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:23:52,633 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:47202 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47218 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:24:04,469 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37760 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:24:04,956 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37762 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:24:06,035 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37778 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37794 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:24:19,513 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:34470 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:24:20,012 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:34472 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:24:21,126 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:34486 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34490 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:30:31,706 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56080 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:17,828 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49440 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:18,307 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49456 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:19,401 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49464 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49480 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:31:28,002 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37254 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:28,493 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37266 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:29,598 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37280 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37286 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:31:38,239 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46152 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:38,721 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46156 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:39,829 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46160 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46166 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:31:48,570 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40672 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:49,052 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40688 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:31:50,170 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40694 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40710 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:32:55,373 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56268 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:33:03,649 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37218 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:33:28,348 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44764 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:33:39,625 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58886 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:33:40,108 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58902 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:33:41,211 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58918 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58926 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:36:08,236 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56736 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:36:16,743 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56910 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:36:17,222 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56916 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:36:18,321 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56928 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56938 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:37:04,540 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56936 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:40:09,045 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59692 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:40:09,527 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59708 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:40:10,621 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59724 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59736 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:40:35,054 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55306 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:40:35,536 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55308 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:40:36,648 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55318 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55326 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:41:09,808 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60416 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:41:10,306 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60432 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:41:11,392 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60434 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60442 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:41:20,032 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:35464 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:41:20,516 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:35474 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:41:21,590 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:35478 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35490 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:41:30,161 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54060 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:41:30,665 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54062 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:41:31,763 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54064 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54072 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:42:39,114 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56068 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:42:39,597 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56084 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:42:40,699 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56096 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56106 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:42:56,644 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:35256 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:43:27,453 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56096 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:43:27,940 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56106 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:43:29,011 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56120 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56130 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:44:23,458 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45004 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:44:23,956 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45014 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:44:25,035 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45016 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45028 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:44:37,235 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48550 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:44:37,716 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48558 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:44:38,799 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48570 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48578 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:46:50,231 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45342 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:46:50,710 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45346 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:46:51,813 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45358 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45362 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:47:03,884 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46140 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:47:04,377 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46142 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:47:05,458 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46154 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46170 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:47:18,159 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59142 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:47:18,645 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59158 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:47:19,764 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59168 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59182 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:47:33,202 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:52976 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:47:33,684 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37792 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:47:34,778 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37796 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37802 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:47:46,569 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60226 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:47:47,053 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60242 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:47:48,142 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60248 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60254 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:48:00,711 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57970 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:01,209 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57972 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:02,331 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57980 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57990 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:48:13,640 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37536 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:14,122 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37538 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:15,210 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37542 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37558 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:48:27,530 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45322 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:28,021 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45334 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:29,107 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45340 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45352 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:48:41,771 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39634 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:42,254 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39650 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:43,360 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39656 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40194 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:48:55,199 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60158 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:55,696 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60166 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:48:56,792 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60172 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60174 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:50:25,812 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48216 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:50:26,295 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48224 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:50:27,386 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48238 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48244 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:50:40,244 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59322 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:50:40,742 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59338 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:50:41,824 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59350 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59356 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:50:54,223 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57434 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:50:54,709 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57446 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:50:55,799 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57450 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57466 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:51:29,525 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55562 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:51:30,008 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55576 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:51:31,101 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55586 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55598 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:51:42,502 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44632 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:51:42,987 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44638 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:51:44,122 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45534 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45550 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:52:36,703 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33768 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:52:53,402 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53770 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:52:53,891 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53776 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:52:54,971 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53782 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53794 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:53:07,029 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33748 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:53:07,522 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33762 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:53:08,609 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33764 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33766 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:53:20,706 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36070 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:53:21,195 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36084 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:53:22,296 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36096 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36112 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:53:34,324 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42680 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:53:34,799 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42686 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:53:35,898 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42688 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42696 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:53:48,275 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55800 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:53:48,766 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55816 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:53:49,862 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55826 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55830 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:54:27,824 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39706 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:54:28,313 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39722 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:54:29,414 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39730 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39740 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:54:42,657 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:52132 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:54:43,143 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:52138 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:54:44,254 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:41286 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41300 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:54:57,150 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44272 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:54:57,649 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44274 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:54:58,741 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44278 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44294 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:56:47,257 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42956 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:56:47,738 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42970 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:56:48,821 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42976 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42988 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:57:02,313 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54880 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:57:02,792 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54884 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:57:03,906 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:38752 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38760 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 18:57:17,112 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40082 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:57:17,612 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40098 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 18:57:18,727 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40106 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40110 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 19:02:33,240 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53620 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:02:55,018 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54484 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:06,485 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53486 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:06,995 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53502 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:08,093 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53508 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53520 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 19:03:21,574 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:52716 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:22,058 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:52732 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:23,161 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:52738 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54304 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 19:03:35,851 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60202 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:36,357 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60204 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:37,438 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60214 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60218 - "POST /livekit/session HTTP/1.1" 200 OK
+INFO:     100.64.1.65:38220 - "GET / HTTP/1.1" 404 Not Found
+2026-06-06 19:03:48,881 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40198 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:49,365 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40206 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:03:50,464 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40212 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40218 - "POST /livekit/session HTTP/1.1" 200 OK
+2026-06-06 19:04:02,124 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54760 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:04:02,618 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54766 - "GET /ready HTTP/1.1" 200 OK
+2026-06-06 19:04:03,731 INFO httpx HTTP Request: GET http://127.0.0.1:8091/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:35546 - "GET /ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35560 - "POST /livekit/session HTTP/1.1" 200 OK

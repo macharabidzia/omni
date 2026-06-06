@@ -74,21 +74,28 @@ class RecordingAudioPublisher:
         self.enqueued_audio: list[tuple[str, int]] = []
         self.finalize_calls = 0
         self.clear_calls = 0
+        self.queued_duration = 0.0
 
     async def enqueue_base64(self, audio_base64: str, *, input_sample_rate: int) -> None:
         self.enqueued_audio.append((audio_base64, input_sample_rate))
+        self.queued_duration += 0.02
 
     async def finalize_turn(self) -> None:
         self.finalize_calls += 1
 
     async def clear(self) -> None:
         self.clear_calls += 1
+        self.queued_duration = 0.0
+
+    def queued_duration_seconds(self) -> float:
+        return self.queued_duration
 
 
 class FakeRealtimeSession:
     def __init__(self, *, settings: Settings, emit_event) -> None:
         del settings
         self.emit_event = emit_event
+        self.livekit_egress_marks = 0
 
     async def start_session(self, _payload: dict) -> None:
         return None
@@ -114,6 +121,9 @@ class FakeRealtimeSession:
 
     async def close(self) -> None:
         return None
+
+    async def mark_livekit_egress_started(self) -> None:
+        self.livekit_egress_marks += 1
 
 
 def test_livekit_worker_uses_configured_audio_queue(monkeypatch) -> None:
@@ -142,6 +152,15 @@ def test_livekit_output_defaults_match_supported_transport() -> None:
     assert settings.livekit_output_sample_rate == 48000
     assert settings.livekit_output_frame_ms == 20
     assert 20 <= settings.livekit_output_queue_ms <= 80
+
+
+def test_assistant_track_publish_options_disable_dtx_and_enable_red() -> None:
+    options = worker_module.build_assistant_track_publish_options()
+
+    assert options.source == worker_module.rtc.TrackSource.SOURCE_MICROPHONE
+    assert options.dtx is False
+    assert options.red is True
+    assert options.audio_encoding.max_bitrate == worker_module.ASSISTANT_TRACK_MAX_BITRATE
 
 
 @pytest.mark.asyncio

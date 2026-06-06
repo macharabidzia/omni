@@ -29,8 +29,11 @@ type AssistantCaptureWindow = Window & {
 
 const AUDIO_PACKET_TYPE_PCM16 = 1;
 const AUDIO_PACKET_HEADER_BYTES = 6;
+const ASSISTANT_TRACK_NAME = "assistant";
 const ASSISTANT_TRACK_ACTIVITY_THRESHOLD = 0.002;
 const ASSISTANT_TRACK_DRAIN_MS = 120;
+const ASSISTANT_TRACK_PLAYOUT_DELAY_MS = resolveNumberQueryParam("playoutDelayMs", 80);
+const LIVEKIT_WEB_AUDIO_MIX = resolveBooleanQueryParam("webAudioMix", true);
 
 export class RealtimeClient {
   private room: Room | null = null;
@@ -99,7 +102,7 @@ export class RealtimeClient {
       adaptiveStream: false,
       dynacast: false,
       stopLocalTrackOnUnpublish: false,
-      webAudioMix: true,
+      webAudioMix: LIVEKIT_WEB_AUDIO_MIX,
     });
     this.room = room;
 
@@ -129,7 +132,7 @@ export class RealtimeClient {
         track_source: publication.source,
         kind: track.kind,
       });
-      void this.handleTrackSubscribed(track, publication.trackSid);
+      void this.handleTrackSubscribed(track, publication.trackSid, publication.trackName);
     });
 
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
@@ -344,14 +347,38 @@ export class RealtimeClient {
     await this.localMonitor.attachStream(this.microphoneStream);
   }
 
-  private async handleTrackSubscribed(track: RemoteTrack, trackSid?: string): Promise<void> {
+  private async handleTrackSubscribed(
+    track: RemoteTrack,
+    trackSid?: string,
+    trackName?: string,
+  ): Promise<void> {
     if (track.kind !== Track.Kind.Audio) {
+      return;
+    }
+    if ((trackName ?? "") !== ASSISTANT_TRACK_NAME) {
+      this.options.onDebugEvent({
+        type: "local.livekit.track_ignored",
+        track_sid: trackSid ?? track.sid ?? null,
+        track_name: trackName ?? "",
+        kind: track.kind,
+      });
       return;
     }
 
     const resolvedTrackSid = trackSid ?? track.sid ?? null;
     if (resolvedTrackSid !== null && this.assistantTrackSid === resolvedTrackSid) {
       return;
+    }
+
+    if (ASSISTANT_TRACK_PLAYOUT_DELAY_MS >= 0) {
+      const requestedPlayoutDelaySeconds = ASSISTANT_TRACK_PLAYOUT_DELAY_MS / 1000;
+      track.setPlayoutDelay(requestedPlayoutDelaySeconds);
+      this.options.onDebugEvent({
+        type: "local.livekit.track_playout_delay_configured",
+        track_sid: resolvedTrackSid,
+        requested_delay_ms: ASSISTANT_TRACK_PLAYOUT_DELAY_MS,
+        effective_delay_ms: round(track.getPlayoutDelay() * 1000),
+      });
     }
 
     const stream = track.mediaStream ?? new MediaStream([track.mediaStreamTrack]);
@@ -365,6 +392,7 @@ export class RealtimeClient {
     this.assistantPlayer.reset();
     this.syncAssistantCaptureStream();
     await this.assistantTrackMonitor.attachStream(stream, { playback: true });
+    this.syncAssistantCaptureStream();
     this.options.onDebugEvent({
       type: "local.livekit.track_playback_enabled",
       track_sid: resolvedTrackSid,
@@ -420,8 +448,10 @@ export class RealtimeClient {
           track_name: publication.trackName,
           track_source: publication.source,
         });
-        await this.handleTrackSubscribed(track, publication.trackSid);
-        return;
+        await this.handleTrackSubscribed(track, publication.trackSid, publication.trackName);
+        if (this.assistantTrackSid !== null) {
+          return;
+        }
       }
     }
     this.options.onDebugEvent({
@@ -434,7 +464,9 @@ export class RealtimeClient {
   private syncAssistantCaptureStream(): void {
     const captureWindow = window as AssistantCaptureWindow;
     captureWindow.__assistantCaptureStream =
-      this.assistantTrackStream ?? this.assistantPlayer.captureStream();
+      this.assistantTrackMonitor.captureStream() ??
+      this.assistantTrackStream ??
+      this.assistantPlayer.captureStream();
   }
 
   private clearAssistantCaptureStream(): void {
@@ -543,4 +575,28 @@ function normalizeLivekitPayload(payload: Uint8Array | ArrayBuffer): Uint8Array 
 
 function round(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function resolveNumberQueryParam(name: string, fallback: number): number {
+  const raw = new URLSearchParams(window.location.search).get(name);
+  if (raw === null || raw.trim() === "") {
+    return fallback;
+  }
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function resolveBooleanQueryParam(name: string, fallback: boolean): boolean {
+  const raw = new URLSearchParams(window.location.search).get(name);
+  if (raw === null || raw.trim() === "") {
+    return fallback;
+  }
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "1" || normalized === "true") {
+    return true;
+  }
+  if (normalized === "0" || normalized === "false") {
+    return false;
+  }
+  return fallback;
 }

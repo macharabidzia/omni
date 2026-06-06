@@ -1,0 +1,68 @@
+{
+  "runs": [
+    {
+      "run": "run1",
+      "delta": 327.2,
+      "egress": 395.8,
+      "played": 769.8,
+      "status": "ok",
+      "suspicious": 0,
+      "max_suspicious_ms": 0.0,
+      "internal": 0,
+      "max_internal_ms": 0.0
+    },
+    {
+      "run": "run2",
+      "delta": 372.1,
+      "egress": 438.1,
+      "played": 809.9,
+      "status": "ok",
+      "suspicious": 0,
+      "max_suspicious_ms": 0.0,
+      "internal": 0,
+      "max_internal_ms": 0.0
+    },
+    {
+      "run": "run3",
+      "delta": 342.4,
+      "egress": 406.4,
+      "played": 781.2,
+      "status": "ok",
+      "suspicious": 0,
+      "max_suspicious_ms": 0.0,
+      "internal": 0,
+      "max_internal_ms": 0.0
+    },
+    {
+      "run": "run4",
+      "delta": 346.9,
+      "egress": 414.9,
+      "played": 779.9,
+      "status": "ok",
+      "suspicious": 0,
+      "max_suspicious_ms": 0.0,
+      "internal": 0,
+      "max_internal_ms": 0.0
+    },
+    {
+      "run": "run5",
+      "delta": 356.3,
+      "egress": 429.5,
+      "played": 810.7,
+      "status": "ok",
+      "suspicious": 0,
+      "max_suspicious_ms": 0.0,
+      "internal": 1,
+      "max_internal_ms": 30.04
+    }
+  ],
+  "summary": {
+    "ok_runs": 5,
+    "warning_runs": 0,
+    "suspicious_runs": 0,
+    "max_suspicious_ms": 0.0,
+    "p95_delta": 372.1,
+    "p95_egress": 438.1,
+    "p95_played": 810.7
+  }
+}

@@ -21,3 +21,18 @@ Nvidia Decoder is supported.
 2026-06-06 17:37:16,336 INFO src.realtime.session Session 2eda8a45-3d36-46e2-841d-3ab5b22671c2 received first input audio chunk duration_ms=20 bytes=640
 2026-06-06 17:37:19,778 INFO src.realtime.session Session 2eda8a45-3d36-46e2-841d-3ab5b22671c2 committing 173 audio chunks (110720 bytes) to Qwen
 2026-06-06 17:37:25,937 INFO src.realtime.session Session 2eda8a45-3d36-46e2-841d-3ab5b22671c2 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 17:47:35,762 INFO src.realtime.session Session 66df3f35-7323-47a5-874c-f7bf034a5079 started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 17:47:36,075 INFO src.realtime.session Session 66df3f35-7323-47a5-874c-f7bf034a5079 received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 17:47:39,191 INFO src.realtime.session Session 66df3f35-7323-47a5-874c-f7bf034a5079 committing 164 audio chunks (104960 bytes) to Qwen
+2026-06-06 17:47:40,781 INFO src.realtime.session Session 66df3f35-7323-47a5-874c-f7bf034a5079 received first assistant audio delta
+2026-06-06 17:47:45,510 INFO src.realtime.session Session 66df3f35-7323-47a5-874c-f7bf034a5079 response done assistant_audio_chunks=74
+2026-06-06 17:47:54,136 INFO src.realtime.session Session 8983c6be-bad8-4371-a0da-68f1adb00ada started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 17:47:54,451 INFO src.realtime.session Session 8983c6be-bad8-4371-a0da-68f1adb00ada received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 17:47:57,607 INFO src.realtime.session Session 8983c6be-bad8-4371-a0da-68f1adb00ada committing 166 audio chunks (106240 bytes) to Qwen
+2026-06-06 17:47:57,965 INFO src.realtime.session Session 8983c6be-bad8-4371-a0da-68f1adb00ada received first assistant audio delta
+2026-06-06 17:48:02,100 INFO src.realtime.session Session 8983c6be-bad8-4371-a0da-68f1adb00ada response done assistant_audio_chunks=62
+2026-06-06 17:49:04,543 INFO src.realtime.session Session 5ea7a5e0-dfca-40d8-9056-ba1545c6660c started speaker=Ethan modalities=text,audio output_audio=True
+2026-06-06 17:49:04,862 INFO src.realtime.session Session 5ea7a5e0-dfca-40d8-9056-ba1545c6660c received first input audio chunk duration_ms=20 bytes=640
+2026-06-06 17:49:08,028 INFO src.realtime.session Session 5ea7a5e0-dfca-40d8-9056-ba1545c6660c committing 167 audio chunks (106880 bytes) to Qwen
+2026-06-06 17:49:08,399 INFO src.realtime.session Session 5ea7a5e0-dfca-40d8-9056-ba1545c6660c received first assistant audio delta
+2026-06-06 17:49:11,870 INFO src.realtime.session Session 5ea7a5e0-dfca-40d8-9056-ba1545c6660c response done assistant_audio_chunks=49

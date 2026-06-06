@@ -1,0 +1,94 @@
+{
+  "status": "ok",
+  "input_path": "/workspace/omni/tmp/playwright-live-check/vps-playback-pl60-batch5/run2.wav",
+  "sample_rate": 48000,
+  "duration_ms": 8533.33,
+  "active_region": {
+    "start_ms": 3936.52,
+    "end_ms": 8294.21,
+    "duration_ms": 4357.71
+  },
+  "edge_padding_ms": 60.0,
+  "context_window_ms": 10.0,
+  "context_active_threshold": 32,
+  "edge_silence_runs_ge_threshold": 0,
+  "longest_edge_silence_ms": 0.0,
+  "edge_silence_runs": [],
+  "internal_silence_runs_ge_threshold": 7,
+  "longest_internal_silence_ms": 166.38,
+  "internal_silence_runs": [
+    {
+      "start_ms_in_active": 563.56,
+      "end_ms_in_active": 623.58,
+      "length_ms": 60.04,
+      "start_ms_absolute": 4500.08,
+      "end_ms_absolute": 4560.1,
+      "pre_peak_abs": 13,
+      "post_peak_abs": 302
+    },
+    {
+      "start_ms_in_active": 659.81,
+      "end_ms_in_active": 690.88,
+      "length_ms": 31.08,
+      "start_ms_absolute": 4596.33,
+      "end_ms_absolute": 4627.4,
+      "pre_peak_abs": 43,
+      "post_peak_abs": 18
+    },
+    {
+      "start_ms_in_active": 900.85,
+      "end_ms_in_active": 943.25,
+      "length_ms": 42.42,
+      "start_ms_absolute": 4837.38,
+      "end_ms_absolute": 4879.77,
+      "pre_peak_abs": 27,
+      "post_peak_abs": 218
+    },
+    {
+      "start_ms_in_active": 981.08,
+      "end_ms_in_active": 1147.44,
+      "length_ms": 166.38,
+      "start_ms_absolute": 4917.6,
+      "end_ms_absolute": 5083.96,
+      "pre_peak_abs": 27,
+      "post_peak_abs": 5815
+    },
+    {
+      "start_ms_in_active": 3591.52,
+      "end_ms_in_active": 3611.83,
+      "length_ms": 20.33,
+      "start_ms_absolute": 7528.04,
+      "end_ms_absolute": 7548.35,
+      "pre_peak_abs": 12,
+      "post_peak_abs": 11
+    },
+    {
+      "start_ms_in_active": 3645.9,
+      "end_ms_in_active": 3667.15,
+      "length_ms": 21.27,
+      "start_ms_absolute": 7582.42,
+      "end_ms_absolute": 7603.67,
+      "pre_peak_abs": 9,
+      "post_peak_abs": 9
+    },
+    {
+      "start_ms_in_active": 3667.19,
+      "end_ms_in_active": 3750.52,
+      "length_ms": 83.35,
+      "start_ms_absolute": 7603.71,
+      "end_ms_absolute": 7687.04,
+      "pre_peak_abs": 9,
+      "post_peak_abs": 5387
+    }
+  ],
+  "suspicious_internal_silence_runs_ge_threshold": 0,
+  "longest_suspicious_internal_silence_ms": 0.0,
+  "suspicious_internal_silence_runs": [],
+  "clipped_samples": 0,
+  "boundary_absdiff": {
+    "count": 217,
+    "max": 8644,
+    "p95": 1987
+  },
+  "warnings": []
+}

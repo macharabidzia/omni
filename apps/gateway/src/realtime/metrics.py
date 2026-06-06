@@ -11,6 +11,7 @@ class SessionMetrics:
     t_first_transcript_delta: float | None = None
     t_first_text_delta: float | None = None
     t_first_audio_delta_received: float | None = None
+    t_first_livekit_egress: float | None = None
     t_first_audio_played: float | None = None
     t_response_done: float | None = None
     t_barge_in: float | None = None
@@ -31,6 +32,7 @@ class SessionMetrics:
                 "t_first_transcript_delta": self._relative_ms(self.t_first_transcript_delta),
                 "t_first_text_delta": self._relative_ms(self.t_first_text_delta),
                 "t_first_audio_delta_received": self._relative_ms(self.t_first_audio_delta_received),
+                "t_first_livekit_egress": self._relative_ms(self.t_first_livekit_egress),
                 "t_first_audio_played": self._relative_ms(self.t_first_audio_played),
                 "t_response_done": self._relative_ms(self.t_response_done),
                 "t_barge_in": self._relative_ms(self.t_barge_in),
@@ -51,6 +53,10 @@ class SessionMetrics:
                 "commit_to_first_audio_delta_ms": self._delta_ms(
                     self.t_audio_commit_sent,
                     self.t_first_audio_delta_received,
+                ),
+                "commit_to_first_livekit_egress_ms": self._delta_ms(
+                    self.t_audio_commit_sent,
+                    self.t_first_livekit_egress,
                 ),
                 "commit_to_first_audio_played_ms": self._delta_ms(
                     self.t_audio_commit_sent,

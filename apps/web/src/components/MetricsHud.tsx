@@ -9,6 +9,7 @@ const metricLabels: Record<keyof GatewayMetrics, string> = {
   commit_to_first_transcript_ms: "Commit to Transcript",
   commit_to_first_text_ms: "Commit to Text",
   commit_to_first_audio_delta_ms: "Commit to Audio Delta",
+  commit_to_first_livekit_egress_ms: "Commit to LK Egress",
   commit_to_first_audio_played_ms: "Commit to Audio Played",
   full_response_ms: "Full Response",
 };
@@ -35,4 +36,3 @@ export function MetricsHud(props: MetricsHudProps) {
     </section>
   );
 }
-

@@ -44,6 +44,7 @@ class RealtimeSession:
         self.metrics = SessionMetrics()
         self.last_metrics_snapshot: dict | None = None
         self.send_lock = asyncio.Lock()
+        self.qwen_session_lock = asyncio.Lock()
         self.closed = False
         self.ignore_model_audio = False
         self.buffered_audio_bytes = bytearray()
@@ -117,6 +118,10 @@ class RealtimeSession:
         )
 
     async def _close_qwen_realtime_session(self) -> None:
+        async with self.qwen_session_lock:
+            await self._close_qwen_realtime_session_unlocked()
+
+    async def _close_qwen_realtime_session_unlocked(self) -> None:
         if self.qwen_reader_task is not None:
             self.qwen_reader_task.cancel()
             try:
@@ -130,6 +135,10 @@ class RealtimeSession:
             self.qwen_client = None
 
     async def _open_qwen_realtime_session(self) -> None:
+        async with self.qwen_session_lock:
+            await self._open_qwen_realtime_session_unlocked()
+
+    async def _open_qwen_realtime_session_unlocked(self) -> None:
         assert self.session_config is not None
         assert self.session_config.output_audio
 
@@ -147,14 +156,15 @@ class RealtimeSession:
         assert self.session_config is not None
         assert self.session_config.output_audio
 
-        await self._close_qwen_realtime_session()
-        self.ignore_model_audio = False
-        self.buffered_assistant_events.clear()
-        self.assistant_output_gate_open = False
-        self.precommit_assistant_output_started = False
-        self.assistant_audio_chunk_count = 0
-        self.upstream_response_pending = False
-        await self._open_qwen_realtime_session()
+        async with self.qwen_session_lock:
+            await self._close_qwen_realtime_session_unlocked()
+            self.ignore_model_audio = False
+            self.buffered_assistant_events.clear()
+            self.assistant_output_gate_open = False
+            self.precommit_assistant_output_started = False
+            self.assistant_audio_chunk_count = 0
+            self.upstream_response_pending = False
+            await self._open_qwen_realtime_session_unlocked()
 
     async def _start_session(self, event: dict) -> None:
         speaker = event.get("speaker", self.settings.supported_speakers[0])
@@ -424,6 +434,9 @@ class RealtimeSession:
 
     async def cancel_response(self) -> None:
         await self._cancel_response()
+
+    def mark_livekit_egress_started(self) -> None:
+        self.metrics.mark_once("t_first_livekit_egress")
 
     async def _pump_qwen_events(self) -> None:
         assert self.qwen_client is not None
