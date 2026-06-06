@@ -420,6 +420,8 @@ export class RealtimeClient {
       this.assistantTrackPlaybackActive = false;
       this.options.onAssistantPlaybackDrained();
     }
+    void this.emitAssistantTrackStats("unsubscribed");
+    this.assistantRemoteTrack = null;
     this.assistantTrackSid = null;
     this.assistantTrackStream = null;
     this.assistantTrackFinalizePending = false;
@@ -553,6 +555,7 @@ export class RealtimeClient {
       perf_now_ms: round(now),
       silence_ms: round(now - this.assistantTrackLastActiveAt),
     });
+    void this.emitAssistantTrackStats("drained");
     this.options.onAssistantPlaybackDrained();
   }
 
@@ -568,6 +571,30 @@ export class RealtimeClient {
     const override = new URLSearchParams(window.location.search).get("transportDebug");
     return override === "1" || override === "true";
   }
+
+  private async emitAssistantTrackStats(phase: string): Promise<void> {
+    if (!this.isTransportDebugEnabled() || this.assistantRemoteTrack === null) {
+      return;
+    }
+
+    try {
+      const report = await this.assistantRemoteTrack.getRTCStatsReport();
+      if (!report) {
+        return;
+      }
+      this.options.onDebugEvent({
+        type: "local.livekit.track_stats",
+        phase,
+        ...summarizeAudioReceiverStats(report),
+      });
+    } catch (error) {
+      this.options.onDebugEvent({
+        type: "local.livekit.track_stats_failed",
+        phase,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 }
 
 function normalizeLivekitPayload(payload: Uint8Array | ArrayBuffer): Uint8Array {
@@ -579,6 +606,45 @@ function normalizeLivekitPayload(payload: Uint8Array | ArrayBuffer): Uint8Array 
 
 function round(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function summarizeAudioReceiverStats(report: RTCStatsReport): Record<string, unknown> {
+  const summary: Record<string, unknown> = {};
+  for (const stat of report.values()) {
+    if (stat.type !== "inbound-rtp") {
+      continue;
+    }
+    const mediaType =
+      "kind" in stat && typeof stat.kind === "string"
+        ? stat.kind
+        : "mediaType" in stat && typeof stat.mediaType === "string"
+          ? stat.mediaType
+          : null;
+    if (mediaType !== "audio") {
+      continue;
+    }
+    copyIfFinite(summary, "packets_received", stat.packetsReceived);
+    copyIfFinite(summary, "packets_lost", stat.packetsLost);
+    copyIfFinite(summary, "jitter_s", stat.jitter);
+    copyIfFinite(summary, "jitter_buffer_delay_s", stat.jitterBufferDelay);
+    copyIfFinite(summary, "jitter_buffer_emitted_count", stat.jitterBufferEmittedCount);
+    copyIfFinite(summary, "concealed_samples", stat.concealedSamples);
+    copyIfFinite(summary, "silent_concealed_samples", stat.silentConcealedSamples);
+    copyIfFinite(summary, "concealment_events", stat.concealmentEvents);
+    copyIfFinite(summary, "inserted_samples_for_deceleration", stat.insertedSamplesForDeceleration);
+    copyIfFinite(summary, "removed_samples_for_acceleration", stat.removedSamplesForAcceleration);
+    copyIfFinite(summary, "total_samples_received", stat.totalSamplesReceived);
+    copyIfFinite(summary, "total_samples_duration_s", stat.totalSamplesDuration);
+    copyIfFinite(summary, "audio_level", stat.audioLevel);
+    break;
+  }
+  return summary;
+}
+
+function copyIfFinite(target: Record<string, unknown>, key: string, value: unknown): void {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    target[key] = value;
+  }
 }
 
 function resolveNumberQueryParam(name: string, fallback: number): number {
