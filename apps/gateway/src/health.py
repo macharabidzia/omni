@@ -33,7 +33,7 @@ async def health() -> dict[str, str]:
 
 
 @router.get("/ready")
-async def ready(deep: bool = Query(default=False)) -> JSONResponse:
+async def ready(deep: bool = Query(default=True)) -> JSONResponse:
     settings = get_settings()
     qwen_result = await probe_qwen(settings, deep=deep)
     livekit_result = await probe_livekit(settings)

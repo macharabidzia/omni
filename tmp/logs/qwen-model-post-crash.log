@@ -1652,3 +1652,10 @@ WARNING 06-06 18:17:57 [nixl_utils.py:44] NIXL agent config is not available
 (APIServer pid=52708) INFO:     connection closed
 (APIServer pid=52708) INFO:     127.0.0.1:36964 - "WebSocket /v1/realtime" [accepted]
 (APIServer pid=52708) INFO:     connection open
+(APIServer pid=52708) INFO 06-06 19:04:09 [orchestrator.py:230] [Orchestrator] _handle_add_request: stage=0 req=rt-ws-c4768f57-d6c6-4d18-953d-fd27ff61e643-62c367a7-1701-4b64-80a4-fef9dd51c02c prompt_type=OmniEngineCoreRequest original_prompt_type=dict final_stage=2 num_sampling_params=3
+(APIServer pid=52708) INFO 06-06 19:04:09 [stage_engine_core_client.py:262] [StageEngineCoreClient] stage-0 [rep-0] add request: rt-ws-c4768f57-d6c6-4d18-953d-fd27ff61e643-62c367a7-1701-4b64-80a4-fef9dd51c02c
+(APIServer pid=52708) INFO 06-06 19:04:09 [stage_engine_core_client.py:262] [StageEngineCoreClient] stage-1 [rep-0] add request: rt-ws-c4768f57-d6c6-4d18-953d-fd27ff61e643-62c367a7-1701-4b64-80a4-fef9dd51c02c
+(APIServer pid=52708) INFO 06-06 19:04:09 [stage_engine_core_client.py:262] [StageEngineCoreClient] stage-2 [rep-0] add request: rt-ws-c4768f57-d6c6-4d18-953d-fd27ff61e643-62c367a7-1701-4b64-80a4-fef9dd51c02c
+(APIServer pid=52708) INFO 06-06 19:04:09 [stage_engine_core_client.py:262] [StageEngineCoreClient] stage-0 [rep-0] add request: rt-ws-c4768f57-d6c6-4d18-953d-fd27ff61e643-62c367a7-1701-4b64-80a4-fef9dd51c02c
+(APIServer pid=52708) INFO 06-06 19:04:09 [stage_engine_core_client.py:262] [StageEngineCoreClient] stage-0 [rep-0] add request: rt-ws-c4768f57-d6c6-4d18-953d-fd27ff61e643-62c367a7-1701-4b64-80a4-fef9dd51c02c
+(APIServer pid=52708) INFO:     connection closed

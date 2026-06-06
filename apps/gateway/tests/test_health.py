@@ -17,7 +17,10 @@ def test_health_returns_container_alive() -> None:
 
 
 def test_ready_returns_200_when_probe_reports_ready(monkeypatch) -> None:
+    observed = {"deep": None}
+
     async def fake_probe_qwen(_settings, *, deep: bool = False):
+        observed["deep"] = deep
         return {
             "status": "qwen_ready",
             "detail": "ready",
@@ -44,6 +47,7 @@ def test_ready_returns_200_when_probe_reports_ready(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
+    assert observed["deep"] is True
 
 
 def test_ready_returns_503_when_probe_reports_unreachable(monkeypatch) -> None:
@@ -166,7 +170,7 @@ def test_probe_qwen_reports_failed_when_realtime_inference_probe_rejects(monkeyp
     assert "assistant audio" in result["detail"]
 
 
-def test_probe_qwen_default_ready_skips_realtime_inference_probe(monkeypatch) -> None:
+def test_probe_qwen_explicit_non_deep_skips_realtime_inference_probe(monkeypatch) -> None:
     class FakeResponse:
         status_code = 200
 
@@ -206,7 +210,8 @@ def test_probe_qwen_default_ready_skips_realtime_inference_probe(monkeypatch) ->
             Settings(
                 QWEN_HEALTH_URL="http://qwen/health",
                 QWEN_REALTIME_URL="ws://qwen/v1/realtime",
-            )
+            ),
+            deep=False,
         )
     )
 
