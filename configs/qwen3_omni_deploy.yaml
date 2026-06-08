@@ -1,37 +1,32 @@
 name: qwen3-omni-native-realtime
+platform: vast_ai
 runtime:
-  model: Qwen/Qwen3-Omni-30B-A3B-Instruct
+  model: /workspace/omni/models/Qwen3-Omni-30B-A3B-Instruct
   hf_hub_disable_xet: true
-  qwen_realtime_url: ws://qwen3-omni:8091/v1/realtime
-  qwen_health_url: http://qwen3-omni:8091/health
+  qwen_realtime_url: ws://127.0.0.1:17091/v1/realtime
+  qwen_health_url: http://127.0.0.1:17091/health
 services:
-  qwen3-omni:
-    port: 8091
+  qwen:
+    port: 17091
     command: >
-      vllm serve Qwen/Qwen3-Omni-30B-A3B-Instruct
-      --omni
-      --no-async-chunk
-      --host 0.0.0.0
-      --port 8091
-      --trust-remote-code
-      --tensor-parallel-size 1
-      --max-model-len 32768
-      --gpu-memory-utilization 0.95
+      /workspace/omni/scripts/run_qwen_model.sh
   gateway:
-    port: 8080
+    port: 17080
+    command: >
+      /workspace/omni/scripts/run_gateway_dev.sh
     env:
-      QWEN_REALTIME_URL: ws://qwen3-omni:8091/v1/realtime
-      QWEN_HEALTH_URL: http://qwen3-omni:8091/health
+      QWEN_REALTIME_URL: ws://127.0.0.1:17091/v1/realtime
+      QWEN_HEALTH_URL: http://127.0.0.1:17091/health
+  worker:
+    command: >
+      /workspace/omni/scripts/run_worker_dev.sh
   web:
-    port: 3000
+    port: 17070
+    command: >
+      /workspace/omni/scripts/run_web_dev.sh
     env:
-      VITE_GATEWAY_HTTP_URL: http://localhost:8080
-runpod:
-  ssh:
-    host: 195.26.233.65
-    port: 57403
-    user: root
-    identity_file: ~/.ssh/id_ed25519
-  proxy:
-    web: https://y977m2sllhl4w8-5173.proxy.runpod.net
-    gateway: https://<runpod-gateway-host>
+      VITE_GATEWAY_HTTP_URL: ""
+external_access:
+  web: https://$PUBLIC_IPADDR:$VAST_TCP_PORT_3000/?token=$OPEN_BUTTON_TOKEN
+  gateway_ready: https://$PUBLIC_IPADDR:$VAST_TCP_PORT_8080/ready?token=$OPEN_BUTTON_TOKEN
+  qwen_health: https://$PUBLIC_IPADDR:$VAST_TCP_PORT_8091/health?token=$OPEN_BUTTON_TOKEN

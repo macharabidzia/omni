@@ -1,3 +1,36 @@
+# Model Runtime
+
+This repo runs the Qwen3-Omni model locally on Vast.ai and uses one LiveKit path only: an external LiveKit server.
+
+## External LiveKit
+
+Set these values in `/workspace/.env`:
+
+```bash
+LIVEKIT_URL=ws://185.62.58.164:7880
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=devsecret
+LIVEKIT_ROOM=omni-room
+LIVEKIT_AGENT_ID=omni-worker
+```
+
+The Vast instance does not host LiveKit. It runs:
+
+- the local Qwen server on `127.0.0.1:17091`
+- the gateway on `127.0.0.1:17080`
+- the browser app on `127.0.0.1:17070`
+- the LiveKit worker that joins the external room and bridges browser audio to Qwen
+
+For a real end-to-end browser verification with a speech WAV file:
+
+```bash
+scripts/smoke_public_livekit_e2e.sh /path/to/real-speech.wav
+```
+
+That command opens the public HTTPS web app, injects the WAV into the browser microphone from session start, waits for LiveKit playback, captures the assistant audio, and analyzes the returned audio for gaps or clipping.
+
+## Upstream Qwen Notes
+
 Qwen3-Omni
 Chat
 Overview
@@ -337,38 +370,11 @@ messages = [
     },
 ]
 
-HTTP services
-Connect to your service using HTTP using a proxied domain and port
+Vast.ai service access
 
-Port 5173
+Current instance:
 
-HTTP Service
-
-Port 8000
-
-HTTP Service
-
-SSH
-Connect to your Pod using SSH. (No support for SCP & SFTP)
-
-$
-ssh 7lycxebyx5swhu-64411390@ssh.runpod.io -i ~/.ssh/id_ed25519
-SSH over exposed TCP
-Connect to your Pod using SSH over a direct TCP connection. (Supports SCP & SFTP)
-
-$
-ssh root@195.26.233.28 -p 58614 -i ~/.ssh/id_ed25519
-Web terminal
-Connect to your Pod using a terminal directly in your browser
-
-
-Enable web terminal
-
-Direct TCP ports
-Connect to your Pod using direct TCP connections to exposed ports.
-
-195.26.233.28:58614
-
-:22
-
-https://7lycxebyx5swhu-5173.proxy.runpod.net/
+- SSH: `ssh root@82.66.51.122 -p 21705`
+- Web app: `https://82.66.51.122:12289/?token=$OPEN_BUTTON_TOKEN`
+- Gateway ready: `https://82.66.51.122:56242/ready?token=$OPEN_BUTTON_TOKEN`
+- Qwen health: `https://82.66.51.122:19571/health?token=$OPEN_BUTTON_TOKEN`

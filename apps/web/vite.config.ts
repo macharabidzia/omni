@@ -2,11 +2,11 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 const gatewayHost = process.env.GATEWAY_HOST ?? "127.0.0.1";
-const gatewayPort = process.env.GATEWAY_PORT ?? "8000";
+const gatewayPort = process.env.GATEWAY_PORT ?? "8080";
 const gatewayHttpTarget =
   process.env.VITE_DEV_PROXY_HTTP_TARGET ?? `http://${gatewayHost}:${gatewayPort}`;
 const livekitTarget = normalizeProxyTarget(
-  process.env.VITE_DEV_PROXY_LIVEKIT_TARGET ?? process.env.LIVEKIT_URL ?? "ws://185.62.58.164:7880",
+  process.env.LIVEKIT_URL ?? "ws://185.62.58.164:7880",
 );
 const vendorChunks: Array<[pkgPath: string, chunkName: string]> = [
   ["/node_modules/react/", "react"],

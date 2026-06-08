@@ -1,4 +1,6 @@
+import os
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,9 +20,16 @@ DEFAULT_SYSTEM_PROMPT = (
 )
 
 
+DEFAULT_ENV_FILE = os.environ.get(
+    "OMNI_ENV_FILE",
+    os.path.join(os.environ.get("WORKSPACE", "/workspace"), ".env"),
+)
+DEFAULT_WORKSPACE = os.environ.get("WORKSPACE", "/workspace")
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=DEFAULT_ENV_FILE,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -61,24 +70,32 @@ class Settings(BaseSettings):
         default=60,
         alias="LIVEKIT_OUTPUT_QUEUE_MS",
     )
+    livekit_output_lowpass_hz: float = Field(
+        default=6000.0,
+        alias="LIVEKIT_OUTPUT_LOWPASS_HZ",
+    )
     livekit_preroll_frames: int = Field(
         default=8,
         alias="LIVEKIT_PREROLL_FRAMES",
+    )
+    audio_artifact_log_path: str = Field(
+        default=str(Path(DEFAULT_WORKSPACE) / "tmp" / "logs" / "audio-artifacts.log"),
+        alias="AUDIO_ARTIFACT_LOG_PATH",
     )
     qwen_model: str = Field(
         default="Qwen/Qwen3-Omni-30B-A3B-Instruct",
         alias="QWEN_MODEL",
     )
     qwen_realtime_url: str = Field(
-        default="ws://qwen3-omni:8091/v1/realtime",
+        default="ws://127.0.0.1:17091/v1/realtime",
         alias="QWEN_REALTIME_URL",
     )
     qwen_chat_url: str = Field(
-        default="http://qwen3-omni:8091/v1/chat/completions",
+        default="http://127.0.0.1:17091/v1/chat/completions",
         alias="QWEN_CHAT_URL",
     )
     qwen_health_url: str = Field(
-        default="http://qwen3-omni:8091/health",
+        default="http://127.0.0.1:17091/health",
         alias="QWEN_HEALTH_URL",
     )
     qwen_debug_raw_events: bool = Field(default=False, alias="QWEN_DEBUG_RAW_EVENTS")

@@ -3,10 +3,23 @@
 set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-GATEWAY_PORT="${GATEWAY_PORT:-8000}"
+# shellcheck disable=SC1091
+source "$REPO_ROOT/scripts/load_env.sh"
+
+VENV_PATH="${APP_VENV_PATH:-$REPO_ROOT/.venv}"
+PYTHON_BIN="$VENV_PATH/bin/python"
+UVICORN_BIN="$VENV_PATH/bin/uvicorn"
+GATEWAY_PORT="${GATEWAY_PORT:-8080}"
+GATEWAY_HOST="${GATEWAY_HOST:-127.0.0.1}"
 QWEN_HOST="${QWEN_HOST:-127.0.0.1}"
 QWEN_PORT="${QWEN_PORT:-8091}"
-QWEN_MODEL_PATH="${QWEN_MODEL_PATH:-$REPO_ROOT/models/Qwen3-Omni-30B-A3B-Instruct}"
+QWEN_MODEL_PATH="${QWEN_MODEL:-${QWEN_MODEL_PATH:-$REPO_ROOT/models/Qwen3-Omni-30B-A3B-Instruct}}"
+
+if [[ ! -x "$UVICORN_BIN" ]]; then
+  echo "error: app runtime not found at $UVICORN_BIN" >&2
+  echo "hint: run scripts/bootstrap_vast.sh first" >&2
+  exit 1
+fi
 
 export QWEN_REALTIME_URL="${QWEN_REALTIME_URL:-ws://$QWEN_HOST:$QWEN_PORT/v1/realtime}"
 export QWEN_CHAT_URL="${QWEN_CHAT_URL:-http://$QWEN_HOST:$QWEN_PORT/v1/chat/completions}"
@@ -27,4 +40,4 @@ export LIVEKIT_OUTPUT_QUEUE_MS="${LIVEKIT_OUTPUT_QUEUE_MS:-60}"
 export LIVEKIT_PREROLL_FRAMES="${LIVEKIT_PREROLL_FRAMES:-8}"
 
 cd "$REPO_ROOT/apps/gateway"
-exec uvicorn src.main:app --host 0.0.0.0 --port "$GATEWAY_PORT"
+exec "$UVICORN_BIN" src.main:app --host "$GATEWAY_HOST" --port "$GATEWAY_PORT"

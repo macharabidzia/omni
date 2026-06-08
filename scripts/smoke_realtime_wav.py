@@ -80,7 +80,10 @@ def parse_args() -> argparse.Namespace:
         "--model",
         default=os.environ.get("QWEN_MODEL", str(DEFAULT_LOCAL_MODEL)),
     )
-    parser.add_argument("--qwen-url", default="ws://localhost:8091/v1/realtime")
+    parser.add_argument(
+        "--qwen-url",
+        default=os.environ.get("QWEN_REALTIME_URL", "ws://127.0.0.1:17091/v1/realtime"),
+    )
     parser.add_argument("--send-delay-ms", type=float, default=0.0)
     parser.add_argument("--request-timeout-seconds", type=float, default=30.0)
     parser.add_argument("--response-timeout-seconds", type=float, default=90.0)

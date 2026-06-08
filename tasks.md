@@ -35,7 +35,7 @@ The target A100 runtime is close to a usable live proof path, but the repo is mi
   files_to_inspect:
     - scripts/*
     - README.md
-  problem: The default Omni orchestrator init timeout is too short for the three-stage Qwen3-Omni boot path on this FUSE-backed RunPod volume.
+  problem: The default Omni orchestrator init timeout is too short for the three-stage Qwen3-Omni boot path on the target persistent volume.
   required_change: Encode a safe long-startup launch configuration for the model server, including larger init timeout values and the selected safetensors load strategy.
   production_contract_reason: steps.md requires deterministic startup and warmup; a server that tears itself down during normal model load cannot satisfy READY.
   acceptance_checks:
@@ -72,7 +72,7 @@ The target A100 runtime is close to a usable live proof path, but the repo is mi
 - Verify live gateway latency metrics are recorded with real model responses.
 
 ### Reviewer Notes
-- The running target environment is a RunPod A100 SXM4 80 GB host.
+- The running target environment is a Vast.ai A100 SXM4 80 GB host.
 - The live model process must be treated as expensive to restart; prefer gateway/web-only iteration whenever model-serving code is unchanged.
 - Live gateway evidence now exists under `benchmark-results/live_gateway_chunk_sweep/`.
 - Additional supported-path evidence exists under `benchmark-results/live_gateway_chunk_sweep_realtime_fastaudio_ethan/`.
@@ -87,4 +87,3 @@ The target A100 runtime is close to a usable live proof path, but the repo is mi
 - The current production-like live path keeps browser audio streaming live, auto-commits after local silence in the web client, and uses a repo-managed local patch for `vllm_omni.model_executor.stage_input_processors.qwen3_omni.talker2code2wav_async_chunk` so code2wav runs with `initial_codec_chunk_frames=2` and a steady `codec_chunk_frames=2` cadence.
 - Warm steady-state evidence on the real proxied gateway path is now in `benchmark-results/live_gateway_proxy_chunk2x2_warm/` with `p50 465.46 ms / p95 487.79 ms / p99 490.76 ms` at `20 ms` chunks and `sample_count 5`.
 - The first post-restart turn remained slow (`1714.86 ms` first playable audio), so latency sign-off should use warm runs only, per `architecture.md`.
-- A real page check against `https://7lycxebyx5swhu-5173.proxy.runpod.net/` is recorded in `tmp/playwright-live-check/result-after-chunk2x2.json` with `Commit to Audio Played 494.1 ms`; its playback debug log shows no `local.playback.drain` event between the first and second assistant audio chunks.

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import array
 import json
+import math
 import subprocess
 import tempfile
 import wave
@@ -36,6 +37,48 @@ def parse_args() -> argparse.Namespace:
         default=32,
         help="Treat an internal silence run as suspicious only when the surrounding context exceeds this amplitude threshold.",
     )
+    parser.add_argument(
+        "--voiced-rms-threshold",
+        type=float,
+        default=200.0,
+        help="Ignore low-energy frames when classifying rough/noisy playback artifacts.",
+    )
+    parser.add_argument(
+        "--roughness-threshold",
+        type=float,
+        default=1.0,
+        help="Flag voiced frames whose mean absolute sample delta exceeds this multiple of RMS.",
+    )
+    parser.add_argument(
+        "--zero-crossing-threshold",
+        type=float,
+        default=0.35,
+        help="Flag voiced frames whose zero-crossing ratio exceeds this threshold.",
+    )
+    parser.add_argument(
+        "--max-noisy-frame-ratio",
+        type=float,
+        default=0.12,
+        help="Warn when rough/noisy voiced frames exceed this fraction of voiced frames.",
+    )
+    parser.add_argument(
+        "--click-derivative-threshold",
+        type=float,
+        default=12000.0,
+        help="Minimum second-derivative magnitude required to count a click-like spike.",
+    )
+    parser.add_argument(
+        "--click-rms-multiplier",
+        type=float,
+        default=8.0,
+        help="Scale click detection relative to the active-region RMS.",
+    )
+    parser.add_argument(
+        "--max-click-spikes-per-second",
+        type=float,
+        default=0.5,
+        help="Warn when click-like sample spikes exceed this rate.",
+    )
     parser.add_argument("--output-json", type=Path, default=None)
     return parser.parse_args()
 
@@ -52,6 +95,13 @@ def main() -> None:
         edge_padding_ms=args.edge_padding_ms,
         context_window_ms=args.context_window_ms,
         context_active_threshold=args.context_active_threshold,
+        voiced_rms_threshold=args.voiced_rms_threshold,
+        roughness_threshold=args.roughness_threshold,
+        zero_crossing_threshold=args.zero_crossing_threshold,
+        max_noisy_frame_ratio=args.max_noisy_frame_ratio,
+        click_derivative_threshold=args.click_derivative_threshold,
+        click_rms_multiplier=args.click_rms_multiplier,
+        max_click_spikes_per_second=args.max_click_spikes_per_second,
     )
     payload = json.dumps(analysis, indent=2)
     if args.output_json is not None:
@@ -73,6 +123,13 @@ def analyze_audio(
     edge_padding_ms: float,
     context_window_ms: float,
     context_active_threshold: int,
+    voiced_rms_threshold: float = 200.0,
+    roughness_threshold: float = 1.0,
+    zero_crossing_threshold: float = 0.35,
+    max_noisy_frame_ratio: float = 0.12,
+    click_derivative_threshold: float = 12000.0,
+    click_rms_multiplier: float = 8.0,
+    max_click_spikes_per_second: float = 0.5,
 ) -> dict[str, object]:
     wav_path = decode_to_wav_if_needed(input_path, expected_sample_rate=expected_sample_rate)
     try:
@@ -93,6 +150,13 @@ def analyze_audio(
         edge_padding_ms=edge_padding_ms,
         context_window_ms=context_window_ms,
         context_active_threshold=context_active_threshold,
+        voiced_rms_threshold=voiced_rms_threshold,
+        roughness_threshold=roughness_threshold,
+        zero_crossing_threshold=zero_crossing_threshold,
+        max_noisy_frame_ratio=max_noisy_frame_ratio,
+        click_derivative_threshold=click_derivative_threshold,
+        click_rms_multiplier=click_rms_multiplier,
+        max_click_spikes_per_second=max_click_spikes_per_second,
     )
     return analysis
 
@@ -110,6 +174,13 @@ def analyze_samples(
     edge_padding_ms: float,
     context_window_ms: float,
     context_active_threshold: int,
+    voiced_rms_threshold: float = 200.0,
+    roughness_threshold: float = 1.0,
+    zero_crossing_threshold: float = 0.35,
+    max_noisy_frame_ratio: float = 0.12,
+    click_derivative_threshold: float = 12000.0,
+    click_rms_multiplier: float = 8.0,
+    max_click_spikes_per_second: float = 0.5,
 ) -> dict[str, object]:
     if samples.typecode != "h":
         raise ValueError("Audio analysis requires PCM16 samples.")
@@ -143,6 +214,20 @@ def analyze_samples(
         context_active_threshold=context_active_threshold,
     )
     clipped_samples = sum(1 for sample in active_samples if abs(sample) >= 32760)
+    frame_artifacts = analyze_frame_artifacts(
+        active_samples,
+        sample_rate=sample_rate,
+        frame_ms=frame_ms,
+        voiced_rms_threshold=voiced_rms_threshold,
+        roughness_threshold=roughness_threshold,
+        zero_crossing_threshold=zero_crossing_threshold,
+    )
+    click_spikes = analyze_click_spikes(
+        active_samples,
+        sample_rate=sample_rate,
+        click_derivative_threshold=click_derivative_threshold,
+        click_rms_multiplier=click_rms_multiplier,
+    )
     longest_internal_silence_ms = (
         round(max(length for _, _, length in internal_silence_runs) * 1000 / sample_rate, 2)
         if internal_silence_runs
@@ -170,6 +255,16 @@ def analyze_samples(
         warnings.append(
             "suspicious internal silence run "
             f"{longest_suspicious_internal_silence_ms} ms exceeded {max_internal_silence_ms} ms"
+        )
+    if frame_artifacts["noisy_frame_ratio"] > max_noisy_frame_ratio:
+        warnings.append(
+            "rough/noisy voiced frame ratio "
+            f"{round(frame_artifacts['noisy_frame_ratio'], 4)} exceeded {max_noisy_frame_ratio}"
+        )
+    if click_spikes["per_second"] > max_click_spikes_per_second:
+        warnings.append(
+            "click-like spike rate "
+            f"{round(click_spikes['per_second'], 2)} per second exceeded {max_click_spikes_per_second}"
         )
 
     status = "ok" if not warnings else "warning"
@@ -218,6 +313,36 @@ def analyze_samples(
             "count": len(boundary_absdiff),
             "max": max(boundary_absdiff) if boundary_absdiff else 0,
             "p95": percentile(boundary_absdiff, 95),
+        },
+        "roughness": {
+            "frame_ms": frame_ms,
+            "voiced_rms_threshold": voiced_rms_threshold,
+            "threshold": roughness_threshold,
+            "mean": round(frame_artifacts["roughness_mean"], 4),
+            "p95": round(frame_artifacts["roughness_p95"], 4),
+            "max": round(frame_artifacts["roughness_max"], 4),
+        },
+        "zero_crossing_ratio": {
+            "frame_ms": frame_ms,
+            "threshold": zero_crossing_threshold,
+            "mean": round(frame_artifacts["zero_crossing_mean"], 4),
+            "p95": round(frame_artifacts["zero_crossing_p95"], 4),
+            "max": round(frame_artifacts["zero_crossing_max"], 4),
+        },
+        "noisy_frames": {
+            "count": frame_artifacts["noisy_frame_count"],
+            "voiced_frame_count": frame_artifacts["voiced_frame_count"],
+            "ratio": round(frame_artifacts["noisy_frame_ratio"], 4),
+            "roughness_threshold": roughness_threshold,
+            "zero_crossing_threshold": zero_crossing_threshold,
+        },
+        "click_spikes": {
+            "count": click_spikes["count"],
+            "per_second": round(click_spikes["per_second"], 4),
+            "max_second_derivative": click_spikes["max_second_derivative"],
+            "derivative_threshold": round(click_spikes["threshold"], 2),
+            "base_derivative_threshold": click_derivative_threshold,
+            "rms_multiplier": click_rms_multiplier,
         },
         "warnings": warnings,
     }
@@ -347,6 +472,137 @@ def describe_silence_runs(
 def percentile(values: list[int], pct: int) -> int:
     if not values:
         return 0
+    ordered = sorted(values)
+    index = min(len(ordered) - 1, int(len(ordered) * pct / 100))
+    return ordered[index]
+
+
+def analyze_frame_artifacts(
+    samples: array.array,
+    *,
+    sample_rate: int,
+    frame_ms: int,
+    voiced_rms_threshold: float,
+    roughness_threshold: float,
+    zero_crossing_threshold: float,
+) -> dict[str, float | int]:
+    frame_samples = max(1, int(sample_rate * frame_ms / 1000))
+    hop_samples = max(1, frame_samples // 2)
+    roughness_values: list[float] = []
+    zero_crossing_values: list[float] = []
+    voiced_frame_count = 0
+    noisy_frame_count = 0
+
+    for start in range(0, max(0, len(samples) - frame_samples + 1), hop_samples):
+        frame = samples[start : start + frame_samples]
+        if len(frame) < frame_samples:
+            continue
+        rms = frame_rms(frame)
+        if rms < voiced_rms_threshold:
+            continue
+        voiced_frame_count += 1
+        roughness = frame_roughness(frame, rms=rms)
+        zero_crossing_ratio = frame_zero_crossing_ratio(frame)
+        roughness_values.append(roughness)
+        zero_crossing_values.append(zero_crossing_ratio)
+        if roughness >= roughness_threshold and zero_crossing_ratio >= zero_crossing_threshold:
+            noisy_frame_count += 1
+
+    noisy_frame_ratio = (
+        noisy_frame_count / voiced_frame_count if voiced_frame_count > 0 else 0.0
+    )
+    return {
+        "roughness_mean": mean(roughness_values),
+        "roughness_p95": percentile_float(roughness_values, 95),
+        "roughness_max": max(roughness_values, default=0.0),
+        "zero_crossing_mean": mean(zero_crossing_values),
+        "zero_crossing_p95": percentile_float(zero_crossing_values, 95),
+        "zero_crossing_max": max(zero_crossing_values, default=0.0),
+        "voiced_frame_count": voiced_frame_count,
+        "noisy_frame_count": noisy_frame_count,
+        "noisy_frame_ratio": noisy_frame_ratio,
+    }
+
+
+def analyze_click_spikes(
+    samples: array.array,
+    *,
+    sample_rate: int,
+    click_derivative_threshold: float,
+    click_rms_multiplier: float,
+) -> dict[str, float | int]:
+    if len(samples) < 3:
+        return {
+            "count": 0,
+            "per_second": 0.0,
+            "max_second_derivative": 0,
+            "threshold": click_derivative_threshold,
+        }
+
+    rms = frame_rms(samples)
+    threshold = max(click_derivative_threshold, rms * click_rms_multiplier)
+    click_count = 0
+    max_second_derivative = 0
+    previous_sample = samples[0]
+    current_sample = samples[1]
+    for next_sample in samples[2:]:
+        second_derivative = abs(next_sample - (2 * current_sample) + previous_sample)
+        max_second_derivative = max(max_second_derivative, second_derivative)
+        if second_derivative >= threshold:
+            click_count += 1
+        previous_sample = current_sample
+        current_sample = next_sample
+
+    duration_seconds = len(samples) / sample_rate if sample_rate > 0 else 0.0
+    return {
+        "count": click_count,
+        "per_second": click_count / duration_seconds if duration_seconds > 0 else 0.0,
+        "max_second_derivative": max_second_derivative,
+        "threshold": threshold,
+    }
+
+
+def frame_rms(samples: array.array) -> float:
+    if not samples:
+        return 0.0
+    return math.sqrt(sum(sample * sample for sample in samples) / len(samples))
+
+
+def frame_roughness(samples: array.array, *, rms: float) -> float:
+    if len(samples) < 2:
+        return 0.0
+    mean_abs_delta = sum(
+        abs(samples[index] - samples[index - 1]) for index in range(1, len(samples))
+    ) / (len(samples) - 1)
+    return mean_abs_delta / max(rms, 1.0)
+
+
+def frame_zero_crossing_ratio(samples: array.array) -> float:
+    if len(samples) < 2:
+        return 0.0
+    crossings = 0
+    previous_sign = sign(samples[0])
+    for sample in samples[1:]:
+        current_sign = sign(sample)
+        if current_sign != previous_sign:
+            crossings += 1
+        previous_sign = current_sign
+    return crossings / (len(samples) - 1)
+
+
+def sign(sample: int) -> int:
+    return -1 if sample < 0 else 1
+
+
+def mean(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    return sum(values) / len(values)
+
+
+def percentile_float(values: list[float], pct: int) -> float:
+    if not values:
+        return 0.0
     ordered = sorted(values)
     index = min(len(ordered) - 1, int(len(ordered) * pct / 100))
     return ordered[index]

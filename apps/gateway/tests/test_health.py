@@ -32,7 +32,7 @@ def test_ready_returns_200_when_probe_reports_ready(monkeypatch) -> None:
         return {
             "status": "livekit_ready",
             "detail": "ready",
-            "livekit_url": "ws://livekit:7880",
+            "livekit_url": "ws://185.62.58.164:7880",
             "livekit_room": "omni-room",
             "livekit_worker_status": "connected",
             "livekit_room_joined": True,
@@ -63,7 +63,7 @@ def test_ready_returns_503_when_probe_reports_unreachable(monkeypatch) -> None:
         return {
             "status": "livekit_ready",
             "detail": "ready",
-            "livekit_url": "ws://livekit:7880",
+            "livekit_url": "ws://185.62.58.164:7880",
             "livekit_room": "omni-room",
             "livekit_worker_status": "connected",
             "livekit_room_joined": True,

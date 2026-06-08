@@ -180,6 +180,59 @@ class FakeStaleResponseQwenClient(FakeRestartableQwenClient):
         )
 
 
+class FakeAppendRecoveringQwenClient(FakeRestartableQwenClient):
+    async def append_audio(self, pcm16_base64: str) -> None:
+        if self.instance_id == 1 and not self.audio_chunks:
+            raise RuntimeError("received 1012 (service restart); then sent 1012 (service restart)")
+        await super().append_audio(pcm16_base64)
+
+    async def commit_audio(self) -> None:
+        await self.events.put(
+            QwenEvent(
+                kind="assistant_audio_delta",
+                payload={"type": "response.audio.delta"},
+                audio_base64=self.audio_chunks[-1],
+                sample_rate=24000,
+            )
+        )
+        await self.events.put(QwenEvent(kind="response_done", payload={"type": "response.done"}))
+        await self.events.put(None)
+
+
+class FakeCommitRecoveringQwenClient(FakeRestartableQwenClient):
+    async def commit_audio(self) -> None:
+        if self.instance_id == 1:
+            raise RuntimeError("received 1012 (service restart); then sent 1012 (service restart)")
+        await self.events.put(
+            QwenEvent(
+                kind="assistant_audio_delta",
+                payload={"type": "response.audio.delta"},
+                audio_base64=self.audio_chunks[-1],
+                sample_rate=24000,
+            )
+        )
+        await self.events.put(QwenEvent(kind="response_done", payload={"type": "response.done"}))
+        await self.events.put(None)
+
+
+class FakeReconnectRefusedOnBufferedCommitQwenClient(FakeRestartableQwenClient):
+    async def connect(self) -> None:
+        if self.instance_id == 2:
+            raise ConnectionRefusedError(111, "Connect call failed ('127.0.0.1', 17091)")
+
+    async def commit_audio(self) -> None:
+        await self.events.put(
+            QwenEvent(
+                kind="assistant_audio_delta",
+                payload={"type": "response.audio.delta"},
+                audio_base64=self.audio_chunks[-1],
+                sample_rate=24000,
+            )
+        )
+        await self.events.put(QwenEvent(kind="response_done", payload={"type": "response.done"}))
+        await self.events.put(None)
+
+
 class FakeQwenChatClient:
     def __init__(self, **_kwargs) -> None:
         self.requests: list[bytes] = []
@@ -213,6 +266,14 @@ async def _start_audio_session(collector: EventCollector) -> RealtimeSession:
 async def _drain_tasks() -> None:
     for _ in range(5):
         await asyncio.sleep(0)
+
+
+async def _wait_for_event(collector: EventCollector, event_type: str, *, attempts: int = 20) -> None:
+    for _ in range(attempts):
+        if any(event["type"] == event_type for event in collector.events):
+            return
+        await asyncio.sleep(0)
+    raise AssertionError(f"Timed out waiting for event type={event_type}")
 
 
 def test_session_requires_event_sink() -> None:
@@ -391,3 +452,69 @@ async def test_session_new_turn_restarts_stale_upstream_qwen_session(monkeypatch
 
     assert len(FakeStaleResponseQwenClient.instances) == 2
     assert FakeStaleResponseQwenClient.instances[0].closed is True
+
+
+@pytest.mark.asyncio
+async def test_session_recovers_turn_after_qwen_append_restart(monkeypatch) -> None:
+    monkeypatch.setattr(session_module, "QwenRealtimeClient", FakeAppendRecoveringQwenClient)
+    FakeAppendRecoveringQwenClient.instances = []
+    collector = EventCollector()
+    session = await _start_audio_session(collector)
+
+    chunk = _valid_audio_base64()
+    await session.append_audio_chunk(
+        audio_base64=chunk,
+        sample_rate=16000,
+    )
+    await session.commit_audio()
+    await _wait_for_event(collector, "assistant.done")
+
+    assert len(FakeAppendRecoveringQwenClient.instances) == 2
+    assert FakeAppendRecoveringQwenClient.instances[0].closed is True
+    assert FakeAppendRecoveringQwenClient.instances[1].audio_chunks == [chunk]
+    assert not [event for event in collector.events if event["type"] == "error"]
+    assert any(event["type"] == "assistant.done" for event in collector.events)
+
+
+@pytest.mark.asyncio
+async def test_session_recovers_turn_after_qwen_commit_restart(monkeypatch) -> None:
+    monkeypatch.setattr(session_module, "QwenRealtimeClient", FakeCommitRecoveringQwenClient)
+    FakeCommitRecoveringQwenClient.instances = []
+    collector = EventCollector()
+    session = await _start_audio_session(collector)
+
+    chunk = _valid_audio_base64()
+    await session.append_audio_chunk(
+        audio_base64=chunk,
+        sample_rate=16000,
+    )
+    await session.commit_audio()
+    await _wait_for_event(collector, "assistant.done")
+
+    assert len(FakeCommitRecoveringQwenClient.instances) == 2
+    assert FakeCommitRecoveringQwenClient.instances[0].closed is True
+    assert FakeCommitRecoveringQwenClient.instances[1].audio_chunks == [chunk]
+    assert not [event for event in collector.events if event["type"] == "error"]
+    assert any(event["type"] == "assistant.done" for event in collector.events)
+
+
+@pytest.mark.asyncio
+async def test_session_retries_buffered_commit_after_qwen_connect_refused(monkeypatch) -> None:
+    monkeypatch.setattr(session_module, "QwenRealtimeClient", FakeReconnectRefusedOnBufferedCommitQwenClient)
+    FakeReconnectRefusedOnBufferedCommitQwenClient.instances = []
+    collector = EventCollector()
+    session = await _start_audio_session(collector)
+
+    chunk = _valid_audio_base64()
+    await session.append_audio_chunk(
+        audio_base64=chunk,
+        sample_rate=16000,
+    )
+    await session._close_qwen_realtime_session()
+    await session.commit_audio()
+    await _wait_for_event(collector, "assistant.done")
+
+    assert len(FakeReconnectRefusedOnBufferedCommitQwenClient.instances) == 3
+    assert FakeReconnectRefusedOnBufferedCommitQwenClient.instances[0].closed is True
+    assert FakeReconnectRefusedOnBufferedCommitQwenClient.instances[2].audio_chunks == [chunk]
+    assert not [event for event in collector.events if event["type"] == "error"]

@@ -6,6 +6,7 @@ import json
 import logging
 import time
 from collections import deque
+from pathlib import Path
 
 from livekit import rtc
 
@@ -276,6 +277,7 @@ class LiveKitWorker:
             audio_source=self.audio_source,
             output_sample_rate=settings.livekit_output_sample_rate,
             output_frame_ms=settings.livekit_output_frame_ms,
+            output_lowpass_hz=settings.livekit_output_lowpass_hz,
         )
 
     async def run(self) -> None:
@@ -301,10 +303,11 @@ class LiveKitWorker:
         publish_options = build_assistant_track_publish_options()
         await self.room.local_participant.publish_track(assistant_track, publish_options)
         logger.info(
-            "LiveKit worker published assistant track sample_rate=%s frame_ms=%s queue_ms=%s dtx=%s red=%s max_bitrate=%s",
+            "LiveKit worker published assistant track sample_rate=%s frame_ms=%s queue_ms=%s lowpass_hz=%s dtx=%s red=%s max_bitrate=%s",
             self.settings.livekit_output_sample_rate,
             self.settings.livekit_output_frame_ms,
             self.settings.livekit_output_queue_ms,
+            self.settings.livekit_output_lowpass_hz,
             publish_options.dtx,
             publish_options.red,
             publish_options.audio_encoding.max_bitrate,
@@ -474,6 +477,15 @@ def main() -> None:
         level=logging.DEBUG if settings.qwen_debug_raw_events else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
+    artifact_log_path = Path(settings.audio_artifact_log_path)
+    artifact_log_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_handler = logging.FileHandler(artifact_log_path, encoding="utf-8")
+    artifact_handler.setLevel(logging.INFO)
+    artifact_handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+    )
+    for logger_name in ("src.livekit.output", "src.livekit.worker"):
+        logging.getLogger(logger_name).addHandler(artifact_handler)
     asyncio.run(_run_worker())
 
 

@@ -3,10 +3,14 @@
 set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# shellcheck disable=SC1091
+source "$REPO_ROOT/scripts/load_env.sh"
+
 VENV_PATH="${QWEN_VENV_PATH:-$REPO_ROOT/.venv-qwen}"
-MODEL_PATH="${QWEN_MODEL_PATH:-$REPO_ROOT/models/Qwen3-Omni-30B-A3B-Instruct}"
-DEPLOY_CONFIG_PATH="${QWEN_DEPLOY_CONFIG_PATH:-$REPO_ROOT/configs/qwen3_omni_single_a100_async_fastaudio.yaml}"
+MODEL_PATH="${QWEN_MODEL:-${QWEN_MODEL_PATH:-$REPO_ROOT/models/Qwen3-Omni-30B-A3B-Instruct}}"
+DEPLOY_CONFIG_PATH="${QWEN_DEPLOY_CONFIG:-${QWEN_DEPLOY_CONFIG_PATH:-$REPO_ROOT/configs/qwen3_omni_single_a100_async_fastaudio.yaml}}"
 QWEN_PORT="${QWEN_PORT:-8091}"
+QWEN_HOST="${QWEN_HOST:-127.0.0.1}"
 QWEN_INIT_TIMEOUT="${QWEN_INIT_TIMEOUT:-1800}"
 QWEN_STAGE_INIT_TIMEOUT="${QWEN_STAGE_INIT_TIMEOUT:-600}"
 QWEN_SAFETENSORS_LOAD_STRATEGY="${QWEN_SAFETENSORS_LOAD_STRATEGY:-prefetch}"
@@ -15,16 +19,15 @@ PATCH_VLLM_ASYNC_REALTIME="${PATCH_VLLM_ASYNC_REALTIME:-1}"
 
 if [[ ! -x "$VENV_PATH/bin/vllm" ]]; then
   echo "error: vLLM runtime not found at $VENV_PATH/bin/vllm" >&2
-  echo "hint: install the model runtime before starting the persistent model process" >&2
+  echo "hint: run scripts/bootstrap_vast.sh first" >&2
   exit 1
 fi
 
 mkdir -p "$CACHE_DIR"
-
-source "$VENV_PATH/bin/activate"
 export HF_HUB_DISABLE_XET="${HF_HUB_DISABLE_XET:-1}"
 export HF_HOME="$CACHE_DIR"
 export TRANSFORMERS_CACHE="$CACHE_DIR"
+export VLLM_USE_V1="${VLLM_USE_V1:-0}"
 
 if [[ "$PATCH_VLLM_ASYNC_REALTIME" == "1" ]]; then
   "$VENV_PATH/bin/python" "$REPO_ROOT/scripts/patch_vllm_async_realtime.py" --venv-path "$VENV_PATH"
@@ -41,10 +44,10 @@ if [[ -n "${QWEN_VLLM_FLAGS:-}" ]]; then
   extra_flags=(${QWEN_VLLM_FLAGS})
 fi
 
-exec vllm serve "$MODEL_PATH" \
+exec "$VENV_PATH/bin/vllm" serve "$MODEL_PATH" \
   --omni \
   --deploy-config "$DEPLOY_CONFIG_PATH" \
-  --host 0.0.0.0 \
+  --host "$QWEN_HOST" \
   --port "$QWEN_PORT" \
   --trust-remote-code \
   --log-stats \

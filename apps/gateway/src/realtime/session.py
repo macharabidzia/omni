@@ -9,9 +9,14 @@ from src.realtime.audio import AudioValidationError, validate_audio_chunk
 from src.realtime.event_map import normalize_qwen_event
 from src.realtime.metrics import SessionMetrics
 from src.realtime.qwen_chat_client import QwenChatClient
-from src.realtime.qwen_client import QwenEvent, QwenRealtimeClient
+from src.realtime.qwen_client import (
+    QwenEvent,
+    QwenRealtimeClient,
+    is_qwen_connection_retryable_error,
+)
 
 logger = logging.getLogger(__name__)
+_QWEN_REOPEN_RETRY_INTERVAL_SECONDS = 0.5
 
 EventSink = Callable[[dict], Awaitable[None]]
 
@@ -55,6 +60,8 @@ class RealtimeSession:
         self.input_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
         self.upstream_response_pending = False
+        self.turn_audio_chunks: list[str] = []
+        self.turn_audio_total_bytes = 0
 
     async def send_event(self, payload: dict) -> None:
         if self.closed:
@@ -104,6 +111,11 @@ class RealtimeSession:
         self.input_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
         self.upstream_response_pending = False
+        self._clear_turn_audio_buffer()
+
+    def _clear_turn_audio_buffer(self) -> None:
+        self.turn_audio_chunks.clear()
+        self.turn_audio_total_bytes = 0
 
     def _build_qwen_realtime_client(self) -> QwenRealtimeClient:
         return QwenRealtimeClient(
@@ -142,29 +154,186 @@ class RealtimeSession:
         assert self.session_config is not None
         assert self.session_config.output_audio
 
-        self.qwen_client = self._build_qwen_realtime_client()
-        await self.qwen_client.connect()
-        await self.qwen_client.start_session(
-            speaker=self.session_config.speaker,
-            modalities=self.session_config.modalities,
-            input_sample_rate=self.session_config.input_sample_rate,
-            output_audio=self.session_config.output_audio,
-        )
+        client = self._build_qwen_realtime_client()
+        try:
+            await client.connect()
+            await client.start_session(
+                speaker=self.session_config.speaker,
+                modalities=self.session_config.modalities,
+                input_sample_rate=self.session_config.input_sample_rate,
+                output_audio=self.session_config.output_audio,
+            )
+        except Exception:
+            await client.close()
+            raise
+        self.qwen_client = client
         self.qwen_reader_task = asyncio.create_task(self._pump_qwen_events())
 
-    async def _restart_qwen_realtime_session(self) -> None:
+    async def _open_qwen_realtime_session_with_retry_unlocked(
+        self,
+        *,
+        reason: str,
+    ) -> None:
+        deadline = asyncio.get_running_loop().time() + self.settings.qwen_request_timeout_seconds
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                await self._open_qwen_realtime_session_unlocked()
+            except Exception as exc:
+                await self._close_qwen_realtime_session_unlocked()
+                remaining_seconds = deadline - asyncio.get_running_loop().time()
+                if not is_qwen_connection_retryable_error(exc) or remaining_seconds <= 0:
+                    raise
+                retry_delay_seconds = min(
+                    _QWEN_REOPEN_RETRY_INTERVAL_SECONDS,
+                    remaining_seconds,
+                )
+                logger.warning(
+                    "Session %s waiting for Qwen realtime reopen reason=%s attempt=%d retry_in=%.2fs error=%s",
+                    self.session_id,
+                    reason,
+                    attempt,
+                    retry_delay_seconds,
+                    exc,
+                )
+                await asyncio.sleep(retry_delay_seconds)
+                continue
+
+            if attempt > 1:
+                logger.info(
+                    "Session %s reopened Qwen realtime session reason=%s attempts=%d",
+                    self.session_id,
+                    reason,
+                    attempt,
+                )
+            return
+
+    async def _restart_qwen_realtime_session(
+        self,
+        *,
+        preserve_turn_audio: bool = False,
+        reason: str = "unspecified",
+    ) -> None:
+        async with self.qwen_session_lock:
+            await self._restart_qwen_realtime_session_unlocked(
+                preserve_turn_audio=preserve_turn_audio,
+                reason=reason,
+            )
+
+    async def _restart_qwen_realtime_session_unlocked(
+        self,
+        *,
+        preserve_turn_audio: bool,
+        reason: str,
+    ) -> None:
         assert self.session_config is not None
         assert self.session_config.output_audio
 
+        logger.warning(
+            "Session %s restarting Qwen realtime session reason=%s preserve_turn_audio=%s buffered_turn_chunks=%d buffered_turn_bytes=%d",
+            self.session_id,
+            reason,
+            preserve_turn_audio,
+            len(self.turn_audio_chunks),
+            self.turn_audio_total_bytes,
+        )
+        await self._close_qwen_realtime_session_unlocked()
+        self.ignore_model_audio = False
+        self.buffered_assistant_events.clear()
+        self.assistant_output_gate_open = False
+        self.precommit_assistant_output_started = False
+        self.assistant_audio_chunk_count = 0
+        self.upstream_response_pending = False
+        if not preserve_turn_audio:
+            self._clear_turn_audio_buffer()
+        await self._open_qwen_realtime_session_with_retry_unlocked(reason=reason)
+
+    async def _ensure_qwen_session_for_buffered_turn(self, *, reason: str) -> None:
+        if self.qwen_client is not None:
+            return
+        if self.session_config is None or not self.session_config.output_audio:
+            return
+        if not self.turn_audio_chunks:
+            return
+
+        logger.warning(
+            "Session %s reopening Qwen session before %s buffered_turn_chunks=%d buffered_turn_bytes=%d",
+            self.session_id,
+            reason,
+            len(self.turn_audio_chunks),
+            self.turn_audio_total_bytes,
+        )
         async with self.qwen_session_lock:
-            await self._close_qwen_realtime_session_unlocked()
-            self.ignore_model_audio = False
-            self.buffered_assistant_events.clear()
-            self.assistant_output_gate_open = False
-            self.precommit_assistant_output_started = False
-            self.assistant_audio_chunk_count = 0
-            self.upstream_response_pending = False
-            await self._open_qwen_realtime_session_unlocked()
+            if self.qwen_client is None:
+                await self._open_qwen_realtime_session_with_retry_unlocked(reason=reason)
+                await self._replay_turn_audio_unlocked()
+
+    async def _replay_turn_audio_unlocked(self) -> None:
+        if not self.turn_audio_chunks:
+            return
+        assert self.qwen_client is not None
+
+        for audio_base64 in self.turn_audio_chunks:
+            await self.qwen_client.append_audio(audio_base64)
+
+        logger.info(
+            "Session %s replayed buffered turn audio chunks=%d bytes=%d",
+            self.session_id,
+            len(self.turn_audio_chunks),
+            self.turn_audio_total_bytes,
+        )
+
+    async def _recover_qwen_turn_after_send_failure(
+        self,
+        *,
+        failed_action: str,
+        exc: Exception,
+        commit_after_replay: bool,
+    ) -> bool:
+        if self.session_config is None or not self.session_config.output_audio:
+            return False
+        if not self.turn_audio_chunks:
+            return False
+        if not is_qwen_connection_retryable_error(exc):
+            return False
+
+        logger.warning(
+            "Session %s recovering Qwen turn after %s failure buffered_turn_chunks=%d buffered_turn_bytes=%d error=%s",
+            self.session_id,
+            failed_action,
+            len(self.turn_audio_chunks),
+            self.turn_audio_total_bytes,
+            exc,
+        )
+        try:
+            async with self.qwen_session_lock:
+                await self._restart_qwen_realtime_session_unlocked(
+                    preserve_turn_audio=True,
+                    reason=f"{failed_action}_failure",
+                )
+                if commit_after_replay:
+                    self.assistant_output_gate_open = True
+                await self._replay_turn_audio_unlocked()
+                if commit_after_replay:
+                    assert self.qwen_client is not None
+                    await self.qwen_client.commit_audio()
+                    self.upstream_response_pending = True
+        except Exception:
+            logger.exception(
+                "Session %s failed to recover Qwen turn after %s failure",
+                self.session_id,
+                failed_action,
+            )
+            await self._close_qwen_realtime_session()
+            return False
+
+        logger.info(
+            "Session %s recovered Qwen turn after %s failure",
+            self.session_id,
+            failed_action,
+        )
+        return True
 
     async def _start_session(self, event: dict) -> None:
         speaker = event.get("speaker", self.settings.supported_speakers[0])
@@ -210,6 +379,7 @@ class RealtimeSession:
         self.input_audio_total_bytes = 0
         self.assistant_audio_chunk_count = 0
         self.upstream_response_pending = False
+        self._clear_turn_audio_buffer()
 
         if output_audio:
             try:
@@ -283,13 +453,18 @@ class RealtimeSession:
                 self.session_id,
             )
             try:
-                await self._restart_qwen_realtime_session()
+                await self._restart_qwen_realtime_session(reason="stale_upstream_before_new_turn")
             except Exception as exc:
                 await self.send_error(
                     code="QWEN_STALE_SESSION_RESET_FAILED",
                     message=f"Failed to reset stale Qwen session before new turn: {exc}",
                 )
                 return
+        if is_first_chunk_of_turn and not self.upstream_response_pending:
+            self._clear_turn_audio_buffer()
+
+        self.turn_audio_chunks.append(validated.audio_base64)
+        self.turn_audio_total_bytes += len(validated.audio_bytes)
         self.input_audio_chunk_count += 1
         self.input_audio_total_bytes += len(validated.audio_bytes)
         if self.input_audio_chunk_count == 1:
@@ -307,6 +482,15 @@ class RealtimeSession:
         try:
             await self.qwen_client.append_audio(validated.audio_base64)
         except Exception as exc:
+            recovered = await self._recover_qwen_turn_after_send_failure(
+                failed_action="append",
+                exc=exc,
+                commit_after_replay=False,
+            )
+            if recovered:
+                await self._send_metrics_update()
+                return
+            await self._close_qwen_realtime_session()
             await self.send_error(
                 code="QWEN_APPEND_FAILED",
                 message=f"Failed to forward audio to Qwen: {exc}",
@@ -368,6 +552,7 @@ class RealtimeSession:
             return
 
         try:
+            await self._ensure_qwen_session_for_buffered_turn(reason="commit")
             assert self.qwen_client is not None
             response_already_started = self.precommit_assistant_output_started
             if response_already_started:
@@ -395,6 +580,17 @@ class RealtimeSession:
             self.input_audio_chunk_count = 0
             self.input_audio_total_bytes = 0
         except Exception as exc:
+            recovered = await self._recover_qwen_turn_after_send_failure(
+                failed_action="commit",
+                exc=exc,
+                commit_after_replay=True,
+            )
+            if recovered:
+                self.input_audio_chunk_count = 0
+                self.input_audio_total_bytes = 0
+                await self._send_metrics_update()
+                return
+            await self._close_qwen_realtime_session()
             await self.send_error(
                 code="QWEN_COMMIT_FAILED",
                 message=f"Failed to commit audio to Qwen: {exc}",
@@ -420,9 +616,10 @@ class RealtimeSession:
 
         self.ignore_model_audio = True
         self.buffered_assistant_events.clear()
+        self._clear_turn_audio_buffer()
         self.metrics.mark_once("t_barge_in")
         try:
-            await self._restart_qwen_realtime_session()
+            await self._restart_qwen_realtime_session(reason="client_interrupt")
         except Exception as exc:
             await self.send_error(
                 code="QWEN_CANCEL_FAILED",
@@ -496,8 +693,10 @@ class RealtimeSession:
                 self.assistant_audio_chunk_count,
             )
             self.assistant_audio_chunk_count = 0
+            self._clear_turn_audio_buffer()
         elif qwen_event.kind == "error":
             self.upstream_response_pending = False
+            self._clear_turn_audio_buffer()
             logger.error(
                 "Session %s upstream Qwen error code=%s message=%s",
                 self.session_id,

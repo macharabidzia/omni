@@ -1,0 +1,11 @@
+Host vast-omni
+  HostName <PUBLIC_IPADDR>
+  User root
+  Port <VAST_TCP_PORT_22>
+  IdentityFile ~/.ssh/id_ed25519
+  ServerAliveInterval 30
+  ServerAliveCountMax 10
+  StrictHostKeyChecking accept-new
+
+# Replace <PUBLIC_IPADDR> and <VAST_TCP_PORT_22> with the values from:
+#   vast-capabilities | jq '.instance.open_ports'

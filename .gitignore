@@ -10,6 +10,7 @@ dist/
 .env
 benchmark-results/
 .venv-qwen/
+tmp/
 !benchmark-results/event_logs/.gitkeep
 models/*
 !models/.gitkeep

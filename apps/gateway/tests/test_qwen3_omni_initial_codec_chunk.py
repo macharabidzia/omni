@@ -8,24 +8,20 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-import torch
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-QWEN_PROCESSOR_PATH = (
-    REPO_ROOT
-    / ".venv-qwen"
-    / "lib"
-    / "python3.12"
-    / "site-packages"
-    / "vllm_omni"
-    / "model_executor"
-    / "stage_input_processors"
-    / "qwen3_omni.py"
+QWEN_PROCESSOR_CANDIDATES = sorted(
+    (REPO_ROOT / ".venv-qwen" / "lib").glob(
+        "python*/site-packages/vllm_omni/model_executor/stage_input_processors/qwen3_omni.py"
+    )
 )
+QWEN_PROCESSOR_PATH = QWEN_PROCESSOR_CANDIDATES[0] if QWEN_PROCESSOR_CANDIDATES else None
 
-if not QWEN_PROCESSOR_PATH.exists():
+if QWEN_PROCESSOR_PATH is None or not QWEN_PROCESSOR_PATH.exists():
     pytest.skip("qwen runtime stage processor not available", allow_module_level=True)
+
+torch = pytest.importorskip("torch")
 
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))

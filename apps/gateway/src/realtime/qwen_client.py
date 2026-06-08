@@ -9,6 +9,19 @@ import websockets
 
 logger = logging.getLogger(__name__)
 _INITIAL_SERVER_EVENT_TIMEOUT_SECONDS = 5.0
+_QWEN_RETRYABLE_ERROR_FRAGMENTS = (
+    "1012",
+    "service restart",
+    "connection closed",
+    "connect call failed",
+    "connection refused",
+    "errno 111",
+    "timed out during opening handshake",
+    "timed out waiting for qwen realtime session.created",
+    "qwen realtime websocket closed during startup",
+    "http 503",
+    "service unavailable",
+)
 
 
 @dataclass(slots=True)
@@ -61,6 +74,7 @@ class QwenRealtimeClient:
     async def connect(self) -> None:
         if self.websocket is not None:
             return
+        logger.info("Connecting to Qwen realtime websocket url=%s", self.url)
         websocket = await websockets.connect(
             self.url,
             max_size=self.max_ws_message_bytes,
@@ -80,6 +94,7 @@ class QwenRealtimeClient:
             await websocket.close()
             raise
         self.websocket = websocket
+        logger.info("Connected to Qwen realtime websocket url=%s", self.url)
 
     async def start_session(
         self,
@@ -94,6 +109,13 @@ class QwenRealtimeClient:
         self.output_audio = output_audio
         self.input_stream_started = False
         self.awaiting_response = False
+        logger.info(
+            "Starting Qwen realtime session speaker=%s modalities=%s output_audio=%s input_sample_rate=%s",
+            speaker,
+            ",".join(modalities),
+            output_audio,
+            input_sample_rate,
+        )
 
         session_update = {
             "type": "session.update",
@@ -149,6 +171,13 @@ class QwenRealtimeClient:
                 )
                 return
             except websockets.ConnectionClosed as exc:
+                logger.warning(
+                    "Qwen realtime websocket closed code=%s reason=%s awaiting_response=%s input_stream_started=%s",
+                    exc.code,
+                    exc.reason or "",
+                    self.awaiting_response,
+                    self.input_stream_started,
+                )
                 if self.awaiting_response:
                     self.input_stream_started = False
                     self.awaiting_response = False
@@ -178,7 +207,16 @@ class QwenRealtimeClient:
     async def _send(self, payload: dict) -> None:
         if self.websocket is None:
             raise RuntimeError("Qwen websocket has not been connected.")
-        await self.websocket.send(json.dumps(payload))
+        try:
+            await self.websocket.send(json.dumps(payload))
+        except websockets.ConnectionClosed as exc:
+            logger.warning(
+                "Qwen websocket send failed type=%s code=%s reason=%s",
+                payload.get("type", "unknown"),
+                exc.code,
+                exc.reason or "",
+            )
+            raise
 
     def _parse_event(self, payload: dict) -> QwenEvent | None:
         raw_type = payload.get("type", "")
@@ -296,6 +334,33 @@ def _extract_error_message(payload: dict) -> str:
         )
         or "Qwen returned an unspecified error."
     )
+
+
+def is_qwen_connection_retryable_error(exc: Exception) -> bool:
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, websockets.ConnectionClosed):
+            return True
+        if isinstance(current, asyncio.TimeoutError):
+            return True
+        if isinstance(current, OSError) and getattr(current, "errno", None) in {
+            104,
+            110,
+            111,
+            113,
+        }:
+            return True
+        message = str(current).lower()
+        if any(fragment in message for fragment in _QWEN_RETRYABLE_ERROR_FRAGMENTS):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
+def is_qwen_connection_closed_error(exc: Exception) -> bool:
+    return is_qwen_connection_retryable_error(exc)
 
 
 async def probe_qwen_realtime_websocket(

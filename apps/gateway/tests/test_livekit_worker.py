@@ -61,11 +61,13 @@ class FakeAudioPublisher:
         audio_source,
         output_sample_rate: int,
         output_frame_ms: int,
+        output_lowpass_hz: float,
         frame_sink=None,
     ) -> None:
         self.audio_source = audio_source
         self.output_sample_rate = output_sample_rate
         self.output_frame_ms = output_frame_ms
+        self.output_lowpass_hz = output_lowpass_hz
         self.frame_sink = frame_sink
 
 
@@ -135,6 +137,7 @@ def test_livekit_worker_uses_configured_audio_queue(monkeypatch) -> None:
         LIVEKIT_OUTPUT_SAMPLE_RATE=24000,
         LIVEKIT_OUTPUT_FRAME_MS=10,
         LIVEKIT_OUTPUT_QUEUE_MS=120,
+        LIVEKIT_OUTPUT_LOWPASS_HZ=5500,
     )
 
     worker = worker_module.LiveKitWorker(settings)
@@ -144,6 +147,7 @@ def test_livekit_worker_uses_configured_audio_queue(monkeypatch) -> None:
     assert worker.audio_source.queue_size_ms == 120
     assert worker.audio_publisher.output_sample_rate == 24000
     assert worker.audio_publisher.output_frame_ms == 10
+    assert worker.audio_publisher.output_lowpass_hz == 5500
 
 
 def test_livekit_output_defaults_match_supported_transport() -> None:

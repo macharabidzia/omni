@@ -32,7 +32,19 @@ async def main() -> None:
     identity = settings.livekit_agent_id if args.worker else args.identity
     token = build_worker_token(settings) if args.worker else build_browser_token(settings, identity=identity)
 
-    await room.connect(settings.livekit_url, token)
+    print(
+        "connecting "
+        f"livekit_url={settings.livekit_url} "
+        f"api_key_present={bool(settings.livekit_api_key)} "
+        f"api_secret_present={bool(settings.livekit_api_secret)} "
+        f"room={settings.livekit_room} "
+        f"identity={identity}"
+    )
+    try:
+        await room.connect(settings.livekit_url, token)
+    except Exception as exc:
+        print(f"failed livekit_url={settings.livekit_url} room={settings.livekit_room} error={exc}")
+        raise
     try:
         print(
             f"connected livekit_url={settings.livekit_url} room={settings.livekit_room} identity={identity}"
@@ -43,3 +55,9 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+    # `livekit-rtc` can panic in Rust during interpreter teardown even after a
+    # successful connect/disconnect cycle. Exit the process immediately once the
+    # smoke check has completed so the helper returns a stable status code.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)
