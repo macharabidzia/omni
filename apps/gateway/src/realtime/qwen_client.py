@@ -131,6 +131,7 @@ class QwenRealtimeClient:
         self.awaiting_response = True
 
     async def append_audio(self, pcm16_base64: str) -> None:
+        await self._ensure_input_stream_started()
         await self._send(
             {
                 "type": "input_audio_buffer.append",
@@ -139,7 +140,6 @@ class QwenRealtimeClient:
         )
 
     async def commit_audio(self) -> None:
-        await self._ensure_input_stream_started()
         await self._send({"type": "input_audio_buffer.commit", "final": True})
 
     async def cancel_response(self) -> None:
@@ -224,6 +224,15 @@ class QwenRealtimeClient:
         if raw_type in {
             "conversation.item.input_audio_transcription.delta",
             "input_audio_buffer.transcript.delta",
+        }:
+            text = _first_non_empty(
+                payload.get("delta"),
+                payload.get("text"),
+                payload.get("transcript"),
+            )
+            return QwenEvent(kind="transcript_delta", payload=payload, text=text)
+
+        if raw_type in {
             "response.audio_transcript.delta",
             "transcription.delta",
         }:
@@ -232,7 +241,7 @@ class QwenRealtimeClient:
                 payload.get("text"),
                 payload.get("transcript"),
             )
-            return QwenEvent(kind="transcript_delta", payload=payload, text=text)
+            return QwenEvent(kind="assistant_text_delta", payload=payload, text=text)
 
         if raw_type in {"response.text.delta", "response.output_text.delta"}:
             text = _first_non_empty(payload.get("delta"), payload.get("text"))

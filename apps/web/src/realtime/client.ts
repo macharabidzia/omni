@@ -1,7 +1,6 @@
 import { Room, RoomEvent, Track, type RemoteTrack } from "livekit-client";
 
 import { AudioLevelMonitor } from "../audio/level-monitor";
-import { PcmPlayer } from "../audio/pcm-player";
 import type { GatewayInboundEvent, Speaker } from "./events";
 
 type RealtimeClientOptions = {
@@ -10,7 +9,6 @@ type RealtimeClientOptions = {
   onClose: () => void;
   onError: (message: string) => void;
   onDebugEvent: (event: { type: string; [key: string]: unknown }) => void;
-  onLocalAudioLevel: (level: number) => void;
   onAssistantPlaybackStarted: () => void;
   onAssistantPlaybackDrained: () => void;
 };
@@ -27,8 +25,6 @@ type AssistantCaptureWindow = Window & {
   __assistantCaptureStream?: MediaStream | null;
 };
 
-const AUDIO_PACKET_TYPE_PCM16 = 1;
-const AUDIO_PACKET_HEADER_BYTES = 6;
 const ASSISTANT_TRACK_NAME = "assistant";
 const ASSISTANT_TRACK_ACTIVITY_THRESHOLD = 0.002;
 const ASSISTANT_TRACK_DRAIN_MS = 120;
@@ -39,7 +35,6 @@ export class RealtimeClient {
   private room: Room | null = null;
   private controlTopic = "omni.control";
   private microphoneStream: MediaStream | null = null;
-  private assistantAudioTransport: "unknown" | "track" | "packet" | "delta" = "unknown";
   private assistantRemoteTrack: RemoteTrack | null = null;
   private assistantTrackSid: string | null = null;
   private assistantTrackStream: MediaStream | null = null;
@@ -47,13 +42,6 @@ export class RealtimeClient {
   private assistantTrackFinalizePending = false;
   private assistantTrackLastActiveAt = 0;
   private assistantTrackSuppressUntil = 0;
-  private localMonitor = new AudioLevelMonitor({
-    threshold: 0,
-    drainMs: 0,
-    fftSize: 512,
-    pollMs: 10,
-    onLevel: (level) => this.options.onLocalAudioLevel(level),
-  });
   private assistantTrackMonitor = new AudioLevelMonitor({
     threshold: 0,
     drainMs: 0,
@@ -78,21 +66,13 @@ export class RealtimeClient {
       this.options.onError("Browser blocked LiveKit assistant audio playback.");
     },
   });
-  private assistantPlayer = new PcmPlayer({
-    onStarted: () => this.options.onAssistantPlaybackStarted(),
-    onDrained: () => this.options.onAssistantPlaybackDrained(),
-    onError: (message) => this.options.onError(message),
-    onDebugEvent: (event) => this.options.onDebugEvent(event),
-  });
   private readonly encoder = new TextEncoder();
   private readonly decoder = new TextDecoder();
-  private audioPacketDebugCount = 0;
   private controlEventSequence = 0;
 
   constructor(private readonly options: RealtimeClientOptions) {}
 
   async connect(speaker: Speaker): Promise<void> {
-    await this.assistantPlayer.prepare();
     this.syncAssistantCaptureStream();
 
     const session = await this.fetchSession();
@@ -112,9 +92,6 @@ export class RealtimeClient {
         return;
       }
       const payloadBytes = normalizeLivekitPayload(payload);
-      if (this.handleAudioPacket(payloadBytes)) {
-        return;
-      }
       try {
         const event = JSON.parse(this.decoder.decode(payloadBytes)) as GatewayInboundEvent;
         this.options.onEvent(event);
@@ -201,7 +178,7 @@ export class RealtimeClient {
       type: "session.start",
       speaker,
       modalities: ["text", "audio"],
-      debug_audio_deltas: this.isTransportDebugEnabled(),
+      debug_audio_metadata: this.isTransportDebugEnabled(),
     });
   }
 
@@ -241,63 +218,32 @@ export class RealtimeClient {
     });
   }
 
-  async enqueueAssistantAudio(event: {
-    audio_base64: string;
-    sample_rate?: number | null;
-    channels?: number | null;
-  }): Promise<void> {
-    if (this.assistantAudioTransport === "track" || this.assistantAudioTransport === "packet") {
-      return;
-    }
-    this.assistantAudioTransport = "delta";
-    await this.assistantPlayer.enqueueBase64({
-      audioBase64: event.audio_base64,
-      sampleRate: event.sample_rate,
-      channels: event.channels,
-    });
-  }
-
   finalizeAssistantAudio(): void {
-    if (this.assistantAudioTransport === "track") {
+    if (this.assistantTrackStream !== null) {
       this.assistantTrackFinalizePending = true;
-      return;
     }
-    this.assistantPlayer.finalize();
   }
 
   interruptAssistantAudio(): void {
-    this.audioPacketDebugCount = 0;
     this.assistantTrackFinalizePending = false;
     this.assistantTrackLastActiveAt = 0;
     this.assistantTrackSuppressUntil = performance.now() + ASSISTANT_TRACK_DRAIN_MS;
     this.assistantTrackMonitor.rearm();
-    if (this.assistantAudioTransport === "track") {
-      if (this.assistantTrackPlaybackActive) {
-        this.assistantTrackPlaybackActive = false;
-        this.options.onAssistantPlaybackDrained();
-      }
-    } else {
-      this.assistantAudioTransport = "unknown";
+    if (this.assistantTrackPlaybackActive) {
+      this.assistantTrackPlaybackActive = false;
+      this.options.onAssistantPlaybackDrained();
     }
-    this.assistantPlayer.reset();
   }
 
   resetAssistantPlaybackMonitor(): void {
-    this.audioPacketDebugCount = 0;
     this.assistantTrackFinalizePending = false;
     this.assistantTrackPlaybackActive = false;
     this.assistantTrackLastActiveAt = 0;
     this.assistantTrackSuppressUntil = 0;
     this.assistantTrackMonitor.rearm();
-    if (this.assistantTrackStream === null) {
-      this.assistantAudioTransport = "unknown";
-    }
-    this.assistantPlayer.reset();
   }
 
   async close(): Promise<void> {
-    this.audioPacketDebugCount = 0;
-    this.assistantAudioTransport = "unknown";
     this.assistantRemoteTrack = null;
     this.assistantTrackSid = null;
     this.assistantTrackStream = null;
@@ -306,9 +252,7 @@ export class RealtimeClient {
     this.assistantTrackLastActiveAt = 0;
     this.assistantTrackSuppressUntil = 0;
     this.clearAssistantCaptureStream();
-    await this.assistantPlayer.close();
     this.assistantTrackMonitor.detach();
-    this.localMonitor.detach();
     this.microphoneStream?.getTracks().forEach((track) => track.stop());
     this.microphoneStream = null;
     await this.room?.disconnect();
@@ -346,7 +290,6 @@ export class RealtimeClient {
         noiseSuppression: true,
       },
     });
-    await this.localMonitor.attachStream(this.microphoneStream);
   }
 
   private async handleTrackSubscribed(
@@ -387,12 +330,10 @@ export class RealtimeClient {
     this.assistantRemoteTrack = track;
     this.assistantTrackSid = resolvedTrackSid;
     this.assistantTrackStream = stream;
-    this.assistantAudioTransport = "track";
     this.assistantTrackPlaybackActive = false;
     this.assistantTrackFinalizePending = false;
     this.assistantTrackLastActiveAt = 0;
     this.assistantTrackSuppressUntil = 0;
-    this.assistantPlayer.reset();
     this.syncAssistantCaptureStream();
     await this.assistantTrackMonitor.attachStream(stream, { playback: true });
     this.syncAssistantCaptureStream();
@@ -428,9 +369,6 @@ export class RealtimeClient {
     this.assistantTrackLastActiveAt = 0;
     this.assistantTrackSuppressUntil = 0;
     this.assistantTrackMonitor.detach();
-    if (this.assistantAudioTransport === "track") {
-      this.assistantAudioTransport = "unknown";
-    }
     this.syncAssistantCaptureStream();
   }
 
@@ -470,9 +408,7 @@ export class RealtimeClient {
   private syncAssistantCaptureStream(): void {
     const captureWindow = window as AssistantCaptureWindow;
     captureWindow.__assistantCaptureStream =
-      this.assistantTrackMonitor.captureStream() ??
-      this.assistantTrackStream ??
-      this.assistantPlayer.captureStream();
+      this.assistantTrackMonitor.captureStream() ?? this.assistantTrackStream;
   }
 
   private clearAssistantCaptureStream(): void {
@@ -480,45 +416,8 @@ export class RealtimeClient {
     captureWindow.__assistantCaptureStream = null;
   }
 
-  private handleAudioPacket(payload: Uint8Array): boolean {
-    if (payload.byteLength < AUDIO_PACKET_HEADER_BYTES) {
-      return false;
-    }
-    if (payload[0] !== AUDIO_PACKET_TYPE_PCM16) {
-      return false;
-    }
-    if (this.assistantAudioTransport === "track") {
-      return true;
-    }
-    if (this.assistantAudioTransport === "delta") {
-      return true;
-    }
-    this.assistantAudioTransport = "packet";
-
-    const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
-    const sampleRate = view.getUint32(1);
-    const channels = view.getUint8(5);
-    const pcmBytes = payload.subarray(AUDIO_PACKET_HEADER_BYTES);
-    if (this.audioPacketDebugCount === 0) {
-      this.options.onDebugEvent({
-        type: "assistant.audio.packet",
-        perf_now_ms: Math.round(performance.now() * 100) / 100,
-        sample_rate: sampleRate,
-        channels,
-        bytes: pcmBytes.byteLength,
-      });
-    }
-    this.audioPacketDebugCount += 1;
-    void this.assistantPlayer.enqueuePcmBytes({
-      pcmBytes,
-      sampleRate,
-      channels,
-    });
-    return true;
-  }
-
   private handleAssistantTrackLevel(level: number): void {
-    if (this.assistantAudioTransport !== "track") {
+    if (this.assistantTrackStream === null) {
       return;
     }
 

@@ -1,22 +1,25 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 DEFAULT_SYSTEM_PROMPT = (
-    "You are Qwen-Omni, a smart voice assistant created by Alibaba Qwen. "
-    "You are a virtual voice assistant with no gender or age. "
-    "In user messages, 'I/me/my/we/our' refer to the user and 'you/your' refer to the assistant. "
-    "In your replies, address the user as 'you/your' and yourself as 'I/me/my'; never mirror the user's pronouns. "
-    "Use short, brief, straightforward replies under 50 words in a natural conversational tone. "
-    "Output only the spoken content. "
-    "Do not use bullet points, stage directions, action descriptions, emotion descriptions, or symbols that describe tone. "
-    "Answer the user's audio or text question directly. "
-    "Reply in the same language as the user unless asked otherwise. "
-    "If you are uncertain or need clarification, ask a short follow-up question."
+    "You are a natural voice assistant. "
+    "You are not human and you have no gender or age, but speak like a real helpful person. "
+    "Do not mention model names, Alibaba, or Qwen unless the user directly asks. "
+    "When the user says 'I/me/my/we/our', they mean themselves. "
+    "When the user says 'you/your', they mean you. "
+    "Use 'I/me/my' for yourself and 'you/your' for the user. "
+    "Keep replies short, natural, and direct, usually under 50 words. "
+    "Answer the main point first. "
+    "Use the same language as the user unless asked otherwise. "
+    "Output only spoken content. "
+    "Do not use bullet points, markdown, emojis, stage directions, or emotion labels. "
+    "If unclear, ask one short natural question."
 )
 
 
@@ -55,8 +58,32 @@ class Settings(BaseSettings):
         alias="LIVEKIT_TOKEN_TTL_SECONDS",
     )
     livekit_input_sample_rate: int = Field(
-        default=16000,
+        default=48000,
         alias="LIVEKIT_INPUT_SAMPLE_RATE",
+    )
+    livekit_input_vad_enabled: bool = Field(
+        default=True,
+        alias="LIVEKIT_INPUT_VAD_ENABLED",
+    )
+    livekit_input_vad_min_speech_duration: float = Field(
+        default=0.05,
+        alias="LIVEKIT_INPUT_VAD_MIN_SPEECH_DURATION",
+    )
+    livekit_input_vad_min_silence_duration: float = Field(
+        default=0.35,
+        alias="LIVEKIT_INPUT_VAD_MIN_SILENCE_DURATION",
+    )
+    livekit_input_vad_prefix_padding_duration: float = Field(
+        default=0.15,
+        alias="LIVEKIT_INPUT_VAD_PREFIX_PADDING_DURATION",
+    )
+    livekit_input_vad_activation_threshold: float = Field(
+        default=0.5,
+        alias="LIVEKIT_INPUT_VAD_ACTIVATION_THRESHOLD",
+    )
+    livekit_input_vad_force_cpu: bool = Field(
+        default=True,
+        alias="LIVEKIT_INPUT_VAD_FORCE_CPU",
     )
     livekit_output_sample_rate: int = Field(
         default=48000,
@@ -67,15 +94,11 @@ class Settings(BaseSettings):
         alias="LIVEKIT_OUTPUT_FRAME_MS",
     )
     livekit_output_queue_ms: int = Field(
-        default=60,
+        default=40,
         alias="LIVEKIT_OUTPUT_QUEUE_MS",
     )
-    livekit_output_lowpass_hz: float = Field(
-        default=6000.0,
-        alias="LIVEKIT_OUTPUT_LOWPASS_HZ",
-    )
     livekit_preroll_frames: int = Field(
-        default=8,
+        default=1,
         alias="LIVEKIT_PREROLL_FRAMES",
     )
     audio_artifact_log_path: str = Field(
@@ -94,6 +117,18 @@ class Settings(BaseSettings):
         default="http://127.0.0.1:17091/v1/chat/completions",
         alias="QWEN_CHAT_URL",
     )
+    qwen_audio_backend: Literal["chat_stream", "realtime"] = Field(
+        default="realtime",
+        alias="QWEN_AUDIO_BACKEND",
+    )
+    qwen_input_sample_rate: int = Field(
+        default=16000,
+        alias="QWEN_AUDIO_INPUT_SAMPLE_RATE",
+    )
+    qwen_output_sample_rate: int = Field(
+        default=24000,
+        alias="QWEN_AUDIO_OUTPUT_SAMPLE_RATE",
+    )
     qwen_health_url: str = Field(
         default="http://127.0.0.1:17091/health",
         alias="QWEN_HEALTH_URL",
@@ -107,8 +142,6 @@ class Settings(BaseSettings):
         default=90.0,
         alias="QWEN_RESPONSE_TIMEOUT_SECONDS",
     )
-    input_sample_rate: int = 16000
-    output_sample_rate: int = 24000
     allowed_chunk_ms: tuple[int, ...] = (10, 20, 40, 80, 120, 200)
     default_browser_chunk_ms: int = 20
     default_smoke_chunk_ms: int = 20
@@ -120,6 +153,19 @@ class Settings(BaseSettings):
         default=64,
         alias="QWEN_TEXT_MAX_COMPLETION_TOKENS",
     )
+
+    @model_validator(mode="after")
+    def _validate_audio_rate_separation(self) -> "Settings":
+        expected_rates = {
+            "LIVEKIT_INPUT_SAMPLE_RATE": (self.livekit_input_sample_rate, 48000),
+            "LIVEKIT_OUTPUT_SAMPLE_RATE": (self.livekit_output_sample_rate, 48000),
+            "QWEN_AUDIO_INPUT_SAMPLE_RATE": (self.qwen_input_sample_rate, 16000),
+            "QWEN_AUDIO_OUTPUT_SAMPLE_RATE": (self.qwen_output_sample_rate, 24000),
+        }
+        for env_name, (value, expected) in expected_rates.items():
+            if value != expected:
+                raise ValueError(f"{env_name} must be {expected}; got {value}.")
+        return self
 
     @field_validator("cors_allow_origins", mode="before")
     @classmethod

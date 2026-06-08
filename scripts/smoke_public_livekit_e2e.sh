@@ -8,6 +8,9 @@ source "$REPO_ROOT/scripts/load_env.sh"
 
 INPUT_PATH="${1:-}"
 OUTPUT_PREFIX="${2:-$REPO_ROOT/tmp/public-livekit-e2e}"
+if [[ -n "$OUTPUT_PREFIX" && "$OUTPUT_PREFIX" != /* ]]; then
+  OUTPUT_PREFIX="$REPO_ROOT/$OUTPUT_PREFIX"
+fi
 
 if [[ -z "$INPUT_PATH" ]]; then
   echo "usage: scripts/smoke_public_livekit_e2e.sh <input-audio-file> [output-prefix]" >&2
@@ -30,6 +33,7 @@ mkdir -p "$(dirname "$OUTPUT_PREFIX")"
 NORMALIZED_INPUT="${OUTPUT_PREFIX}.input.wav"
 CHECK_JSON="${OUTPUT_PREFIX}.check.json"
 CAPTURE_JSON="${OUTPUT_PREFIX}.capture.json"
+CAPTURE_WEBM="${OUTPUT_PREFIX}.capture.webm"
 CAPTURE_WAV="${OUTPUT_PREFIX}.capture.wav"
 ANALYSIS_JSON="${OUTPUT_PREFIX}.analysis.json"
 
@@ -52,8 +56,10 @@ ffmpeg -y -i "$INPUT_PATH" -ac 1 -ar 16000 -c:a pcm_s16le "$NORMALIZED_INPUT" >/
 (
   cd "$REPO_ROOT/apps/web"
   node scripts/playwright-livekit-check.mjs "$WEB_URL" "$NORMALIZED_INPUT" "$CHECK_JSON"
-  node scripts/playwright-livekit-capture.mjs "$WEB_URL" "$NORMALIZED_INPUT" "$CAPTURE_JSON" "$CAPTURE_WAV"
+  node scripts/playwright-livekit-capture.mjs "$WEB_URL" "$NORMALIZED_INPUT" "$CAPTURE_JSON" "$CAPTURE_WEBM"
 )
+
+ffmpeg -y -i "$CAPTURE_WEBM" -ac 1 -ar 48000 -c:a pcm_s16le "$CAPTURE_WAV" >/dev/null 2>&1
 
 "$REPO_ROOT/.venv/bin/python" "$REPO_ROOT/scripts/analyze_capture_audio.py" \
   "$CAPTURE_WAV" \
@@ -63,5 +69,6 @@ echo "web_url=$WEB_URL"
 echo "normalized_input=$NORMALIZED_INPUT"
 echo "check_json=$CHECK_JSON"
 echo "capture_json=$CAPTURE_JSON"
+echo "capture_webm=$CAPTURE_WEBM"
 echo "capture_wav=$CAPTURE_WAV"
 echo "analysis_json=$ANALYSIS_JSON"

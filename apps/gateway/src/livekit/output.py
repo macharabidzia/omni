@@ -3,24 +3,34 @@ from __future__ import annotations
 import base64
 import logging
 import time
-from array import array
-from math import ceil, pi
+from math import ceil
 from typing import Awaitable, Callable
 
+import numpy as np
 from livekit import rtc
 
-from src.realtime.audio import chunk_bytes_for_duration_ms
+from src.realtime.audio import (
+    chunk_bytes_for_duration_ms,
+    pcm16_bytes as encode_pcm16_bytes,
+    pcm16_peak_abs,
+    pcm16_rms,
+    pcm16_samples,
+)
 
 logger = logging.getLogger(__name__)
 
 FrameSink = Callable[[bytes], Awaitable[None]]
 LEADING_SILENCE_TRIM_MAX_MS = 120
+INTERCHUNK_LEADING_SILENCE_TRIM_MAX_MS = 60
+INTERCHUNK_TRAILING_SILENCE_TRIM_MIN_MS = 20
+INTERCHUNK_TRAILING_SILENCE_TRIM_MAX_MS = 30
+INTERCHUNK_TRAILING_SILENCE_RMS_THRESHOLD = 96
 LEADING_SILENCE_WINDOW_MS = 5
 LEADING_SILENCE_PEAK_THRESHOLD = 48
 LEADING_FADE_IN_MS = 4
 CHUNK_GAP_WARNING_MS = 160
 QUEUE_STARVATION_WARNING_MS = 40
-BOUNDARY_SMOOTH_MS = 1.5
+BOUNDARY_SMOOTH_MS = 3.0
 BOUNDARY_JUMP_SMOOTH_ABS = 4_000
 BOUNDARY_JUMP_WARNING_ABS = 8_000
 ISOLATED_SPIKE_SMOOTH_ABS = 12_000
@@ -33,13 +43,11 @@ class AssistantAudioPublisher:
         audio_source: rtc.AudioSource,
         output_sample_rate: int,
         output_frame_ms: int,
-        output_lowpass_hz: float,
         frame_sink: FrameSink | None = None,
     ) -> None:
         self.audio_source = audio_source
         self.output_sample_rate = output_sample_rate
         self.output_frame_ms = output_frame_ms
-        self.output_lowpass_hz = max(0.0, output_lowpass_hz)
         self.frame_sink = frame_sink
         self.output_frame_bytes = chunk_bytes_for_duration_ms(
             output_frame_ms,
@@ -52,6 +60,18 @@ class AssistantAudioPublisher:
             1,
             int(round(output_sample_rate * (LEADING_SILENCE_WINDOW_MS / 1000))),
         )
+        self._interchunk_trim_max_samples = max(
+            1,
+            int(round(output_sample_rate * (INTERCHUNK_LEADING_SILENCE_TRIM_MAX_MS / 1000))),
+        )
+        self._interchunk_trailing_trim_min_samples = max(
+            1,
+            int(round(output_sample_rate * (INTERCHUNK_TRAILING_SILENCE_TRIM_MIN_MS / 1000))),
+        )
+        self._interchunk_trailing_trim_max_samples = max(
+            1,
+            int(round(output_sample_rate * (INTERCHUNK_TRAILING_SILENCE_TRIM_MAX_MS / 1000))),
+        )
         self._leading_fade_in_samples = max(
             1,
             int(round(output_sample_rate * (LEADING_FADE_IN_MS / 1000))),
@@ -59,10 +79,6 @@ class AssistantAudioPublisher:
         self._boundary_smooth_samples = max(
             1,
             int(round(output_sample_rate * (BOUNDARY_SMOOTH_MS / 1000))),
-        )
-        self._lowpass_alpha = self._compute_lowpass_alpha(
-            cutoff_hz=self.output_lowpass_hz,
-            sample_rate=output_sample_rate,
         )
         self._last_chunk_monotonic: float | None = None
         self._reset_turn_boundary_state()
@@ -87,7 +103,7 @@ class AssistantAudioPublisher:
             pcm16_bytes,
             input_sample_rate=input_sample_rate,
         )
-        pcm16_output = self._trim_turn_leading_silence(pcm16_output)
+        pcm16_output = self._normalize_chunk_silence(pcm16_output)
         if not pcm16_output:
             return
         pcm16_output = self._smooth_artifacts(pcm16_output)
@@ -101,13 +117,16 @@ class AssistantAudioPublisher:
     async def finalize_turn(self) -> None:
         tail = self._flush_resampler()
         if tail:
-            tail = self._trim_turn_leading_silence(tail)
-            self.pending_output.extend(tail)
+            tail = self._normalize_chunk_silence(tail)
+            if tail:
+                self.pending_output.extend(tail)
 
         if not self.pending_output:
             logger.info(
-                "Assistant audio turn finalized with no publishable audio trimmed_leading_ms=%.2f",
+                "Assistant audio turn finalized with no publishable audio trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d",
                 self._turn_trimmed_leading_ms,
+                self._turn_interchunk_trimmed_ms,
+                self._turn_dropped_silent_chunk_count,
             )
             self._reset_turn_boundary_state()
             return
@@ -115,14 +134,19 @@ class AssistantAudioPublisher:
         self._pad_tail_with_fadeout()
         await self._flush_complete_frames()
         logger.info(
-            "Assistant audio turn finalized chunks=%d published_audio_ms=%.2f queued_ms=%.2f trimmed_leading_ms=%.2f lowpass_hz=%.1f boundary_jump_max=%d boundary_jump_p95=%d suspicious_boundaries=%d smoothed_boundaries=%d smoothed_spikes=%d",
+            "Assistant audio turn finalized chunks=%d published_audio_ms=%.2f queued_ms=%.2f trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d raw_boundary_jump_max=%d raw_boundary_jump_p95=%d effective_boundary_jump_max=%d effective_boundary_jump_p95=%d suspicious_boundaries=%d smoothed_boundaries=%d smoothed_spikes=%d",
             self._turn_chunk_count,
             self._turn_input_audio_ms,
             self.queued_duration_seconds() * 1000,
             self._turn_trimmed_leading_ms,
-            self.output_lowpass_hz,
-            max(self._turn_boundary_jump_values) if self._turn_boundary_jump_values else 0,
-            self._percentile(self._turn_boundary_jump_values, 95),
+            self._turn_interchunk_trimmed_ms,
+            self._turn_dropped_silent_chunk_count,
+            max(self._turn_raw_boundary_jump_values) if self._turn_raw_boundary_jump_values else 0,
+            self._percentile(self._turn_raw_boundary_jump_values, 95),
+            max(self._turn_effective_boundary_jump_values)
+            if self._turn_effective_boundary_jump_values
+            else 0,
+            self._percentile(self._turn_effective_boundary_jump_values, 95),
             self._turn_suspicious_boundary_count,
             self._turn_smoothed_boundary_count,
             self._turn_smoothed_spike_count,
@@ -132,11 +156,13 @@ class AssistantAudioPublisher:
     async def clear(self) -> None:
         if self._turn_chunk_count > 0 or self.pending_output:
             logger.info(
-                "Assistant audio turn cleared chunks=%d queued_ms=%.2f pending_bytes=%d trimmed_leading_ms=%.2f",
+                "Assistant audio turn cleared chunks=%d queued_ms=%.2f pending_bytes=%d trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d",
                 self._turn_chunk_count,
                 self.queued_duration_seconds() * 1000,
                 len(self.pending_output),
                 self._turn_trimmed_leading_ms,
+                self._turn_interchunk_trimmed_ms,
+                self._turn_dropped_silent_chunk_count,
             )
         self.pending_output.clear()
         self._resampler = None
@@ -186,18 +212,44 @@ class AssistantAudioPublisher:
 
         missing_bytes = self.output_frame_bytes - remainder
         missing_samples = missing_bytes // 2
-        last_sample = int.from_bytes(self.pending_output[-2:], byteorder="little", signed=True)
-        fadeout = array("h")
-        for index in range(missing_samples):
-            remaining = missing_samples - index - 1
-            fadeout.append(int(round(last_sample * remaining / missing_samples)))
-        self.pending_output.extend(fadeout.tobytes())
+        if missing_samples <= 0:
+            return
+        last_sample = int(pcm16_samples(self.pending_output[-2:])[0])
+        scale = np.arange(missing_samples - 1, -1, -1, dtype=np.float32) / missing_samples
+        self.pending_output.extend(encode_pcm16_bytes(last_sample * scale))
 
     @staticmethod
     def _frames_to_bytes(frames: list[rtc.AudioFrame]) -> bytes:
         if not frames:
             return b""
         return b"".join(bytes(frame.data) for frame in frames)
+
+    def _normalize_chunk_silence(self, pcm16_bytes: bytes) -> bytes:
+        if not pcm16_bytes:
+            return b""
+
+        if not self._turn_voiced_audio_started:
+            pcm16_bytes = self._trim_turn_leading_silence(pcm16_bytes)
+            if not pcm16_bytes:
+                return b""
+            if self._chunk_peak_abs(pcm16_bytes) > LEADING_SILENCE_PEAK_THRESHOLD:
+                self._turn_voiced_audio_started = True
+            return pcm16_bytes
+
+        if self._chunk_peak_abs(pcm16_bytes) <= LEADING_SILENCE_PEAK_THRESHOLD:
+            self._turn_dropped_silent_chunk_count += 1
+            return b""
+
+        sample_count = len(pcm16_bytes) // 2
+        trim_samples = self._count_leading_silence_samples(
+            pcm16_bytes,
+            max_trim_samples=min(sample_count, self._interchunk_trim_max_samples),
+        )
+        if trim_samples <= 0:
+            return self._trim_interchunk_trailing_silence(pcm16_bytes)
+
+        self._turn_interchunk_trimmed_ms += (trim_samples / self.output_sample_rate) * 1000
+        return self._trim_interchunk_trailing_silence(pcm16_bytes[trim_samples * 2 :])
 
     def _trim_turn_leading_silence(self, pcm16_bytes: bytes) -> bytes:
         if self._leading_trim_complete or not pcm16_bytes:
@@ -207,24 +259,10 @@ class AssistantAudioPublisher:
         if sample_count == 0:
             return pcm16_bytes
 
-        max_trim_samples = min(sample_count, self._leading_trim_remaining_samples)
-        trim_samples = 0
-
-        while trim_samples < max_trim_samples:
-            window_samples = min(
-                self._leading_trim_window_samples,
-                max_trim_samples - trim_samples,
-            )
-            if window_samples <= 0:
-                break
-            peak_abs = self._peak_abs(
-                pcm16_bytes,
-                start_sample=trim_samples,
-                sample_count=window_samples,
-            )
-            if peak_abs > LEADING_SILENCE_PEAK_THRESHOLD:
-                break
-            trim_samples += window_samples
+        trim_samples = self._count_leading_silence_samples(
+            pcm16_bytes,
+            max_trim_samples=min(sample_count, self._leading_trim_remaining_samples),
+        )
 
         if trim_samples == 0:
             self._leading_trim_complete = True
@@ -248,100 +286,110 @@ class AssistantAudioPublisher:
         if fade_samples <= 1:
             return pcm16_bytes
 
-        faded = array("h")
-        faded.frombytes(pcm16_bytes)
-        for index in range(fade_samples):
-            faded[index] = int(round(faded[index] * ((index + 1) / fade_samples)))
-        return faded.tobytes()
+        samples = pcm16_samples(pcm16_bytes, copy=True)
+        scale = np.arange(1, fade_samples + 1, dtype=np.float32) / fade_samples
+        samples[:fade_samples] = np.rint(samples[:fade_samples].astype(np.float32) * scale)
+        return encode_pcm16_bytes(samples)
 
     def _smooth_artifacts(self, pcm16_bytes: bytes) -> bytes:
-        samples = array("h")
-        samples.frombytes(pcm16_bytes)
-        if not samples:
+        samples = pcm16_samples(pcm16_bytes, copy=True)
+        if samples.size == 0:
             return pcm16_bytes
 
         self._smooth_chunk_boundary_inplace(samples)
         self._smooth_isolated_spikes_inplace(samples)
-        self._apply_lowpass_inplace(samples)
-        self._last_output_sample = samples[-1]
-        return samples.tobytes()
+        self._last_output_sample = int(samples[-1])
+        return encode_pcm16_bytes(samples)
 
-    def _smooth_chunk_boundary_inplace(self, samples: array) -> None:
-        if self._last_output_sample is None or not samples:
+    def _smooth_chunk_boundary_inplace(self, samples: np.ndarray) -> None:
+        if self._last_output_sample is None or samples.size == 0:
             return
 
-        boundary_jump_abs = abs(samples[0] - self._last_output_sample)
-        self._turn_boundary_jump_values.append(boundary_jump_abs)
-        if boundary_jump_abs >= BOUNDARY_JUMP_WARNING_ABS:
-            self._turn_suspicious_boundary_count += 1
-            logger.warning(
-                "Assistant audio boundary jump boundary_abs=%d turn_chunks=%d queued_ms=%.2f",
-                boundary_jump_abs,
-                self._turn_chunk_count,
-                self.queued_duration_seconds() * 1000,
-            )
-        if boundary_jump_abs < BOUNDARY_JUMP_SMOOTH_ABS:
+        raw_boundary_jump_abs = abs(int(samples[0]) - self._last_output_sample)
+        self._turn_raw_boundary_jump_values.append(raw_boundary_jump_abs)
+        if raw_boundary_jump_abs < BOUNDARY_JUMP_SMOOTH_ABS:
+            self._turn_effective_boundary_jump_values.append(raw_boundary_jump_abs)
+            if raw_boundary_jump_abs >= BOUNDARY_JUMP_WARNING_ABS:
+                self._turn_suspicious_boundary_count += 1
+                logger.warning(
+                    "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f",
+                    raw_boundary_jump_abs,
+                    raw_boundary_jump_abs,
+                    self._turn_chunk_count,
+                    self.queued_duration_seconds() * 1000,
+                )
             return
 
         fade_samples = min(len(samples), self._boundary_smooth_samples)
         if fade_samples <= 1:
-            samples[0] = int(round((samples[0] + self._last_output_sample) / 2))
+            candidate_prefix = np.array(
+                [int(round((int(samples[0]) + self._last_output_sample) / 2))],
+                dtype=np.int16,
+            )
         else:
-            for index in range(fade_samples):
-                alpha = index / (fade_samples - 1)
-                samples[index] = int(
-                    round((1 - alpha) * self._last_output_sample + (alpha * samples[index]))
+            alpha = np.linspace(0.0, 1.0, fade_samples, dtype=np.float32)
+            original = samples[:fade_samples].astype(np.float32)
+            candidate_prefix = np.rint(
+                ((1.0 - alpha) * self._last_output_sample) + (alpha * original)
+            ).astype(np.int16)
+
+        effective_boundary_jump_abs = self._boundary_transition_peak_abs(
+            candidate_prefix,
+            previous_sample=self._last_output_sample,
+            transition_samples=fade_samples,
+        )
+        if effective_boundary_jump_abs >= raw_boundary_jump_abs:
+            self._turn_effective_boundary_jump_values.append(raw_boundary_jump_abs)
+            if raw_boundary_jump_abs >= BOUNDARY_JUMP_WARNING_ABS:
+                self._turn_suspicious_boundary_count += 1
+                logger.warning(
+                    "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f",
+                    raw_boundary_jump_abs,
+                    raw_boundary_jump_abs,
+                    self._turn_chunk_count,
+                    self.queued_duration_seconds() * 1000,
                 )
+            return
+
+        samples[:fade_samples] = candidate_prefix
+        self._turn_effective_boundary_jump_values.append(effective_boundary_jump_abs)
+        if effective_boundary_jump_abs >= BOUNDARY_JUMP_WARNING_ABS:
+            self._turn_suspicious_boundary_count += 1
+            logger.warning(
+                "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f",
+                effective_boundary_jump_abs,
+                raw_boundary_jump_abs,
+                self._turn_chunk_count,
+                self.queued_duration_seconds() * 1000,
+            )
         self._turn_smoothed_boundary_count += 1
 
-    def _smooth_isolated_spikes_inplace(self, samples: array) -> None:
+    def _smooth_isolated_spikes_inplace(self, samples: np.ndarray) -> None:
         if len(samples) < 3:
             return
 
-        smoothed = 0
-        for index in range(1, len(samples) - 1):
-            previous_sample = samples[index - 1]
-            current_sample = samples[index]
-            next_sample = samples[index + 1]
-            deviation = abs((2 * current_sample) - previous_sample - next_sample)
-            if deviation < ISOLATED_SPIKE_SMOOTH_ABS:
-                continue
-            if (
-                abs(current_sample - previous_sample) < (ISOLATED_SPIKE_SMOOTH_ABS // 2)
-                or abs(current_sample - next_sample) < (ISOLATED_SPIKE_SMOOTH_ABS // 2)
-            ):
-                continue
-            samples[index] = int(round((previous_sample + next_sample) / 2))
-            smoothed += 1
+        previous_samples = samples[:-2].astype(np.int32)
+        current_samples = samples[1:-1].astype(np.int32)
+        next_samples = samples[2:].astype(np.int32)
+        deviation = np.abs((2 * current_samples) - previous_samples - next_samples)
+        mask = (
+            (deviation >= ISOLATED_SPIKE_SMOOTH_ABS)
+            & (np.abs(current_samples - previous_samples) >= (ISOLATED_SPIKE_SMOOTH_ABS // 2))
+            & (np.abs(current_samples - next_samples) >= (ISOLATED_SPIKE_SMOOTH_ABS // 2))
+        )
+        smoothed = int(np.count_nonzero(mask))
+        if smoothed > 0:
+            middle_samples = samples[1:-1]
+            middle_samples[mask] = np.rint((previous_samples[mask] + next_samples[mask]) / 2)
 
         if smoothed > 0:
             self._turn_smoothed_spike_count += smoothed
-            logger.warning(
-                "Assistant audio spike smoothing smoothed_samples=%d turn_chunks=%d queued_ms=%.2f",
+            logger.info(
+                "Assistant audio spike smoothing applied smoothed_samples=%d turn_chunks=%d queued_ms=%.2f",
                 smoothed,
                 self._turn_chunk_count,
                 self.queued_duration_seconds() * 1000,
             )
-
-    def _apply_lowpass_inplace(self, samples: array) -> None:
-        if self._lowpass_alpha is None or not samples:
-            return
-
-        previous_output = self._lowpass_prev_output_sample
-        if previous_output is None:
-            previous_output = float(samples[0])
-            self._lowpass_prev_output_sample = previous_output
-            start_index = 1
-        else:
-            start_index = 0
-
-        for index in range(start_index, len(samples)):
-            previous_output = previous_output + (
-                self._lowpass_alpha * (samples[index] - previous_output)
-            )
-            samples[index] = int(round(previous_output))
-
-        self._lowpass_prev_output_sample = previous_output
 
     def _reset_turn_boundary_state(self) -> None:
         self._leading_trim_complete = False
@@ -351,24 +399,122 @@ class AssistantAudioPublisher:
         )
         self._last_chunk_monotonic = None
         self._last_output_sample: int | None = None
-        self._lowpass_prev_output_sample: float | None = None
+        self._turn_voiced_audio_started = False
         self._turn_chunk_count = 0
         self._turn_input_audio_ms = 0.0
         self._turn_trimmed_leading_ms = 0.0
-        self._turn_boundary_jump_values: list[int] = []
+        self._turn_interchunk_trimmed_ms = 0.0
+        self._turn_dropped_silent_chunk_count = 0
+        self._turn_raw_boundary_jump_values: list[int] = []
+        self._turn_effective_boundary_jump_values: list[int] = []
         self._turn_suspicious_boundary_count = 0
         self._turn_smoothed_boundary_count = 0
         self._turn_smoothed_spike_count = 0
 
+    def _count_leading_silence_samples(self, pcm16_bytes: bytes, *, max_trim_samples: int) -> int:
+        trim_samples = 0
+        while trim_samples < max_trim_samples:
+            window_samples = min(
+                self._leading_trim_window_samples,
+                max_trim_samples - trim_samples,
+            )
+            if window_samples <= 0:
+                break
+            peak_abs = self._peak_abs(
+                pcm16_bytes,
+                start_sample=trim_samples,
+                sample_count=window_samples,
+            )
+            if peak_abs > LEADING_SILENCE_PEAK_THRESHOLD:
+                break
+            trim_samples += window_samples
+        return trim_samples
+
+    def _trim_interchunk_trailing_silence(self, pcm16_bytes: bytes) -> bytes:
+        sample_count = len(pcm16_bytes) // 2
+        if sample_count <= 0:
+            return b""
+
+        trim_samples = self._count_trailing_silence_samples(
+            pcm16_bytes,
+            max_trim_samples=min(sample_count, self._interchunk_trailing_trim_max_samples),
+        )
+        if trim_samples < self._interchunk_trailing_trim_min_samples:
+            return pcm16_bytes
+        if (
+            self._rms(
+                pcm16_bytes,
+                start_sample=sample_count - trim_samples,
+                sample_count=trim_samples,
+            )
+            > INTERCHUNK_TRAILING_SILENCE_RMS_THRESHOLD
+        ):
+            return pcm16_bytes
+
+        keep_samples = sample_count - trim_samples
+        if keep_samples <= 0:
+            return pcm16_bytes
+
+        self._turn_interchunk_trimmed_ms += (trim_samples / self.output_sample_rate) * 1000
+        return pcm16_bytes[: keep_samples * 2]
+
+    @staticmethod
+    def _chunk_peak_abs(pcm16_bytes: bytes) -> int:
+        return pcm16_peak_abs(pcm16_bytes)
+
+    def _count_trailing_silence_samples(self, pcm16_bytes: bytes, *, max_trim_samples: int) -> int:
+        sample_count = len(pcm16_bytes) // 2
+        trim_samples = 0
+        while trim_samples < max_trim_samples:
+            window_samples = min(
+                self._leading_trim_window_samples,
+                max_trim_samples - trim_samples,
+            )
+            if window_samples <= 0:
+                break
+            start_sample = sample_count - trim_samples - window_samples
+            peak_abs = self._peak_abs(
+                pcm16_bytes,
+                start_sample=start_sample,
+                sample_count=window_samples,
+            )
+            if peak_abs > LEADING_SILENCE_PEAK_THRESHOLD:
+                break
+            trim_samples += window_samples
+        return trim_samples
+
+    @staticmethod
+    def _rms(pcm16_bytes: bytes, *, start_sample: int, sample_count: int) -> float:
+        return pcm16_rms(
+            pcm16_bytes,
+            start_sample=start_sample,
+            sample_count=sample_count,
+        )
+
+    @staticmethod
+    def _boundary_transition_peak_abs(
+        samples: np.ndarray,
+        *,
+        previous_sample: int,
+        transition_samples: int,
+    ) -> int:
+        sample_count = min(len(samples), max(1, transition_samples))
+        if sample_count <= 0:
+            return 0
+        transition = samples[:sample_count].astype(np.int32)
+        previous = np.array([previous_sample], dtype=np.int32)
+        deltas = np.diff(np.concatenate((previous, transition)))
+        if deltas.size == 0:
+            return 0
+        return int(np.max(np.abs(deltas)))
+
     @staticmethod
     def _peak_abs(pcm16_bytes: bytes, *, start_sample: int, sample_count: int) -> int:
-        peak_abs = 0
-        start = start_sample * 2
-        end = start + (sample_count * 2)
-        for offset in range(start, end, 2):
-            sample = int.from_bytes(pcm16_bytes[offset : offset + 2], byteorder="little", signed=True)
-            peak_abs = max(peak_abs, abs(sample))
-        return peak_abs
+        return pcm16_peak_abs(
+            pcm16_bytes,
+            start_sample=start_sample,
+            sample_count=sample_count,
+        )
 
     @staticmethod
     def _percentile(values: list[int], pct: int) -> int:
@@ -377,14 +523,6 @@ class AssistantAudioPublisher:
         ordered = sorted(values)
         index = min(len(ordered) - 1, ceil((len(ordered) * pct / 100)) - 1)
         return ordered[index]
-
-    @staticmethod
-    def _compute_lowpass_alpha(*, cutoff_hz: float, sample_rate: int) -> float | None:
-        if cutoff_hz <= 0 or sample_rate <= 0:
-            return None
-        dt = 1 / sample_rate
-        rc = 1 / (2 * pi * cutoff_hz)
-        return dt / (rc + dt)
 
     async def _flush_complete_frames(self) -> None:
         while len(self.pending_output) >= self.output_frame_bytes:

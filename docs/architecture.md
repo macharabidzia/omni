@@ -451,7 +451,7 @@ format: pcm16
 channels: 1
 ```
 
-Worker must convert model-native audio to LiveKit-compatible audio before publishing.
+Worker must publish LiveKit-compatible PCM audio and only resample model-native audio when the model output rate differs from the configured LiveKit output rate.
 
 Playback rules:
 
@@ -637,11 +637,13 @@ LIVEKIT_AGENT_ID:
 MODEL_BACKEND_URL:
 QWEN3_OMNI_MODEL:
 MODEL_OUTPUT_MODE: speech
-INPUT_AUDIO_SAMPLE_RATE:
-OUTPUT_AUDIO_SAMPLE_RATE:
+QWEN_AUDIO_INPUT_SAMPLE_RATE: 16000
+QWEN_AUDIO_OUTPUT_SAMPLE_RATE: 24000
+LIVEKIT_INPUT_SAMPLE_RATE: 48000
 LIVEKIT_OUTPUT_SAMPLE_RATE: 48000
 LIVEKIT_OUTPUT_FRAME_MS: 20
-LIVEKIT_OUTPUT_QUEUE_MS: 60
+LIVEKIT_OUTPUT_QUEUE_MS: 40
+LIVEKIT_PREROLL_FRAMES: 1
 TARGET_FIRST_AUDIO_P95_MS: 500
 MAX_SESSIONS:
 QUEUE_MAX_AUDIO_FRAMES:

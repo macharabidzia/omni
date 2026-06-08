@@ -12,16 +12,24 @@ export type GatewayMetrics = {
 
 export type GatewayInboundEvent =
   | { type: "session.ready"; session_id: string }
-  | { type: "transcript.delta"; text: string }
-  | { type: "assistant.text.delta"; text: string }
+  | { type: "input.speech.start"; speech_duration_ms?: number | null }
   | {
-      type: "assistant.audio.delta";
-      audio_base64: string;
+      type: "input.speech.commit";
+      speech_duration_ms?: number | null;
+      silence_duration_ms?: number | null;
+      input_audio_ms?: number | null;
+    }
+  | { type: "transcript.delta"; text: string }
+  | { type: "assistant.text.delta"; text: string; output_version?: number | null }
+  | {
+      type: "assistant.audio.metadata";
       sample_rate?: number | null;
       channels?: number | null;
       format?: string | null;
+      audio_base64_length?: number | null;
+      output_version?: number | null;
     }
-  | { type: "assistant.done" }
+  | { type: "assistant.done"; output_version?: number | null }
   | { type: "assistant.interrupted" }
   | { type: "metrics.update"; metrics: GatewayMetrics; timestamps?: Record<string, number | null> }
   | { type: "error"; code: string; message: string };

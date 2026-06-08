@@ -13,6 +13,7 @@ from livekit import api as livekit_api
 
 from src.config import Settings, get_settings
 from src.realtime.audio import iter_pcm16_chunks
+from src.realtime.qwen_chat_client import QwenChatClient
 from src.realtime.qwen_client import QwenRealtimeClient, probe_qwen_realtime_websocket
 
 router = APIRouter()
@@ -62,20 +63,22 @@ async def probe_qwen(settings: Settings, *, deep: bool = False) -> dict[str, str
             "qwen_realtime_url": settings.qwen_realtime_url,
         }
 
-    try:
-        await probe_qwen_realtime_websocket(
-            url=settings.qwen_realtime_url,
-            request_timeout_seconds=settings.qwen_request_timeout_seconds,
-            max_ws_message_bytes=settings.max_ws_message_bytes,
-            debug_raw_events=settings.qwen_debug_raw_events,
-        )
-    except Exception as exc:
-        return {
-            "status": "qwen_failed",
-            "detail": f"Realtime websocket probe failed: {exc}",
-            "qwen_health_url": settings.qwen_health_url,
-            "qwen_realtime_url": settings.qwen_realtime_url,
-        }
+    if settings.qwen_audio_backend == "realtime":
+        try:
+            await probe_qwen_realtime_websocket(
+                url=settings.qwen_realtime_url,
+                request_timeout_seconds=settings.qwen_request_timeout_seconds,
+                max_ws_message_bytes=settings.max_ws_message_bytes,
+                debug_raw_events=settings.qwen_debug_raw_events,
+            )
+        except Exception as exc:
+            return {
+                "status": "qwen_failed",
+                "detail": f"Realtime websocket probe failed: {exc}",
+                "qwen_health_url": settings.qwen_health_url,
+                "qwen_realtime_url": settings.qwen_realtime_url,
+                "qwen_chat_url": settings.qwen_chat_url,
+            }
 
     if deep:
         inference_probe_result = await probe_qwen_realtime_inference_cached(settings)
@@ -85,12 +88,21 @@ async def probe_qwen(settings: Settings, *, deep: bool = False) -> dict[str, str
     return {
         "status": "qwen_ready",
         "detail": (
-            "Qwen health, realtime session, and inference probes succeeded."
+            (
+                "Qwen health, realtime session, and inference probes succeeded."
+                if settings.qwen_audio_backend == "realtime"
+                else "Qwen health and streaming chat audio inference probes succeeded."
+            )
             if deep
-            else "Qwen health and realtime session probes succeeded."
+            else (
+                "Qwen health and realtime session probes succeeded."
+                if settings.qwen_audio_backend == "realtime"
+                else "Qwen health probe succeeded."
+            )
         ),
         "qwen_health_url": settings.qwen_health_url,
         "qwen_realtime_url": settings.qwen_realtime_url,
+        "qwen_chat_url": settings.qwen_chat_url,
     }
 
 
@@ -105,13 +117,21 @@ async def probe_qwen_realtime_inference_cached(settings: Settings) -> dict[str, 
         return None
 
     try:
-        await probe_qwen_realtime_inference(settings)
+        if settings.qwen_audio_backend == "realtime":
+            await probe_qwen_realtime_inference(settings)
+        else:
+            await probe_qwen_chat_stream_inference(settings)
     except Exception as exc:
         return {
             "status": "qwen_failed",
-            "detail": f"Realtime inference probe failed: {exc}",
+            "detail": (
+                f"Realtime inference probe failed: {exc}"
+                if settings.qwen_audio_backend == "realtime"
+                else f"Streaming chat audio inference probe failed: {exc}"
+            ),
             "qwen_health_url": settings.qwen_health_url,
             "qwen_realtime_url": settings.qwen_realtime_url,
+            "qwen_chat_url": settings.qwen_chat_url,
         }
 
     _last_qwen_inference_probe_ok_at = now
@@ -128,7 +148,7 @@ async def probe_qwen_realtime_inference(settings: Settings) -> None:
         url=settings.qwen_realtime_url,
         request_timeout_seconds=settings.qwen_request_timeout_seconds,
         response_timeout_seconds=timeout_seconds,
-        output_sample_rate=settings.output_sample_rate,
+        output_sample_rate=settings.qwen_output_sample_rate,
         max_ws_message_bytes=settings.max_ws_message_bytes,
         debug_raw_events=settings.qwen_debug_raw_events,
         instructions="Reply briefly.",
@@ -138,14 +158,14 @@ async def probe_qwen_realtime_inference(settings: Settings) -> None:
         await client.start_session(
             speaker=settings.supported_speakers[0],
             modalities=["text", "audio"],
-            input_sample_rate=settings.input_sample_rate,
+            input_sample_rate=settings.qwen_input_sample_rate,
             output_audio=True,
         )
-        probe_audio = _load_probe_audio_pcm16(sample_rate=settings.input_sample_rate)
+        probe_audio = _load_probe_audio_pcm16(sample_rate=settings.qwen_input_sample_rate)
         for chunk in iter_pcm16_chunks(
             probe_audio,
             duration_ms=settings.default_smoke_chunk_ms,
-            sample_rate=settings.input_sample_rate,
+            sample_rate=settings.qwen_input_sample_rate,
             pad_final_chunk=True,
         ):
             await client.append_audio(base64.b64encode(chunk).decode("ascii"))
@@ -164,6 +184,32 @@ async def probe_qwen_realtime_inference(settings: Settings) -> None:
         await client.close()
 
     raise RuntimeError("No assistant audio was received from the realtime probe.")
+
+
+async def probe_qwen_chat_stream_inference(settings: Settings) -> None:
+    client = QwenChatClient(
+        model=settings.qwen_model,
+        url=settings.qwen_chat_url,
+        request_timeout_seconds=min(
+            settings.qwen_response_timeout_seconds,
+            _QWEN_INFERENCE_PROBE_TIMEOUT_SECONDS,
+        ),
+        system_prompt=settings.default_system_prompt,
+        max_completion_tokens=settings.text_max_completion_tokens,
+    )
+    try:
+        probe_audio = _load_probe_audio_pcm16(sample_rate=settings.qwen_input_sample_rate)
+        async for event in client.stream_audio_response(
+            audio_pcm16=probe_audio,
+            sample_rate=settings.qwen_input_sample_rate,
+            speaker=settings.supported_speakers[0],
+        ):
+            if event.kind == "assistant_audio_delta":
+                return
+    finally:
+        await client.close()
+
+    raise RuntimeError("No assistant audio was received from the streaming chat probe.")
 
 
 def _build_probe_audio_pcm16(

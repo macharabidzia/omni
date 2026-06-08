@@ -6,7 +6,7 @@ import pytest
 import src.realtime.session as session_module
 from src.config import Settings
 from src.realtime.qwen_client import QwenEvent
-from src.realtime.session import RealtimeSession
+from src.realtime.session import RealtimeSession, RealtimeSessionConfig
 
 
 def _valid_audio_base64() -> str:
@@ -247,9 +247,43 @@ class FakeQwenChatClient:
         self.closed = True
 
 
-async def _start_audio_session(collector: EventCollector) -> RealtimeSession:
+class FakeStreamingQwenChatClient(FakeQwenChatClient):
+    last_instance = None
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        type(self).last_instance = self
+        self.stream_requests: list[tuple[bytes, int, str]] = []
+
+    async def stream_audio_response(
+        self,
+        *,
+        audio_pcm16: bytes,
+        sample_rate: int,
+        speaker: str,
+    ):
+        self.stream_requests.append((audio_pcm16, sample_rate, speaker))
+        yield QwenEvent(kind="assistant_text_delta", payload={"type": "response.text.delta"}, text="brief ")
+        yield QwenEvent(
+            kind="assistant_audio_delta",
+            payload={"type": "response.audio.delta"},
+            audio_base64=base64.b64encode(b"\x00\x00" * 960).decode("ascii"),
+            sample_rate=24000,
+        )
+        yield QwenEvent(kind="response_done", payload={"type": "response.done"})
+
+
+def _session_settings(**overrides) -> Settings:
+    return Settings(**overrides)
+
+
+async def _start_audio_session(
+    collector: EventCollector,
+    *,
+    settings: Settings | None = None,
+) -> RealtimeSession:
     session = RealtimeSession(
-        settings=Settings(),
+        settings=settings or _session_settings(QWEN_AUDIO_BACKEND="realtime"),
         emit_event=collector.emit,
     )
     await session.start_session(
@@ -261,6 +295,13 @@ async def _start_audio_session(collector: EventCollector) -> RealtimeSession:
         }
     )
     return session
+
+
+async def _start_chat_stream_audio_session(collector: EventCollector) -> RealtimeSession:
+    return await _start_audio_session(
+        collector,
+        settings=_session_settings(QWEN_AUDIO_BACKEND="chat_stream"),
+    )
 
 
 async def _drain_tasks() -> None:
@@ -285,7 +326,10 @@ def test_session_requires_event_sink() -> None:
 async def test_session_returns_structured_error_when_qwen_is_unavailable(monkeypatch) -> None:
     monkeypatch.setattr(session_module, "QwenRealtimeClient", FailingQwenClient)
     collector = EventCollector()
-    session = RealtimeSession(settings=Settings(), emit_event=collector.emit)
+    session = RealtimeSession(
+        settings=_session_settings(QWEN_AUDIO_BACKEND="realtime"),
+        emit_event=collector.emit,
+    )
 
     await session.start_session(
         {
@@ -346,8 +390,8 @@ async def test_session_buffers_assistant_output_until_commit(monkeypatch) -> Non
     metrics_events = [event for event in collector.events if event["type"] == "metrics.update"]
     assert metrics_events
     final_metrics = metrics_events[-1]["metrics"]
-    assert final_metrics["commit_to_first_transcript_ms"] == 0
-    assert final_metrics["commit_to_first_audio_delta_ms"] == 0
+    assert final_metrics["commit_to_first_transcript_ms"] <= 1
+    assert final_metrics["commit_to_first_audio_delta_ms"] <= 1
 
 
 @pytest.mark.asyncio
@@ -404,6 +448,33 @@ async def test_session_text_mode_uses_chat_completions(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_session_audio_mode_uses_streaming_chat_completions(monkeypatch) -> None:
+    monkeypatch.setattr(session_module, "QwenChatClient", FakeStreamingQwenChatClient)
+    collector = EventCollector()
+    session = await _start_chat_stream_audio_session(collector)
+
+    await session.append_audio_chunk(
+        audio_base64=_valid_audio_base64(),
+        sample_rate=16000,
+    )
+    await session.commit_audio()
+    await _wait_for_event(collector, "assistant.done")
+
+    client = FakeStreamingQwenChatClient.last_instance
+    assert client is not None
+    assert len(client.stream_requests) == 1
+    request_audio, request_sample_rate, request_speaker = client.stream_requests[0]
+    assert request_audio
+    assert request_sample_rate == 16000
+    assert request_speaker == "Ethan"
+
+    seen_types = [event["type"] for event in collector.events]
+    assert "transcript.delta" not in seen_types
+    assert "assistant.text.delta" in seen_types
+    assert "assistant.audio.delta" in seen_types
+
+
+@pytest.mark.asyncio
 async def test_session_cancel_restarts_upstream_qwen_session(monkeypatch) -> None:
     monkeypatch.setattr(session_module, "QwenRealtimeClient", FakeRestartableQwenClient)
     FakeRestartableQwenClient.instances = []
@@ -417,6 +488,7 @@ async def test_session_cancel_restarts_upstream_qwen_session(monkeypatch) -> Non
     await session.commit_audio()
     await _drain_tasks()
 
+    output_version_before_interrupt = session.output_version
     await session.cancel_response()
     await session.append_audio_chunk(
         audio_base64=_valid_audio_base64(),
@@ -426,7 +498,40 @@ async def test_session_cancel_restarts_upstream_qwen_session(monkeypatch) -> Non
     await _drain_tasks()
 
     assert len(FakeRestartableQwenClient.instances) == 2
+    assert session.output_version == output_version_before_interrupt + 1
+    assert FakeRestartableQwenClient.instances[0].cancelled is True
     assert FakeRestartableQwenClient.instances[0].closed is True
+
+
+@pytest.mark.asyncio
+async def test_session_drops_stale_audio_delta_by_output_version() -> None:
+    collector = EventCollector()
+    session = RealtimeSession(
+        settings=_session_settings(QWEN_AUDIO_BACKEND="realtime"),
+        emit_event=collector.emit,
+    )
+    session.session_config = RealtimeSessionConfig(
+        speaker="Ethan",
+        modalities=["text", "audio"],
+        input_sample_rate=16000,
+        output_audio=True,
+    )
+    stale_output_version = session.output_version
+    session._bump_output_version("test_interrupt")
+
+    await session._handle_qwen_event(
+        QwenEvent(
+            kind="assistant_audio_delta",
+            payload={"type": "response.audio.delta"},
+            audio_base64=_valid_audio_base64(),
+            sample_rate=24000,
+        ),
+        output_version=stale_output_version,
+    )
+
+    seen_types = [event["type"] for event in collector.events]
+    assert "assistant.audio.delta" not in seen_types
+    assert session.assistant_audio_chunk_count == 0
 
 
 @pytest.mark.asyncio

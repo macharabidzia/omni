@@ -110,6 +110,7 @@ def test_probe_qwen_reports_failed_when_realtime_session_probe_rejects(monkeypat
     result = asyncio.run(
         health_module.probe_qwen(
             Settings(
+                QWEN_AUDIO_BACKEND="realtime",
                 QWEN_HEALTH_URL="http://qwen/health",
                 QWEN_REALTIME_URL="ws://qwen/v1/realtime",
             ),
@@ -159,6 +160,7 @@ def test_probe_qwen_reports_failed_when_realtime_inference_probe_rejects(monkeyp
     result = asyncio.run(
         health_module.probe_qwen(
             Settings(
+                QWEN_AUDIO_BACKEND="realtime",
                 QWEN_HEALTH_URL="http://qwen/health",
                 QWEN_REALTIME_URL="ws://qwen/v1/realtime",
             ),
@@ -208,6 +210,7 @@ def test_probe_qwen_explicit_non_deep_skips_realtime_inference_probe(monkeypatch
     result = asyncio.run(
         health_module.probe_qwen(
             Settings(
+                QWEN_AUDIO_BACKEND="realtime",
                 QWEN_HEALTH_URL="http://qwen/health",
                 QWEN_REALTIME_URL="ws://qwen/v1/realtime",
             ),
@@ -229,6 +232,7 @@ def test_probe_qwen_reuses_recent_successful_inference_probe(monkeypatch) -> Non
     monkeypatch.setattr(health_module, "_last_qwen_inference_probe_ok_at", None)
 
     settings = Settings(
+        QWEN_AUDIO_BACKEND="realtime",
         QWEN_HEALTH_URL="http://qwen/health",
         QWEN_REALTIME_URL="ws://qwen/v1/realtime",
     )

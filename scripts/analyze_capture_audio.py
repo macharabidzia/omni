@@ -4,11 +4,12 @@ from __future__ import annotations
 import argparse
 import array
 import json
-import math
 import subprocess
 import tempfile
 import wave
 from pathlib import Path
+
+import numpy as np
 
 
 def parse_args() -> argparse.Namespace:
@@ -36,6 +37,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=32,
         help="Treat an internal silence run as suspicious only when the surrounding context exceeds this amplitude threshold.",
+    )
+    parser.add_argument(
+        "--silence-context-rms-threshold",
+        type=float,
+        default=500.0,
+        help="Treat an internal silence run as suspicious only when both surrounding context windows exceed this RMS.",
     )
     parser.add_argument(
         "--voiced-rms-threshold",
@@ -79,6 +86,15 @@ def parse_args() -> argparse.Namespace:
         default=0.5,
         help="Warn when click-like sample spikes exceed this rate.",
     )
+    parser.add_argument(
+        "--artifact-analysis-rate",
+        type=int,
+        default=0,
+        help=(
+            "Normalize artifact metrics to this sample rate when positive. "
+            "Default 0 analyzes artifacts at the capture's native sample rate."
+        ),
+    )
     parser.add_argument("--output-json", type=Path, default=None)
     return parser.parse_args()
 
@@ -95,6 +111,7 @@ def main() -> None:
         edge_padding_ms=args.edge_padding_ms,
         context_window_ms=args.context_window_ms,
         context_active_threshold=args.context_active_threshold,
+        silence_context_rms_threshold=args.silence_context_rms_threshold,
         voiced_rms_threshold=args.voiced_rms_threshold,
         roughness_threshold=args.roughness_threshold,
         zero_crossing_threshold=args.zero_crossing_threshold,
@@ -102,6 +119,7 @@ def main() -> None:
         click_derivative_threshold=args.click_derivative_threshold,
         click_rms_multiplier=args.click_rms_multiplier,
         max_click_spikes_per_second=args.max_click_spikes_per_second,
+        artifact_analysis_rate=args.artifact_analysis_rate,
     )
     payload = json.dumps(analysis, indent=2)
     if args.output_json is not None:
@@ -123,6 +141,7 @@ def analyze_audio(
     edge_padding_ms: float,
     context_window_ms: float,
     context_active_threshold: int,
+    silence_context_rms_threshold: float,
     voiced_rms_threshold: float = 200.0,
     roughness_threshold: float = 1.0,
     zero_crossing_threshold: float = 0.35,
@@ -130,6 +149,7 @@ def analyze_audio(
     click_derivative_threshold: float = 12000.0,
     click_rms_multiplier: float = 8.0,
     max_click_spikes_per_second: float = 0.5,
+    artifact_analysis_rate: int = 0,
 ) -> dict[str, object]:
     wav_path = decode_to_wav_if_needed(input_path, expected_sample_rate=expected_sample_rate)
     try:
@@ -150,6 +170,7 @@ def analyze_audio(
         edge_padding_ms=edge_padding_ms,
         context_window_ms=context_window_ms,
         context_active_threshold=context_active_threshold,
+        silence_context_rms_threshold=silence_context_rms_threshold,
         voiced_rms_threshold=voiced_rms_threshold,
         roughness_threshold=roughness_threshold,
         zero_crossing_threshold=zero_crossing_threshold,
@@ -157,6 +178,7 @@ def analyze_audio(
         click_derivative_threshold=click_derivative_threshold,
         click_rms_multiplier=click_rms_multiplier,
         max_click_spikes_per_second=max_click_spikes_per_second,
+        artifact_analysis_rate=artifact_analysis_rate,
     )
     return analysis
 
@@ -174,6 +196,7 @@ def analyze_samples(
     edge_padding_ms: float,
     context_window_ms: float,
     context_active_threshold: int,
+    silence_context_rms_threshold: float,
     voiced_rms_threshold: float = 200.0,
     roughness_threshold: float = 1.0,
     zero_crossing_threshold: float = 0.35,
@@ -181,6 +204,7 @@ def analyze_samples(
     click_derivative_threshold: float = 12000.0,
     click_rms_multiplier: float = 8.0,
     max_click_spikes_per_second: float = 0.5,
+    artifact_analysis_rate: int = 0,
 ) -> dict[str, object]:
     if samples.typecode != "h":
         raise ValueError("Audio analysis requires PCM16 samples.")
@@ -212,19 +236,26 @@ def analyze_samples(
         internal_silence_runs=internal_silence_runs,
         context_window_samples=max(1, int(sample_rate * context_window_ms / 1000)),
         context_active_threshold=context_active_threshold,
+        context_voiced_rms_threshold=silence_context_rms_threshold,
     )
     clipped_samples = sum(1 for sample in active_samples if abs(sample) >= 32760)
-    frame_artifacts = analyze_frame_artifacts(
+    target_artifact_sample_rate = sample_rate if artifact_analysis_rate <= 0 else artifact_analysis_rate
+    artifact_sample_rate, artifact_samples, artifact_normalization = normalize_artifact_samples(
         active_samples,
         sample_rate=sample_rate,
+        target_sample_rate=target_artifact_sample_rate,
+    )
+    frame_artifacts = analyze_frame_artifacts(
+        artifact_samples,
+        sample_rate=artifact_sample_rate,
         frame_ms=frame_ms,
         voiced_rms_threshold=voiced_rms_threshold,
         roughness_threshold=roughness_threshold,
         zero_crossing_threshold=zero_crossing_threshold,
     )
     click_spikes = analyze_click_spikes(
-        active_samples,
-        sample_rate=sample_rate,
+        artifact_samples,
+        sample_rate=artifact_sample_rate,
         click_derivative_threshold=click_derivative_threshold,
         click_rms_multiplier=click_rms_multiplier,
     )
@@ -281,6 +312,7 @@ def analyze_samples(
         "edge_padding_ms": edge_padding_ms,
         "context_window_ms": context_window_ms,
         "context_active_threshold": context_active_threshold,
+        "silence_context_rms_threshold": silence_context_rms_threshold,
         "edge_silence_runs_ge_threshold": len(edge_silence_runs),
         "longest_edge_silence_ms": longest_edge_silence_ms,
         "edge_silence_runs": describe_silence_runs(
@@ -313,6 +345,11 @@ def analyze_samples(
             "count": len(boundary_absdiff),
             "max": max(boundary_absdiff) if boundary_absdiff else 0,
             "p95": percentile(boundary_absdiff, 95),
+        },
+        "artifact_analysis": {
+            "target_rate": target_artifact_sample_rate,
+            "effective_rate": artifact_sample_rate,
+            "normalization": artifact_normalization,
         },
         "roughness": {
             "frame_ms": frame_ms,
@@ -430,6 +467,7 @@ def find_suspicious_internal_silence_runs(
     internal_silence_runs: list[tuple[int, int, int]],
     context_window_samples: int,
     context_active_threshold: int,
+    context_voiced_rms_threshold: float,
 ) -> list[tuple[int, int, int]]:
     suspicious_runs: list[tuple[int, int, int]] = []
     for silence_run in internal_silence_runs:
@@ -438,7 +476,14 @@ def find_suspicious_internal_silence_runs(
         post_context = samples[end + 1 : min(len(samples), end + 1 + context_window_samples)]
         pre_peak = max((abs(sample) for sample in pre_context), default=0)
         post_peak = max((abs(sample) for sample in post_context), default=0)
-        if pre_peak >= context_active_threshold and post_peak >= context_active_threshold:
+        pre_rms = frame_rms(pre_context)
+        post_rms = frame_rms(post_context)
+        if (
+            pre_peak >= context_active_threshold
+            and post_peak >= context_active_threshold
+            and pre_rms >= context_voiced_rms_threshold
+            and post_rms >= context_voiced_rms_threshold
+        ):
             suspicious_runs.append(silence_run)
     return suspicious_runs
 
@@ -464,6 +509,8 @@ def describe_silence_runs(
                 "end_ms_absolute": round((active_start + end) * 1000 / sample_rate, 2),
                 "pre_peak_abs": max((abs(sample) for sample in before), default=0),
                 "post_peak_abs": max((abs(sample) for sample in after), default=0),
+                "pre_rms": round(frame_rms(before), 2),
+                "post_rms": round(frame_rms(after), 2),
             }
         )
     return described
@@ -562,36 +609,56 @@ def analyze_click_spikes(
     }
 
 
+def normalize_artifact_samples(
+    samples: array.array,
+    *,
+    sample_rate: int,
+    target_sample_rate: int,
+) -> tuple[int, array.array, str]:
+    if not samples or sample_rate <= 0 or target_sample_rate <= 0:
+        return sample_rate, samples, "native"
+    if sample_rate <= target_sample_rate:
+        return sample_rate, samples, "native"
+
+    sample_values = samples_to_numpy(samples).astype(np.float32)
+    if sample_rate % target_sample_rate == 0:
+        factor = sample_rate // target_sample_rate
+        if factor <= 1:
+            return sample_rate, samples, "native"
+        starts = np.arange(0, len(sample_values), factor)
+        sums = np.add.reduceat(sample_values, starts)
+        counts = np.minimum(factor, len(sample_values) - starts)
+        normalized = numpy_to_pcm16_array(np.rint(sums / counts))
+        return target_sample_rate, normalized, f"block_average_decimate_x{factor}"
+
+    target_count = max(1, int(round(len(sample_values) * target_sample_rate / sample_rate)))
+    source_positions = np.arange(len(sample_values), dtype=np.float32)
+    target_positions = np.linspace(0, len(sample_values) - 1, target_count, dtype=np.float32)
+    normalized = numpy_to_pcm16_array(np.rint(np.interp(target_positions, source_positions, sample_values)))
+    return target_sample_rate, normalized, "numpy_linear_resample"
+
+
 def frame_rms(samples: array.array) -> float:
     if not samples:
         return 0.0
-    return math.sqrt(sum(sample * sample for sample in samples) / len(samples))
+    values = samples_to_numpy(samples).astype(np.float32)
+    return float(np.sqrt(np.mean(values * values)))
 
 
 def frame_roughness(samples: array.array, *, rms: float) -> float:
     if len(samples) < 2:
         return 0.0
-    mean_abs_delta = sum(
-        abs(samples[index] - samples[index - 1]) for index in range(1, len(samples))
-    ) / (len(samples) - 1)
+    values = samples_to_numpy(samples).astype(np.int32, copy=False)
+    mean_abs_delta = float(np.mean(np.abs(np.diff(values))))
     return mean_abs_delta / max(rms, 1.0)
 
 
 def frame_zero_crossing_ratio(samples: array.array) -> float:
     if len(samples) < 2:
         return 0.0
-    crossings = 0
-    previous_sign = sign(samples[0])
-    for sample in samples[1:]:
-        current_sign = sign(sample)
-        if current_sign != previous_sign:
-            crossings += 1
-        previous_sign = current_sign
-    return crossings / (len(samples) - 1)
-
-
-def sign(sample: int) -> int:
-    return -1 if sample < 0 else 1
+    values = samples_to_numpy(samples)
+    signs = np.where(values < 0, -1, 1)
+    return float(np.count_nonzero(signs[1:] != signs[:-1]) / (len(samples) - 1))
 
 
 def mean(values: list[float]) -> float:
@@ -606,6 +673,17 @@ def percentile_float(values: list[float], pct: int) -> float:
     ordered = sorted(values)
     index = min(len(ordered) - 1, int(len(ordered) * pct / 100))
     return ordered[index]
+
+
+def samples_to_numpy(samples: array.array) -> np.ndarray:
+    return np.frombuffer(samples, dtype=np.int16)
+
+
+def numpy_to_pcm16_array(samples: np.ndarray) -> array.array:
+    pcm16 = np.clip(np.rint(samples), -32768, 32767).astype("<i2", copy=False)
+    output = array.array("h")
+    output.frombytes(pcm16.tobytes())
+    return output
 
 
 if __name__ == "__main__":

@@ -35,14 +35,6 @@ def _pcm16_base64(values: list[int]) -> str:
     return base64.b64encode(pcm16.tobytes()).decode("ascii")
 
 
-def _mean_abs_diff(values: array) -> float:
-    if len(values) < 2:
-        return 0.0
-    return sum(abs(values[index] - values[index - 1]) for index in range(1, len(values))) / (
-        len(values) - 1
-    )
-
-
 @pytest.mark.asyncio
 async def test_assistant_audio_publisher_resamples_to_48k_and_fades_partial_tail() -> None:
     audio_source = FakeAudioSource()
@@ -50,7 +42,6 @@ async def test_assistant_audio_publisher_resamples_to_48k_and_fades_partial_tail
         audio_source=audio_source,
         output_sample_rate=48000,
         output_frame_ms=20,
-        output_lowpass_hz=6000,
     )
 
     # 10 ms at 24 kHz -> 10 ms at 48 kHz after resampling, which leaves a half-frame tail.
@@ -81,7 +72,6 @@ async def test_assistant_audio_publisher_clear_resets_state() -> None:
         audio_source=audio_source,
         output_sample_rate=48000,
         output_frame_ms=20,
-        output_lowpass_hz=6000,
     )
 
     await publisher.enqueue_base64(
@@ -106,7 +96,6 @@ async def test_assistant_audio_publisher_calls_frame_sink_for_complete_frames() 
         audio_source=audio_source,
         output_sample_rate=48000,
         output_frame_ms=20,
-        output_lowpass_hz=6000,
         frame_sink=frame_sink,
     )
 
@@ -128,7 +117,6 @@ async def test_assistant_audio_publisher_trims_turn_leading_silence() -> None:
         audio_source=audio_source,
         output_sample_rate=48000,
         output_frame_ms=20,
-        output_lowpass_hz=6000,
     )
 
     leading_silence_samples = int(48000 * 0.06)
@@ -153,7 +141,6 @@ async def test_assistant_audio_publisher_smooths_large_chunk_boundary_jump() -> 
         audio_source=audio_source,
         output_sample_rate=48000,
         output_frame_ms=20,
-        output_lowpass_hz=0,
     )
 
     await publisher.enqueue_base64(
@@ -175,13 +162,47 @@ async def test_assistant_audio_publisher_smooths_large_chunk_boundary_jump() -> 
 
 
 @pytest.mark.asyncio
+async def test_assistant_audio_publisher_does_not_apply_boundary_smoothing_when_it_worsens_transition() -> None:
+    audio_source = FakeAudioSource()
+    publisher = AssistantAudioPublisher(
+        audio_source=audio_source,
+        output_sample_rate=48000,
+        output_frame_ms=20,
+    )
+
+    await publisher.enqueue_base64(
+        _pcm16_base64(([1000] * 959) + [0]),
+        input_sample_rate=48000,
+    )
+    oscillating_start = [6000 if index % 2 == 0 else -6000 for index in range(144)]
+    await publisher.enqueue_base64(
+        _pcm16_base64(oscillating_start + ([0] * (960 - len(oscillating_start)))),
+        input_sample_rate=48000,
+    )
+    await publisher.finalize_turn()
+
+    samples = array("h")
+    samples.frombytes(b"".join(bytes(frame.data) for frame in audio_source.frames))
+    boundary_index = 960
+    raw_boundary_jump = abs(samples[boundary_index] - samples[boundary_index - 1])
+    transition = samples[boundary_index : boundary_index + len(oscillating_start)]
+    max_transition_jump = max(
+        abs(transition[index] - transition[index - 1])
+        for index in range(1, len(transition))
+    )
+
+    assert raw_boundary_jump == 6000
+    assert samples[boundary_index] == 6000
+    assert max_transition_jump <= 12000
+
+
+@pytest.mark.asyncio
 async def test_assistant_audio_publisher_smooths_isolated_spike() -> None:
     audio_source = FakeAudioSource()
     publisher = AssistantAudioPublisher(
         audio_source=audio_source,
         output_sample_rate=48000,
         output_frame_ms=20,
-        output_lowpass_hz=0,
     )
 
     values = [1_000] * 960
@@ -199,23 +220,81 @@ async def test_assistant_audio_publisher_smooths_isolated_spike() -> None:
 
 
 @pytest.mark.asyncio
-async def test_assistant_audio_publisher_lowpass_reduces_high_frequency_roughness() -> None:
+async def test_assistant_audio_publisher_drops_fully_silent_chunk_after_voice_started() -> None:
     audio_source = FakeAudioSource()
     publisher = AssistantAudioPublisher(
         audio_source=audio_source,
         output_sample_rate=48000,
         output_frame_ms=20,
-        output_lowpass_hz=2000,
     )
 
-    input_values = [1_000 if index % 2 == 0 else -1_000 for index in range(960)]
     await publisher.enqueue_base64(
-        _pcm16_base64(input_values),
+        _constant_pcm16_base64(samples=960, amplitude=1_000),
+        input_sample_rate=48000,
+    )
+    await publisher.enqueue_base64(
+        _constant_pcm16_base64(samples=960, amplitude=0),
+        input_sample_rate=48000,
+    )
+    await publisher.enqueue_base64(
+        _constant_pcm16_base64(samples=960, amplitude=1_000),
         input_sample_rate=48000,
     )
     await publisher.finalize_turn()
 
-    assert len(audio_source.frames) == 1
-    output_samples = array("h")
-    output_samples.frombytes(bytes(audio_source.frames[0].data))
-    assert _mean_abs_diff(output_samples) < _mean_abs_diff(array("h", input_values))
+    assert len(audio_source.frames) == 2
+    second_frame_samples = array("h")
+    second_frame_samples.frombytes(bytes(audio_source.frames[1].data))
+    assert max(abs(sample) for sample in second_frame_samples) >= 500
+
+
+@pytest.mark.asyncio
+async def test_assistant_audio_publisher_trims_post_start_chunk_leading_silence() -> None:
+    audio_source = FakeAudioSource()
+    publisher = AssistantAudioPublisher(
+        audio_source=audio_source,
+        output_sample_rate=48000,
+        output_frame_ms=20,
+    )
+
+    await publisher.enqueue_base64(
+        _constant_pcm16_base64(samples=960, amplitude=1_000),
+        input_sample_rate=48000,
+    )
+    await publisher.enqueue_base64(
+        _pcm16_base64(([0] * 1440) + ([1_000] * 480)),
+        input_sample_rate=48000,
+    )
+    await publisher.finalize_turn()
+
+    assert len(audio_source.frames) == 2
+    second_frame_samples = array("h")
+    second_frame_samples.frombytes(bytes(audio_source.frames[1].data))
+    assert max(abs(sample) for sample in second_frame_samples[:480]) >= 500
+
+
+@pytest.mark.asyncio
+async def test_assistant_audio_publisher_trims_post_start_chunk_trailing_silence() -> None:
+    audio_source = FakeAudioSource()
+    publisher = AssistantAudioPublisher(
+        audio_source=audio_source,
+        output_sample_rate=48000,
+        output_frame_ms=20,
+    )
+
+    await publisher.enqueue_base64(
+        _constant_pcm16_base64(samples=960, amplitude=1_000),
+        input_sample_rate=48000,
+    )
+    await publisher.enqueue_base64(
+        _pcm16_base64(([1_000] * 480) + ([0] * 1440)),
+        input_sample_rate=48000,
+    )
+    await publisher.finalize_turn()
+
+    assert len(audio_source.frames) == 2
+    second_frame_samples = array("h")
+    second_frame_samples.frombytes(bytes(audio_source.frames[1].data))
+    assert max(abs(sample) for sample in second_frame_samples[:480]) >= 500
+    assert max(abs(sample) for sample in second_frame_samples[480:]) < 1_000
+    assert second_frame_samples[-1] == 0

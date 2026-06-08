@@ -121,7 +121,33 @@ def test_parse_event_treats_transcription_done_as_terminal_response() -> None:
     assert client._parse_event({"type": "response.audio.done"}) is None
 
 
-def test_qwen_client_starts_generation_only_on_explicit_commit() -> None:
+def test_parse_event_separates_input_transcript_from_assistant_output_text() -> None:
+    client = QwenRealtimeClient(
+        model="qwen",
+        url="ws://qwen/v1/realtime",
+        request_timeout_seconds=1.0,
+        response_timeout_seconds=1.0,
+        output_sample_rate=24000,
+        max_ws_message_bytes=1024,
+    )
+
+    input_event = client._parse_event(
+        {"type": "input_audio_buffer.transcript.delta", "delta": "hello"}
+    )
+    assistant_event = client._parse_event(
+        {"type": "transcription.delta", "delta": "Sure!"}
+    )
+
+    assert input_event is not None
+    assert input_event.kind == "transcript_delta"
+    assert input_event.text == "hello"
+
+    assert assistant_event is not None
+    assert assistant_event.kind == "assistant_text_delta"
+    assert assistant_event.text == "Sure!"
+
+
+def test_qwen_client_starts_input_stream_before_first_append() -> None:
     websocket = FakeWebSocket([])
     client = QwenRealtimeClient(
         model="qwen",
@@ -138,7 +164,7 @@ def test_qwen_client_starts_generation_only_on_explicit_commit() -> None:
 
     sent_payloads = [json.loads(payload) for payload in websocket.sent]
     assert sent_payloads == [
-        {"type": "input_audio_buffer.append", "audio": "aGVsbG8="},
         {"type": "input_audio_buffer.commit", "final": False},
+        {"type": "input_audio_buffer.append", "audio": "aGVsbG8="},
         {"type": "input_audio_buffer.commit", "final": True},
     ]

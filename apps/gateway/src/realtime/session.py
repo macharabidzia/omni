@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 _QWEN_REOPEN_RETRY_INTERVAL_SECONDS = 0.5
 
 EventSink = Callable[[dict], Awaitable[None]]
+BufferedAssistantEvent = tuple[int, QwenEvent]
 
 
 @dataclass(slots=True)
@@ -45,6 +46,7 @@ class RealtimeSession:
         self.qwen_client: QwenRealtimeClient | None = None
         self.qwen_chat_client: QwenChatClient | None = None
         self.qwen_reader_task: asyncio.Task | None = None
+        self.audio_response_task: asyncio.Task | None = None
         self.text_response_task: asyncio.Task | None = None
         self.metrics = SessionMetrics()
         self.last_metrics_snapshot: dict | None = None
@@ -52,9 +54,10 @@ class RealtimeSession:
         self.qwen_session_lock = asyncio.Lock()
         self.closed = False
         self.ignore_model_audio = False
+        self.output_version = 0
         self.buffered_audio_bytes = bytearray()
         self.assistant_output_gate_open = True
-        self.buffered_assistant_events: list[QwenEvent] = []
+        self.buffered_assistant_events: list[BufferedAssistantEvent] = []
         self.precommit_assistant_output_started = False
         self.input_audio_chunk_count = 0
         self.input_audio_total_bytes = 0
@@ -87,6 +90,14 @@ class RealtimeSession:
     async def _reset_runtime(self) -> None:
         await self._close_qwen_realtime_session()
 
+        if self.audio_response_task is not None:
+            self.audio_response_task.cancel()
+            try:
+                await self.audio_response_task
+            except asyncio.CancelledError:
+                pass
+            self.audio_response_task = None
+
         if self.text_response_task is not None:
             self.text_response_task.cancel()
             try:
@@ -114,6 +125,7 @@ class RealtimeSession:
         self._clear_turn_audio_buffer()
 
     def _clear_turn_audio_buffer(self) -> None:
+        self.buffered_audio_bytes.clear()
         self.turn_audio_chunks.clear()
         self.turn_audio_total_bytes = 0
 
@@ -123,11 +135,23 @@ class RealtimeSession:
             url=self.settings.qwen_realtime_url,
             request_timeout_seconds=self.settings.qwen_request_timeout_seconds,
             response_timeout_seconds=self.settings.qwen_response_timeout_seconds,
-            output_sample_rate=self.settings.output_sample_rate,
+            output_sample_rate=self.settings.qwen_output_sample_rate,
             max_ws_message_bytes=self.settings.max_ws_message_bytes,
             debug_raw_events=self.settings.qwen_debug_raw_events,
             instructions=self.settings.default_system_prompt,
         )
+
+    def _build_qwen_chat_client(self) -> QwenChatClient:
+        return QwenChatClient(
+            model=self.settings.qwen_model,
+            url=self.settings.qwen_chat_url,
+            request_timeout_seconds=self.settings.qwen_response_timeout_seconds,
+            system_prompt=self.settings.default_system_prompt,
+            max_completion_tokens=self.settings.text_max_completion_tokens,
+        )
+
+    def _uses_realtime_audio_backend(self) -> bool:
+        return self.settings.qwen_audio_backend == "realtime"
 
     async def _close_qwen_realtime_session(self) -> None:
         async with self.qwen_session_lock:
@@ -167,7 +191,10 @@ class RealtimeSession:
             await client.close()
             raise
         self.qwen_client = client
-        self.qwen_reader_task = asyncio.create_task(self._pump_qwen_events())
+        reader_output_version = self.output_version
+        self.qwen_reader_task = asyncio.create_task(
+            self._pump_qwen_events(reader_output_version)
+        )
 
     async def _open_qwen_realtime_session_with_retry_unlocked(
         self,
@@ -213,11 +240,13 @@ class RealtimeSession:
         self,
         *,
         preserve_turn_audio: bool = False,
+        advance_output_version: bool = True,
         reason: str = "unspecified",
     ) -> None:
         async with self.qwen_session_lock:
             await self._restart_qwen_realtime_session_unlocked(
                 preserve_turn_audio=preserve_turn_audio,
+                advance_output_version=advance_output_version,
                 reason=reason,
             )
 
@@ -225,6 +254,7 @@ class RealtimeSession:
         self,
         *,
         preserve_turn_audio: bool,
+        advance_output_version: bool = True,
         reason: str,
     ) -> None:
         assert self.session_config is not None
@@ -238,6 +268,8 @@ class RealtimeSession:
             len(self.turn_audio_chunks),
             self.turn_audio_total_bytes,
         )
+        if advance_output_version:
+            self._bump_output_version(reason)
         await self._close_qwen_realtime_session_unlocked()
         self.ignore_model_audio = False
         self.buffered_assistant_events.clear()
@@ -310,6 +342,7 @@ class RealtimeSession:
             async with self.qwen_session_lock:
                 await self._restart_qwen_realtime_session_unlocked(
                     preserve_turn_audio=True,
+                    advance_output_version=True,
                     reason=f"{failed_action}_failure",
                 )
                 if commit_after_replay:
@@ -354,8 +387,8 @@ class RealtimeSession:
             )
             return
 
-        input_sample_rate = int(event.get("input_sample_rate", self.settings.input_sample_rate))
-        if input_sample_rate != self.settings.input_sample_rate:
+        input_sample_rate = int(event.get("input_sample_rate", self.settings.qwen_input_sample_rate))
+        if input_sample_rate != self.settings.qwen_input_sample_rate:
             await self.send_error(
                 code="UNSUPPORTED_SAMPLE_RATE",
                 message="Input audio must be 16 kHz PCM16 mono.",
@@ -364,6 +397,7 @@ class RealtimeSession:
 
         output_audio = bool(event.get("output_audio", "audio" in modalities))
         await self._reset_runtime()
+        self._bump_output_version("session_start")
         self.session_config = RealtimeSessionConfig(
             speaker=speaker,
             modalities=modalities,
@@ -381,7 +415,7 @@ class RealtimeSession:
         self.upstream_response_pending = False
         self._clear_turn_audio_buffer()
 
-        if output_audio:
+        if output_audio and self._uses_realtime_audio_backend():
             try:
                 await self._open_qwen_realtime_session()
             except Exception as exc:
@@ -392,13 +426,7 @@ class RealtimeSession:
                 )
                 return
         else:
-            self.qwen_chat_client = QwenChatClient(
-                model=self.settings.qwen_model,
-                url=self.settings.qwen_chat_url,
-                request_timeout_seconds=self.settings.qwen_response_timeout_seconds,
-                system_prompt=self.settings.default_system_prompt,
-                max_completion_tokens=self.settings.text_max_completion_tokens,
-            )
+            self.qwen_chat_client = self._build_qwen_chat_client()
         logger.info(
             "Session %s started speaker=%s modalities=%s output_audio=%s",
             self.session_id,
@@ -428,7 +456,7 @@ class RealtimeSession:
         try:
             validated = validate_audio_chunk(
                 audio_base64=event.get("audio_base64", ""),
-                sample_rate=int(event.get("sample_rate", self.settings.input_sample_rate)),
+                sample_rate=int(event.get("sample_rate", self.settings.qwen_input_sample_rate)),
                 channels=int(event.get("channels", 1)),
                 audio_format=event.get("format", ""),
                 allowed_chunk_ms=self.settings.allowed_chunk_ms,
@@ -437,11 +465,9 @@ class RealtimeSession:
             await self.send_error(code=exc.code, message=exc.message)
             return
 
+        is_first_chunk_of_turn = self.input_audio_chunk_count == 0
         self.metrics.mark_once("t_microphone_started")
         self.metrics.mark_once("t_first_audio_chunk_sent")
-        if not self.session_config.output_audio:
-            self.buffered_audio_bytes.extend(validated.audio_bytes)
-        is_first_chunk_of_turn = self.input_audio_chunk_count == 0
         if (
             self.session_config.output_audio
             and self.qwen_client is not None
@@ -462,6 +488,8 @@ class RealtimeSession:
                 return
         if is_first_chunk_of_turn and not self.upstream_response_pending:
             self._clear_turn_audio_buffer()
+        if not self.session_config.output_audio or not self._uses_realtime_audio_backend():
+            self.buffered_audio_bytes.extend(validated.audio_bytes)
 
         self.turn_audio_chunks.append(validated.audio_base64)
         self.turn_audio_total_bytes += len(validated.audio_bytes)
@@ -544,6 +572,44 @@ class RealtimeSession:
             await self._send_metrics_update()
             return
 
+        if not self._uses_realtime_audio_backend():
+            if self.audio_response_task is not None and not self.audio_response_task.done():
+                await self.send_error(
+                    code="RESPONSE_IN_PROGRESS",
+                    message="Wait for the active audio response to finish before committing more audio.",
+                )
+                return
+            audio_pcm16 = bytes(self.buffered_audio_bytes)
+            if not audio_pcm16:
+                await self.send_error(
+                    code="EMPTY_AUDIO",
+                    message="No audio buffered for realtime commit.",
+                )
+                return
+            assert self.qwen_chat_client is not None
+            self.assistant_output_gate_open = True
+            self.precommit_assistant_output_started = False
+            logger.info(
+                "Session %s streaming %d audio chunks (%d bytes) through Qwen chat completions",
+                self.session_id,
+                self.input_audio_chunk_count,
+                self.input_audio_total_bytes,
+            )
+            self.audio_response_task = asyncio.create_task(
+                self._run_streaming_audio_completion(
+                    audio_pcm16=audio_pcm16,
+                    sample_rate=self.session_config.input_sample_rate,
+                    speaker=self.session_config.speaker,
+                    output_version=self.output_version,
+                )
+            )
+            self.upstream_response_pending = True
+            self.input_audio_chunk_count = 0
+            self.input_audio_total_bytes = 0
+            self._clear_turn_audio_buffer()
+            await self._send_metrics_update()
+            return
+
         if self.input_audio_chunk_count == 0:
             await self.send_error(
                 code="EMPTY_AUDIO",
@@ -603,7 +669,23 @@ class RealtimeSession:
         await self._commit_audio()
 
     async def _cancel_response(self) -> None:
+        if self.audio_response_task is not None and not self.audio_response_task.done():
+            self._bump_output_version("client_interrupt")
+            self.audio_response_task.cancel()
+            try:
+                await self.audio_response_task
+            except asyncio.CancelledError:
+                pass
+            self.audio_response_task = None
+            self.upstream_response_pending = False
+            self.buffered_assistant_events.clear()
+            self._clear_turn_audio_buffer()
+            self.metrics.mark_once("t_barge_in")
+            await self._send_metrics_update()
+            return
+
         if self.text_response_task is not None and not self.text_response_task.done():
+            self._bump_output_version("client_interrupt")
             self.text_response_task.cancel()
             self.text_response_task = None
             self.metrics.mark_once("t_response_done")
@@ -614,12 +696,20 @@ class RealtimeSession:
         if self.qwen_client is None:
             return
 
+        self._bump_output_version("client_interrupt")
         self.ignore_model_audio = True
         self.buffered_assistant_events.clear()
         self._clear_turn_audio_buffer()
         self.metrics.mark_once("t_barge_in")
         try:
-            await self._restart_qwen_realtime_session(reason="client_interrupt")
+            await self.qwen_client.cancel_response()
+        except Exception:
+            logger.exception("Session %s failed to cancel Qwen response", self.session_id)
+        try:
+            await self._restart_qwen_realtime_session(
+                advance_output_version=False,
+                reason="client_interrupt",
+            )
         except Exception as exc:
             await self.send_error(
                 code="QWEN_CANCEL_FAILED",
@@ -635,25 +725,66 @@ class RealtimeSession:
     def mark_livekit_egress_started(self) -> None:
         self.metrics.mark_once("t_first_livekit_egress")
 
-    async def _pump_qwen_events(self) -> None:
+    def _bump_output_version(self, reason: str) -> int:
+        self.output_version += 1
+        self.buffered_assistant_events.clear()
+        logger.info(
+            "Session %s advanced output_version=%d reason=%s",
+            self.session_id,
+            self.output_version,
+            reason,
+        )
+        return self.output_version
+
+    def _is_current_output_version(self, output_version: int | None) -> bool:
+        return output_version is None or output_version == self.output_version
+
+    def _log_stale_qwen_event(self, qwen_event: QwenEvent, output_version: int | None) -> None:
+        if qwen_event.kind == "assistant_audio_delta":
+            logger.info(
+                "Session %s dropped stale assistant audio delta event_version=%s current_output_version=%d",
+                self.session_id,
+                output_version,
+                self.output_version,
+            )
+            return
+        logger.debug(
+            "Session %s dropped stale Qwen event kind=%s event_version=%s current_output_version=%d",
+            self.session_id,
+            qwen_event.kind,
+            output_version,
+            self.output_version,
+        )
+
+    async def _pump_qwen_events(self, output_version: int) -> None:
         assert self.qwen_client is not None
         async for qwen_event in self.qwen_client.iter_events():
             if self.closed:
                 return
-            await self._handle_qwen_event(qwen_event)
+            await self._handle_qwen_event(qwen_event, output_version=output_version)
 
-    async def _handle_qwen_event(self, qwen_event: QwenEvent) -> None:
+    async def _handle_qwen_event(
+        self,
+        qwen_event: QwenEvent,
+        *,
+        output_version: int | None = None,
+    ) -> None:
+        if not self._is_current_output_version(output_version):
+            self._log_stale_qwen_event(qwen_event, output_version)
+            return
+
+        event_output_version = self.output_version if output_version is None else output_version
         if qwen_event.kind == "transcript_delta":
             self.metrics.mark_once("t_first_transcript_delta")
-            await self._forward_qwen_event(qwen_event)
+            await self._forward_qwen_event(qwen_event, output_version=event_output_version)
             return
 
         if self._should_buffer_assistant_event(qwen_event):
             self.precommit_assistant_output_started = True
-            self.buffered_assistant_events.append(qwen_event)
+            self.buffered_assistant_events.append((event_output_version, qwen_event))
             return
 
-        await self._forward_qwen_event(qwen_event)
+        await self._forward_qwen_event(qwen_event, output_version=event_output_version)
 
     def _should_buffer_assistant_event(self, qwen_event: QwenEvent) -> bool:
         if self.session_config is None or not self.session_config.output_audio:
@@ -671,10 +802,19 @@ class RealtimeSession:
             return
         pending_events = self.buffered_assistant_events
         self.buffered_assistant_events = []
-        for qwen_event in pending_events:
-            await self._forward_qwen_event(qwen_event)
+        for output_version, qwen_event in pending_events:
+            await self._forward_qwen_event(qwen_event, output_version=output_version)
 
-    async def _forward_qwen_event(self, qwen_event: QwenEvent) -> None:
+    async def _forward_qwen_event(
+        self,
+        qwen_event: QwenEvent,
+        *,
+        output_version: int | None,
+    ) -> None:
+        if not self._is_current_output_version(output_version):
+            self._log_stale_qwen_event(qwen_event, output_version)
+            return
+
         if qwen_event.kind == "assistant_text_delta":
             if self.metrics.mark_once("t_first_text_delta"):
                 logger.info("Session %s received first assistant text delta", self.session_id)
@@ -706,6 +846,12 @@ class RealtimeSession:
 
         normalized_event = normalize_qwen_event(qwen_event)
         if normalized_event is not None:
+            if qwen_event.kind in {
+                "assistant_text_delta",
+                "assistant_audio_delta",
+                "response_done",
+            }:
+                normalized_event["output_version"] = output_version
             await self.send_event(normalized_event)
             await self._send_metrics_update()
 
@@ -721,6 +867,38 @@ class RealtimeSession:
                 "timestamps": snapshot["timestamps"],
             }
         )
+
+    async def _run_streaming_audio_completion(
+        self,
+        *,
+        audio_pcm16: bytes,
+        sample_rate: int,
+        speaker: str,
+        output_version: int,
+    ) -> None:
+        assert self.qwen_chat_client is not None
+        try:
+            async for qwen_event in self.qwen_chat_client.stream_audio_response(
+                audio_pcm16=audio_pcm16,
+                sample_rate=sample_rate,
+                speaker=speaker,
+            ):
+                if self.closed:
+                    return
+                await self._handle_qwen_event(qwen_event, output_version=output_version)
+        except asyncio.CancelledError:
+            self.upstream_response_pending = False
+            raise
+        except Exception as exc:
+            logger.exception("Failed streaming audio chat completion")
+            self.upstream_response_pending = False
+            self._clear_turn_audio_buffer()
+            await self.send_error(
+                code="QWEN_AUDIO_COMPLETION_FAILED",
+                message=f"Failed streaming audio completion: {exc}",
+            )
+        finally:
+            self.audio_response_task = None
 
     async def _run_text_only_completion(self) -> None:
         assert self.session_config is not None
@@ -751,3 +929,10 @@ class RealtimeSession:
         await self.send_event({"type": "assistant.done"})
         await self._send_metrics_update()
         self.text_response_task = None
+
+    def has_active_response(self) -> bool:
+        if self.audio_response_task is not None and not self.audio_response_task.done():
+            return True
+        if self.text_response_task is not None and not self.text_response_task.done():
+            return True
+        return self.upstream_response_pending

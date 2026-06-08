@@ -1,7 +1,13 @@
 import base64
+import io
 import math
+import wave
 from dataclasses import dataclass
 from typing import Iterator
+
+import numpy as np
+
+PCM16_DTYPE = np.dtype("<i2")
 
 
 class AudioValidationError(ValueError):
@@ -97,6 +103,80 @@ def pcm16_duration_ms(byte_count: int, sample_rate: int) -> int:
 def chunk_bytes_for_duration_ms(duration_ms: int, sample_rate: int = 16000) -> int:
     sample_count = math.ceil(sample_rate * (duration_ms / 1000))
     return sample_count * 2
+
+
+def pcm16_samples(audio_pcm16: bytes | bytearray | memoryview, *, copy: bool = False) -> np.ndarray:
+    if len(audio_pcm16) % 2 != 0:
+        raise ValueError("PCM16 audio must contain 2-byte aligned samples.")
+    samples = np.frombuffer(audio_pcm16, dtype=PCM16_DTYPE)
+    if copy:
+        return samples.astype(np.int16, copy=True)
+    return samples
+
+
+def pcm16_bytes(samples: np.ndarray) -> bytes:
+    clipped = np.clip(np.rint(samples), -32768, 32767).astype(PCM16_DTYPE, copy=False)
+    return clipped.tobytes()
+
+
+def pcm16_peak_abs(
+    audio_pcm16: bytes | bytearray | memoryview,
+    *,
+    start_sample: int = 0,
+    sample_count: int | None = None,
+) -> int:
+    samples = pcm16_samples(audio_pcm16)
+    start = max(0, start_sample)
+    end = len(samples) if sample_count is None else min(len(samples), start + max(0, sample_count))
+    if end <= start:
+        return 0
+    return pcm16_sample_peak_abs(samples[start:end])
+
+
+def pcm16_sample_peak_abs(samples: np.ndarray) -> int:
+    if samples.size == 0:
+        return 0
+    return int(np.max(np.abs(samples.astype(np.int32, copy=False))))
+
+
+def pcm16_rms(
+    audio_pcm16: bytes | bytearray | memoryview,
+    *,
+    start_sample: int = 0,
+    sample_count: int | None = None,
+) -> float:
+    samples = pcm16_samples(audio_pcm16)
+    start = max(0, start_sample)
+    end = len(samples) if sample_count is None else min(len(samples), start + max(0, sample_count))
+    if end <= start:
+        return 0.0
+    window = samples[start:end].astype(np.float32, copy=False)
+    return float(np.sqrt(np.mean(window * window)))
+
+
+def pcm16_to_wav(audio_pcm16: bytes, *, sample_rate: int) -> bytes:
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(audio_pcm16)
+    return buffer.getvalue()
+
+
+def wav_to_pcm16(wav_bytes: bytes) -> tuple[bytes, int]:
+    try:
+        with wave.open(io.BytesIO(wav_bytes), "rb") as wav_file:
+            if wav_file.getnchannels() != 1:
+                raise ValueError("Only mono WAV audio is supported.")
+            if wav_file.getsampwidth() != 2:
+                raise ValueError("Only 16-bit PCM WAV audio is supported.")
+            sample_rate = wav_file.getframerate()
+            pcm16_bytes = wav_file.readframes(wav_file.getnframes())
+    except wave.Error as exc:
+        raise ValueError(f"Invalid WAV audio: {exc}") from exc
+
+    return pcm16_bytes, sample_rate
 
 
 def iter_pcm16_chunks(
