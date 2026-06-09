@@ -64,6 +64,7 @@ input {
 
 .controls-panel,
 .metrics-panel,
+.perf-panel,
 .debug-panel {
   margin-bottom: 16px;
 }
@@ -208,6 +209,12 @@ input {
 
 .metric-value {
   font-size: 1.2rem;
+}
+
+.metric-value-compact {
+  font-size: 1rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .panel-grid {

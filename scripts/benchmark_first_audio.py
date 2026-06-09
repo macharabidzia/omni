@@ -130,6 +130,8 @@ def main() -> None:
                         "commit_to_first_response_ms": (
                             metrics_payload["metrics"]["commit_to_first_audio_played_ms"]
                             if isinstance(metrics_payload["metrics"]["commit_to_first_audio_played_ms"], (int, float))
+                            else metrics_payload["metrics"]["commit_to_first_audio_delta_ms"]
+                            if isinstance(metrics_payload["metrics"]["commit_to_first_audio_delta_ms"], (int, float))
                             else metrics_payload["metrics"]["commit_to_first_text_ms"]
                         ),
                         "full_response_ms": metrics_payload["metrics"]["full_response_ms"],

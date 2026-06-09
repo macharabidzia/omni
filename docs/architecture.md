@@ -1,980 +1,627 @@
-# architecture.md — Qwen3-Omni LiveKit Realtime Voice Architecture
+# architecture.md — Final clean architecture for continuous smooth audio
 
-## Scope
+**Scope:** production-ready low-latency voice path for the current `apps/gateway` design.
 
-This repository implements one production realtime voice runtime design using:
-
-* Browser/client LiveKit WebRTC transport
-* Self-hosted LiveKit server as the realtime media transport
-* App Runtime LiveKit Worker / Agent
-* `RealtimeSessionKernel` as the only application authority
-* vLLM-Omni serving Qwen3-Omni
-* App-to-model streaming adapter
-* Continuous microphone audio ingest from LiveKit
-* Continuous assistant audio egress to LiveKit
-* Target first audible response: `p95 <= 500ms`
-* Stretch target: `p95 <= 350ms`
-
-LiveKit is the only browser realtime transport.
-
-No browser WebSocket audio transport.
-No app WebSocket gateway for browser audio.
-No direct browser-to-model bypass.
-No telephony transport.
-No Asterisk.
-No SIP.
-No RAG for now.
-No Qdrant/Postgres/Redis memory path for now.
-No worker-to-worker authority.
+**Principle:** keep the architecture direct. Audio should travel as WebRTC media through LiveKit and as streaming PCM through Qwen realtime. HTTP, JSON, metrics, and diagnostics must not sit in the hot audio path.
 
 ---
 
-## Core Goal
+## Goals
 
-The system must support realtime speech interaction:
+- Warm p95 `speech_end_to_first_assistant_egress_ms <= 500 ms`.
+- Smooth continuous assistant audio with stable frame cadence, no avoidable queue buildup, no clicks/pops, and safe interruption.
+- Clear ownership of each concern: API tokens, room worker, turn lifecycle, Qwen session, audio publishing, metrics.
+- Minimal moving parts: no broker, no parallel audio transport, no duplicated VAD ownership, no extra orchestration layer.
 
-```text
-Browser microphone
--> LiveKit WebRTC uplink
--> Self-hosted LiveKit server
--> App Runtime LiveKit Worker
--> RealtimeSessionKernel
--> vLLM-Omni streaming backend
--> Qwen3-Omni streaming audio/text
--> RealtimeSessionKernel lineage check
--> LiveKit audio track egress
--> Browser audio playback
-```
+## Non-goals
 
-LiveKit owns realtime media transport only.
-
-LiveKit does not own:
-
-* conversation authority
-* cancellation policy
-* interruption policy
-* stale output policy
-* semantic turn state
-* readiness interpretation
-* replay lineage
-* assistant generation state
-* model output state
-
-The model server is an execution backend only.
-
-It does not own:
-
-* conversation authority
-* cancellation policy
-* interruption policy
-* stale output policy
-* browser playback authority
-* readiness interpretation
-* replay lineage
-* session state
-* output state
+- Multi-speaker conversation inside one room.
+- Browser-owned turn commits while server VAD is enabled.
+- Sending realtime audio over JSON/base64 to the browser.
+- Per-frame persistent storage, tracing, or database writes.
+- Replacing LiveKit’s media transport with custom WebRTC or raw websocket audio.
 
 ---
 
-## Production Target
+## Target latency budget
 
-Primary latency target:
+This budget is for the warm path after the browser has joined, the assistant track is published/subscribed, and Qwen is ready.
 
-```text
-first audible assistant response p95 <= 500ms
-```
+| Segment | Target p95 | Notes |
+|---|---:|---|
+| Last user audio frame accepted → VAD end | 120–180 ms | Controlled by VAD min silence and frame cadence. |
+| VAD end → Qwen commit sent | <= 20 ms | No full utterance re-upload or blocking work. |
+| Qwen commit sent → first Qwen audio delta | <= 250–320 ms | Main model/runtime budget. |
+| First Qwen audio delta → first LiveKit assistant frame | <= 30 ms | Decode/resample/frame/publish overhead. |
+| LiveKit/browser jitter/playout | track separately | Browser/network adds variable delay outside Python. |
 
-Stretch target:
+**Primary SLO:** `speech_end_to_first_assistant_egress_ms <= 500 ms p95`.
 
-```text
-first audible assistant response p95 <= 350ms
-```
-
-Required reports:
-
-```text
-p50
-p95
-p99
-sample_count
-model readiness
-LiveKit readiness
-worker readiness
-GPU/server info when available
-failure classification
-```
-
-Cold model startup is not part of realtime latency.
-
-Realtime latency is measured only after:
-
-* app runtime is READY
-* LiveKit server is reachable
-* LiveKit room join succeeds
-* LiveKit audio input subscription succeeds
-* vLLM-Omni server is READY
-* Qwen3-Omni is loaded
-* model warmup passed
-* first response probe succeeded
-* speech output mode is confirmed
+**Important distinction:** server egress and browser-heard audio are not the same metric. The server can be under 500 ms while the browser adds jitter-buffer or output-device delay. Track both.
 
 ---
 
-## Runtime Topology
-
-Recommended first production topology:
+## High-level system diagram
 
 ```text
-Process 1: livekit_server
-  - public WebRTC signaling/media
-  - ICE/STUN/TURN if enabled
-  - browser room/session transport
-  - audio track routing
-
-Process 2: app_runtime_livekit_worker
-  - LiveKit room participant / agent
-  - audio track subscription
-  - assistant audio track publication
-  - RealtimeSessionKernel
-  - bounded event bus
-  - vLLM-Omni streaming client/adapter
-  - interruption/cancel manager
-  - metrics reporter
-  - replay logger
-  - drift guards
-
-Process 3: vllm_omni_server
-  - Qwen3-Omni model
-  - vLLM-Omni serving runtime
-  - streaming audio/text generation
+Browser
+  ├─ gets token from FastAPI /livekit/session
+  ├─ publishes microphone as LiveKit audio track
+  ├─ subscribes to assistant LiveKit audio track
+  └─ sends/receives small control + telemetry packets
+        │
+        ▼
+LiveKit SFU / Room
+        │
+        ▼
+Gateway LiveKit Worker
+  ├─ owns one active participant session per room
+  ├─ consumes browser audio at Qwen input rate
+  ├─ runs server-side VAD and turn lifecycle
+  ├─ streams PCM16 chunks to Qwen realtime
+  ├─ receives assistant text/audio events
+  ├─ filters stale output by output_version
+  └─ publishes assistant audio frames through AudioSource
+        │
+        ▼
+Qwen Realtime Backend
+  ├─ warm websocket per active session
+  ├─ accepts PCM16 mono 16 kHz input chunks
+  └─ streams incremental assistant audio deltas
 ```
 
-Allowed:
-
-* LiveKit as browser realtime transport
-* one app authority
-* app runtime connecting to LiveKit as a worker/agent
-* app runtime connecting to model server through an adapter
-* browser connecting only to LiveKit
-* model streaming through the app runtime
-* LiveKit used for continuous low-latency audio frames
-
-Forbidden:
-
-* browser WebSocket audio transport
-* browser connecting directly to vLLM-Omni
-* vLLM-Omni sending audio directly to browser
-* LiveKit worker bypassing the kernel
-* LiveKit callbacks mutating conversation state directly
-* second runtime authority
-* extra orchestrator that overrides the kernel
-* transport layer making semantic decisions
-* unbounded queues
-* fake backend counted as production success
-* RAG/memory retrieval in the realtime path for now
+FastAPI is intentionally outside the media loop. It creates sessions/tokens and reports health; it does not proxy turn audio.
 
 ---
 
-## Canonical Live Flow
+## Runtime services
 
-```text
-1. Browser joins a LiveKit room.
-2. Browser publishes microphone audio track.
-3. App Runtime LiveKit Worker joins the same room.
-4. Worker subscribes to the user audio track.
-5. Worker receives small continuous audio frames from LiveKit.
-6. Worker converts audio frames into kernel events.
-7. RealtimeSessionKernel.enqueue_event() accepts event.
-8. Kernel reducer orders event.
-9. Kernel commits state transition.
-10. Kernel collects DispatchCommands.
-11. Dispatch runs outside kernel lock.
-12. App sends input audio/text to vLLM-Omni backend adapter.
-13. Qwen3-Omni streams response text/audio.
-14. Model callback converts each response into kernel event.
-15. Kernel checks epoch/output_version lineage.
-16. Kernel commits assistant text/audio output if current.
-17. LiveKit egress queue receives only valid current audio.
-18. Worker publishes assistant audio frames to LiveKit.
-19. Browser receives and plays assistant audio through LiveKit/WebRTC.
-```
+### 1. API service: `apps/gateway/src/main.py`
+
+Responsibilities:
+
+- Create the FastAPI app.
+- Configure logging and CORS.
+- Mount health/readiness routes.
+- Mount LiveKit token/session route.
+
+Rules:
+
+- Stateless.
+- Horizontally scalable.
+- No LiveKit room state.
+- No Qwen websocket state.
+- No audio frame processing.
+
+### 2. LiveKit worker service: `apps/gateway/src/livekit/worker.py`
+
+Responsibilities:
+
+- Connect as the assistant/agent participant.
+- Publish the assistant audio track.
+- Accept only one active browser participant per room.
+- Subscribe to the active browser microphone track.
+- Own `ParticipantBridgeSession` for the active participant.
+- Convert LiveKit audio frames into Qwen input chunks.
+- Run server-side VAD and turn state.
+- Handle interruption and stale-output suppression.
+- Publish control/data events back to the browser.
+
+Rules:
+
+- One active participant per worker room in the current architecture.
+- Do not put this inside multi-worker FastAPI.
+- All hot-path queues must be bounded.
+- Enforce a hard max turn duration and drop overrun tail audio until the speech boundary closes.
+- No per-frame logs in production.
+
+### 3. Realtime session: `apps/gateway/src/realtime/session.py`
+
+Responsibilities:
+
+- Own one Qwen conversation/session bridge.
+- Open and keep a warm Qwen realtime websocket.
+- Append user audio as it arrives.
+- Commit on VAD end.
+- Gate assistant output until commit when needed.
+- Restart/recover on transient upstream send failures.
+- Cancel/restart on hard interrupt.
+- Emit normalized runtime events.
+- Maintain metrics and output version.
+
+Rules:
+
+- Do not reconnect per turn unless recovery/restart requires it.
+- Do not use chat-completion fallback in the production realtime audio path.
+- Do not leak raw upstream event shapes to the browser.
+- `output_version` must guard all assistant output.
+
+### 4. Qwen realtime client: `apps/gateway/src/realtime/qwen_client.py`
+
+Responsibilities:
+
+- Open websocket and validate startup event.
+- Send `session.update`.
+- Start input stream before first append.
+- Append PCM16 base64 chunks.
+- Commit audio.
+- Normalize transcript, text, audio, done, and error events.
+- Detect retryable closed/unreachable cases.
+
+Rules:
+
+- Input is PCM16 mono 16 kHz for realtime.
+- Audio output sample rate comes from upstream event metadata when available.
+- The client should not know about LiveKit.
+
+### 5. Assistant audio publisher: `apps/gateway/src/livekit/output.py`
+
+Responsibilities:
+
+- Decode assistant audio chunks.
+- Convert model output rate to LiveKit publish rate.
+- Maintain streaming resampler state across chunks.
+- Trim safe leading/inter-chunk silence.
+- Preserve natural short pauses.
+- Smooth boundary jumps and isolated spikes.
+- Accumulate complete LiveKit frames.
+- Publish frames to `rtc.AudioSource.capture_frame`.
+- Expose queued duration and clear/wait/finalize operations.
+
+Rules:
+
+- This is the only output audio adapter.
+- Resample once.
+- Frame once.
+- Flush resampler only at turn finalization.
+- Queue depth is a latency signal and must be bounded.
+
+### 6. Audio helpers: `apps/gateway/src/realtime/audio.py`
+
+Responsibilities:
+
+- Validate chunk format/duration.
+- Convert byte counts to durations.
+- Provide PCM16 NumPy views/helpers.
+- Convert WAV only for fallback/offline paths.
+- Split PCM16 into fixed-duration chunks.
+
+Rules:
+
+- Realtime path should avoid WAV wrapping.
+- Use copy-free views where safe.
+
+### 7. Event map: `apps/gateway/src/realtime/event_map.py`
+
+Responsibilities:
+
+- Convert internal Qwen events into public gateway events.
+- Keep browser event schema stable.
+
+Rules:
+
+- Public events are small.
+- Audio goes to browser as LiveKit media, not as public JSON in production.
+
+### 8. Metrics: `apps/gateway/src/realtime/metrics.py`
+
+Responsibilities:
+
+- Record turn/session milestones.
+- Emit relative timestamps and derived latencies.
+- Provide one turn summary plus key update events.
+
+Rules:
+
+- Metrics must be cheap.
+- Do not emit every frame.
+- All metric names use milliseconds.
 
 ---
 
-## Single Authority Rule
+## Audio rate and frame contract
 
-Only this function may accept live semantic events:
+| Direction | Format | Rate | Owner |
+|---|---|---:|---|
+| Browser mic → LiveKit | WebRTC audio track | browser-native/WebRTC | Browser + LiveKit |
+| LiveKit worker input stream → Qwen | PCM16 mono | 16 kHz | Worker audio stream |
+| Qwen realtime input chunks | base64 PCM16 mono | 16 kHz | `RealtimeSession` / `QwenRealtimeClient` |
+| Qwen realtime output | base64 PCM16 | model native, typically 24 kHz | Qwen backend |
+| Gateway assistant publish | PCM16 mono frames | 48 kHz | `AssistantAudioPublisher` |
+| Browser playback | WebRTC audio track | browser/device | LiveKit + browser |
 
-```text
-RealtimeSessionKernel.enqueue_event()
-```
+Production defaults:
 
-All of these must enter through the kernel:
-
-* LiveKit room join
-* LiveKit participant connected
-* LiveKit participant disconnected
-* LiveKit audio track subscribed
-* LiveKit audio frame received
-* user audio append
-* user speech commit
-* user text input if enabled
-* user interrupt
-* room/session close
-* model session ready
-* model text delta
-* model audio delta
-* model audio done
-* model response done
-* model error
-* model warning
-* LiveKit disconnect
-* LiveKit reconnect
-* egress success/failure
-* playback cancellation
-* readiness change
-
-Forbidden:
-
-```text
-browser -> model direct call
-model -> browser direct output
-LiveKit callback mutating conversation state directly
-LiveKit worker deciding stale output policy
-LiveKit worker deciding cancellation policy
-transport layer deciding interruption policy
-model server deciding browser playback state
-RAG/vector/database retrieval in realtime path for now
-```
+- Qwen input chunk target: 80 ms to start; benchmark 40 ms only if needed.
+- LiveKit output frame target: 10 ms.
+- LiveKit assistant audio source queue target: 150–200 ms.
+- Qwen websocket: open on `session.start`, keep warm across turns.
+- RED: enabled for assistant publish.
+- DTX: disabled for assistant TTS.
 
 ---
 
-## Kernel Ownership
+## Turn lifecycle
 
-`RealtimeSessionKernel` owns:
+```text
+idle
+  └─ VAD speech_start
+       ▼
+user_speaking
+  ├─ flush preroll to Qwen
+  ├─ stream live user audio to Qwen
+  └─ VAD speech_end
+       ▼
+committing
+  ├─ send final input commit
+  └─ open output gate
+       ▼
+assistant_streaming
+  ├─ receive Qwen transcript/text/audio
+  ├─ publish first assistant audio as soon as possible
+  ├─ buffer or order UI/control events so audio is not delayed
+  └─ response done / finalized
+       ▼
+idle
+```
+
+Invalid duplicate transitions are ignored with a structured reason.
+
+---
+
+## Interrupt lifecycle
+
+```text
+assistant_streaming or queued_assistant_audio
+  └─ new VAD speech_start or browser interrupt
+       ├─ clear LiveKit AudioSource queue
+       ├─ clear AssistantAudioPublisher buffers
+       ├─ cancel/restart Qwen realtime session if required
+       ├─ increment output_version
+       ├─ publish assistant.interrupted control event
+       └─ start new user turn with preroll
+```
+
+Hard rules:
+
+- Any assistant output with an old `output_version` is dropped.
+- Queue clear must happen before new assistant audio can be published.
+- New user speech wins over old assistant playout.
+
+---
+
+## Queue and backpressure policy
+
+| Queue/buffer | Target | Action when unhealthy |
+|---|---:|---|
+| Browser/WebRTC jitter | observe only | surface via browser stats |
+| Worker preroll | 200–300 ms | cap/drop oldest silence if exceeded |
+| VAD event queue | small bounded | log state warning, drop duplicate events safely |
+| Qwen pending event buffer | bounded by turn | drop stale output by version |
+| Pending pre-audio UI events | tiny | flush at first audio or done |
+| Assistant audio source queue | 150–200 ms target | warn near cap, clear on interrupt, and hard-drop overloaded pending frames once the queue reaches the configured cap |
+
+Backpressure should be visible in metrics. It should not silently accumulate.
+Per-turn replay audio and pre-audio payload buffers must be bounded by the same max-turn/resource limits as live speech.
+
+---
+
+## Public event schema
+
+Minimum public events:
+
+```text
+session.ready
+turn.started
+turn.committed
+transcript.delta
+assistant.audio_started
+assistant.done
+assistant.interrupted
+metrics.update
+error
+room.busy
+```
+
+Every event should include:
 
 ```text
 session_id
-room_id
-participant_id
+participant_identity
+room
 turn_id
-epoch
 output_version
-active_response_id
-generation_state
-input_commit_state
-assistant_output_state
-interruption_state
-cancel_state
-livekit_connection_state
-livekit_room_state
-model_connection_state
-readiness_state
-dispatch_intent
-replay_lineage
-stale_output_suppression
-```
-
-Only kernel reducer transitions may mutate these.
-
----
-
-## Lock Safety
-
-Allowed under kernel lock:
-
-```text
-dequeue bounded events
-order events
-reduce events
-commit state transition
-collect DispatchCommands
-```
-
-Forbidden under kernel lock:
-
-```text
-await LiveKit audio publish
-await LiveKit room operation
-await model send
-await model response
-await audio encoding
-await audio decoding
-execute backend dispatch
-recursive tick
-recursive dispatch
-database calls
-vector search
-RAG retrieval
-```
-
-Required pattern:
-
-```text
-lock:
-  order events
-  reduce events
-  commit state
-  collect DispatchCommands
-
-unlock:
-  execute DispatchCommands
-  enqueue outputs back through RealtimeSessionKernel.enqueue_event()
-```
-
----
-
-## LiveKit Transport Contract
-
-Browser sends to app through LiveKit:
-
-```yaml
-client.audio.frame
-client.speech.start
-client.speech.commit
-client.interrupt
-client.playback.state
-client.session.close
-```
-
-App sends to browser through LiveKit:
-
-```yaml
-server.ready
-assistant.audio.frame
-assistant.audio.done
-assistant.interrupted
-assistant.error
-session.closed
-```
-
-Data-channel messages are allowed for control metadata only:
-
-```yaml
-server.ready
-assistant.text.delta
-assistant.done
-assistant.error
-metrics.partial
-client.interrupt
-client.playback.ack
-session.closed
-```
-
-Audio must use LiveKit audio tracks, not browser WebSocket binary frames.
-
-Every internal event must carry:
-
-```yaml
-session_id: string
-room_id: string
-participant_id: string
-turn_id: string
-epoch: integer
-output_version: integer
-event_type: string
-created_ns: integer
-payload: object
-```
-
-No anonymous audio frames are allowed in production.
-
-Every audio frame received from LiveKit must be wrapped with:
-
-```yaml
-session_id:
-room_id:
-participant_id:
-track_id:
-turn_id:
-epoch:
-audio_frame_index:
-sample_rate:
-channels:
-frame_ms:
-received_ns:
-```
-
----
-
-## Browser Audio Input Contract
-
-Preferred browser input through LiveKit:
-
-```yaml
-sample_rate: 48000
-frame_ms: 10 or 20
-format: livekit_audio_frame
-channels: 1
-transport: livekit_webrtc
-```
-
-Worker internal normalized input:
-
-```yaml
-sample_rate: 16000 or 24000
-frame_ms: 20
-format: pcm16
-channels: 1
+backend
+timestamp_ms
 ```
 
 Rules:
 
-* browser publishes microphone as a LiveKit audio track
-* app must reject frames before READY
-* app must reject frames with missing session metadata
-* app must bound per-session input queue
-* app must record `livekit_audio_received_ns`
-* app must not wait for full utterance in realtime mode
-* resampling must happen outside kernel lock
-* LiveKit callback must not mutate semantic state directly
+- Critical control events are reliable.
+- Frequent telemetry is best-effort/debug-only.
+- Internal upstream/Qwen payload shapes are not public API.
+- `metrics.update` may include per-turn metrics, worker rollups, reconnect reasons, and worker counters such as interrupts, duplicate commits, stale drops, and error totals.
 
 ---
 
-## Browser Audio Output Contract
+## Observability model
 
-Preferred assistant output through LiveKit:
-
-```yaml
-sample_rate: 48000
-format: livekit_audio_frame
-frame_ms: 10 or 20
-channels: 1
-transport: livekit_webrtc
-```
-
-Model-native output may be:
-
-```yaml
-sample_rate: 24000
-format: pcm16
-channels: 1
-```
-
-Worker must publish LiveKit-compatible PCM audio and only resample model-native audio when the model output rate differs from the configured LiveKit output rate.
-
-Playback rules:
-
-* browser must support immediate stop on interrupt
-* app must stop publishing stale assistant audio before browser playback
-* assistant audio must be tagged by epoch/output_version internally
-* stale audio must be dropped before LiveKit egress
-* browser-side stale-drop by data-channel metadata is allowed as extra protection
-* LiveKit egress buffer target: `20ms - 80ms`
-* egress buffer above `120ms` must be reported as latency risk
-
----
-
-## LiveKit Worker Contract
-
-The app runtime must connect to LiveKit using:
-
-```yaml
-LIVEKIT_URL:
-LIVEKIT_API_KEY:
-LIVEKIT_API_SECRET:
-LIVEKIT_ROOM:
-LIVEKIT_AGENT_ID:
-LIVEKIT_INPUT_SAMPLE_RATE:
-LIVEKIT_OUTPUT_SAMPLE_RATE:
-LIVEKIT_OUTPUT_FRAME_MS:
-LIVEKIT_OUTPUT_QUEUE_MS:
-```
-
-Worker responsibilities:
+### Required per-turn timestamps
 
 ```text
-connect to LiveKit
-join target room
-subscribe to user microphone track
-normalize inbound audio frames
-enqueue audio events into RealtimeSessionKernel
-publish assistant audio track
-send control messages through LiveKit data channel if needed
-report connection/readiness metrics
-handle reconnects without state corruption
+session_start_received
+qwen_ws_connected
+qwen_session_ready
+vad_speech_start
+first_user_audio_uploaded
+last_user_audio_uploaded
+vad_speech_end
+commit_sent
+qwen_first_transcript
+qwen_first_text
+qwen_first_audio
+first_livekit_frame_captured
+assistant_done
+turn_closed
 ```
 
-Worker must not:
+### Required derived metrics
 
 ```text
-decide conversation state
-decide stale output validity
-decide cancellation policy
-call model directly without kernel dispatch
-publish model output before lineage check
-hold unbounded audio buffers
-count LiveKit connection alone as READY
+vad_end_to_commit_ms
+commit_to_qwen_first_audio_ms
+qwen_first_audio_to_livekit_first_frame_ms
+speech_end_to_first_assistant_egress_ms
+speech_start_to_commit_ms
+turn_total_ms
+queue_depth_at_first_frame_ms
+browser_jitter_buffer_ms
 ```
+
+### Minimum dashboard
+
+- p50/p95/p99 `speech_end_to_first_assistant_egress_ms`.
+- p50/p95 `commit_to_qwen_first_audio_ms`.
+- p95 `qwen_first_audio_to_livekit_first_frame_ms`.
+- Assistant queue depth.
+- Reconnects by reason.
+- Error count.
+- Interrupts.
+- Duplicate commits ignored.
+- Stale outputs dropped.
+- Browser jitter buffer estimate.
+- Error counts by code when available.
 
 ---
 
-## Model Streaming Adapter Contract
-
-App sends to model adapter:
-
-```yaml
-session.start
-input_audio.append
-input_audio.commit
-input_text.append
-response.create
-response.cancel
-session.close
-```
-
-App receives from model adapter:
-
-```yaml
-session.ready
-response.text.delta
-response.audio.delta
-response.audio.done
-response.done
-response.error
-server.warning
-```
-
-If the model server protocol field names differ, adapter must translate them into this internal event contract.
-
-The internal app contract must not change every time the model server protocol changes.
-
-The model transport may be WebSocket, HTTP streaming, gRPC, or local process IPC, but it is not the browser/client transport and must remain behind the kernel authority.
-
----
-
-## Required Message Lineage
-
-Every app-to-model message must include:
-
-```yaml
-session_id:
-room_id:
-participant_id:
-turn_id:
-epoch:
-output_version:
-response_id:
-created_ns:
-```
-
-Every model-to-app event must be wrapped with:
-
-```yaml
-session_id:
-room_id:
-participant_id:
-turn_id:
-epoch:
-output_version:
-response_id:
-received_ns:
-model_event_type:
-```
-
-If model does not return lineage fields natively, the adapter must attach lineage from the active request mapping.
-
-No model output may be emitted to LiveKit without lineage check.
-
----
-
-## Startup Contract
-
-Startup order:
+## Deployment architecture
 
 ```text
-1. Load runtime config.
-2. Validate LiveKit URL.
-3. Validate LiveKit API key and secret.
-4. Validate LiveKit room/agent settings.
-5. Validate model backend URL/path.
-6. Validate Qwen3-Omni model name/path.
-7. Validate model output mode = speech.
-8. Validate audio config.
-9. Validate queue limits.
-10. Connect to model backend.
-11. Create warmup model session.
-12. Run warmup text/audio probe.
-13. Confirm streaming response event.
-14. Confirm audio output mode.
-15. Confirm response.cancel works.
-16. Connect LiveKit worker.
-17. Join LiveKit room.
-18. Confirm audio track publish capability.
-19. Confirm audio track subscribe capability.
-20. Create RealtimeSessionKernel.
-21. Mark app runtime READY.
+[Browser]
+   │
+   ├── HTTPS token request ───────────────► [FastAPI API service]
+   │                                             │
+   │                                             └── health/readiness/diagnostics
+   │
+   └── WebRTC media/data ────────────────► [LiveKit]
+                                                │
+                                                ▼
+                                      [Gateway LiveKit Worker]
+                                                │
+                                                ▼
+                                      [Qwen Realtime Backend]
 ```
 
-Forbidden:
+Deployment rules:
+
+- Keep API and worker as separate services/processes.
+- Keep worker and Qwen in the same region/network zone where possible.
+- Keep browser connected to the nearest sensible LiveKit region.
+- Scale API statelessly.
+- Scale workers by active rooms/sessions.
+- Track Qwen/GPU capacity separately from API capacity.
+- Use graceful drain on deploys.
+
+---
+
+## Graceful drain
+
+Drain is the only supported deploy/restart path for the LiveKit worker.
+
+1. Mark the worker snapshot as `draining`.
+2. Return degraded `/ready` and reject new `/livekit/session` requests.
+3. Reject new browser participants/tracks with `room.busy`.
+4. Let the active participant finish naturally when possible.
+5. After `LIVEKIT_DRAIN_TIMEOUT_SECONDS`, force-close active sessions, clear assistant playout state, and disconnect.
+
+Rules:
+
+- Drain is visible in readiness and worker snapshot state.
+- Drain must not accept a new browser session while the old one is winding down.
+- Forced drain is better than leaving a ghost assistant track or orphaned warm Qwen session.
+
+---
+
+## Health and readiness
+
+- `/health`: process is alive.
+- `/ready`: shallow dependency readiness; cheap enough for normal orchestration.
+- `/ready?deep=true` or diagnostics route: Qwen websocket startup and optional inference probe; TTL-cached.
+- LiveKit probe: config, room visibility, worker presence, assistant track publication.
+- Worker snapshot augments readiness with reconnect counts, active session count, queue depth, and available p50/p95/p99 first-audio rollups.
+- Qwen probe: HTTP/health if available, websocket startup, optional audio inference.
+
+Do not run expensive inference probes on every orchestrator health check.
+
+---
+
+## Retry and timeout policy
+
+| Condition | Classification | Runtime action | Browser-visible result |
+|---|---|---|---|
+| Realtime websocket startup/connect fails with retryable closed/refused/timeout error | retryable | Retry reopen within `QWEN_REQUEST_TIMEOUT_SECONDS` | If retries exhaust, `error` with `QWEN_UNAVAILABLE` |
+| Realtime append send fails and buffered turn audio is available | retryable | Restart realtime session, replay buffered turn audio, continue turn | No user-visible error if recovery succeeds |
+| Realtime commit send fails and buffered turn audio is available | retryable | Restart realtime session, replay buffered turn audio, re-commit | No user-visible error if recovery succeeds |
+| Realtime append/commit fails with non-retryable error | terminal | Close broken session path | `error` with `QWEN_APPEND_FAILED` or `QWEN_COMMIT_FAILED` |
+| Upstream websocket closes before terminal response event | retryable-on-next-open | Mark `upstream_closed`, drop stale output, reopen when recovery or next turn requires it | `error` with `QWEN_CONNECTION_CLOSED` |
+| First assistant audio does not arrive by `QWEN_FIRST_AUDIO_TIMEOUT_SECONDS` | terminal-for-current-response | Emit structured error, mark turn closed, bump `output_version`, restart realtime session | `error` with `QWEN_FIRST_AUDIO_TIMEOUT` |
+| Assistant response does not finish by `QWEN_TOTAL_RESPONSE_TIMEOUT_SECONDS` | terminal-for-current-response | Emit structured error, mark turn closed, bump `output_version`, restart realtime session | `error` with `QWEN_RESPONSE_TIMEOUT` |
+| Browser session stays idle past `LIVEKIT_BROWSER_IDLE_TIMEOUT_SECONDS` | terminal-for-idle-session | Emit structured error, close session state, clear worker-side audio/VAD/runtime state | `error` with `BROWSER_IDLE_TIMEOUT` |
+| User barge-in or manual interrupt while assistant output is active | terminal-for-old-response | Clear playout, close upstream socket, restart realtime session | `assistant.interrupted` |
+| Worker drain timeout reached | terminal-for-active-session | Close active participant sessions and stop worker | New joins rejected until worker replacement is ready |
+
+Rules:
+
+- Retryable classification is code, not guesswork; `is_qwen_connection_retryable_error()` is the source of truth.
+- Hard interrupt means kill the old output path. Do not depend on polite upstream cancel semantics.
+- Timeout recovery must always preserve stale-output safety by advancing `output_version` before new assistant egress.
+- Browser idle timeout must be long enough to tolerate normal conversation pauses while still reclaiming abandoned sessions.
+
+---
+
+## Testing architecture
+
+### Unit tests
+
+Keep and expand current tests for:
+
+- Audio validation and chunking.
+- Settings rate/queue validation.
+- AssistantAudioPublisher resampling, trimming, smoothing, queue warning/cap.
+- Worker turn lifecycle, VAD, duplicate commit, interrupt, stale output.
+- Qwen event parsing and connection errors.
+- Session output gating, retry/restart recovery, fallback modes.
+- Qwen initial codec chunk behavior.
+- Audio artifact capture only when explicitly enabled for debug/perf runs.
+
+### Integration tests
+
+Add:
+
+- Qwen websocket stub that emits first audio after configurable delay.
+- Local LiveKit worker test for first egress timing.
+- Browser smoke test for join, subscribe, first playout, interrupt.
+- Audio capture analyzer against a golden assistant-output WAV.
+
+### Performance tests
+
+Add:
+
+- `scripts/benchmark_qwen_ttfb.py` for warm Qwen append/commit/first-audio timing. It defaults to a stub websocket and can target a live realtime URL when available.
+- `scripts/benchmark_livekit_egress.py` for gateway-only `AssistantAudioPublisher` egress timing with threshold gating on first `capture_frame`.
+- `scripts/benchmark_realtime_turn.py` for the in-process warm turn path using the real worker/session/publisher stack against a stub realtime backend.
+- Full warm browser→LiveKit→worker→Qwen→LiveKit benchmark when a live backend and browser harness are available.
+- Cold-start benchmark separately; do not mix it into warm p95 SLO.
+
+---
+
+## Configuration contract
+
+Required production settings should be documented with safe defaults:
 
 ```text
-accepting LiveKit user audio before READY
-fake READY
-silent text-only fallback
-silent different model fallback
-model download during live startup
-unbounded reconnect loop
-hidden LiveKit failure
-production success without model warmup
-production success without speech output proof
-production success without LiveKit join proof
-RAG dependency required for startup
-database dependency required for startup
-vector store dependency required for startup
+QWEN_REALTIME_URL
+QWEN_MODEL
+QWEN_INPUT_SAMPLE_RATE_HZ=16000
+QWEN_OUTPUT_SAMPLE_RATE_HZ=24000
+QWEN_AUDIO_BACKEND=realtime
+QWEN_REQUEST_TIMEOUT_SECONDS
+QWEN_RESPONSE_TIMEOUT_SECONDS
+QWEN_FIRST_AUDIO_TIMEOUT_SECONDS
+QWEN_TOTAL_RESPONSE_TIMEOUT_SECONDS
+QWEN_PREWARM_ON_STARTUP
+QWEN_PREWARM_MAX_WAIT_SECONDS
+QWEN_PREWARM_RETRY_INTERVAL_SECONDS
+QWEN_TEXT_MAX_COMPLETION_TOKENS=<fallback text cap>
+voice response token cap: configured in the deployed Qwen runtime (default local configs keep stage-0 `max_tokens: 16`)
+LIVEKIT_URL
+LIVEKIT_API_KEY
+LIVEKIT_API_SECRET
+LIVEKIT_ROOM
+LIVEKIT_AGENT_IDENTITY
+LIVEKIT_BROWSER_IDENTITY_PREFIX
+LIVEKIT_INPUT_SAMPLE_RATE_HZ=48000
+LIVEKIT_PUBLISH_SAMPLE_RATE_HZ=48000
+LIVEKIT_OUTPUT_FRAME_MS=10
+LIVEKIT_AUDIO_SOURCE_QUEUE_MS=150-200
+LIVEKIT_DRAIN_TIMEOUT_SECONDS
+LIVEKIT_BROWSER_IDLE_TIMEOUT_SECONDS
+LIVEKIT_ASSISTANT_RED=true
+LIVEKIT_ASSISTANT_DTX=false
+VAD_ENABLED=true
+VAD_MIN_SPEECH_MS=80-160
+VAD_MIN_SILENCE_MS=120-180
+VAD_PREROLL_MS=200-300
+DEBUG_AUDIO_ARTIFACTS=false
+DEBUG_RAW_QWEN_EVENTS=false
 ```
+
+Startup must fail fast on unsupported or unsafe values.
 
 ---
 
-## Required Config
-
-```yaml
-LIVEKIT_URL:
-LIVEKIT_API_KEY:
-LIVEKIT_API_SECRET:
-LIVEKIT_ROOM:
-LIVEKIT_AGENT_ID:
-MODEL_BACKEND_URL:
-QWEN3_OMNI_MODEL:
-MODEL_OUTPUT_MODE: speech
-QWEN_AUDIO_INPUT_SAMPLE_RATE: 16000
-QWEN_AUDIO_OUTPUT_SAMPLE_RATE: 24000
-LIVEKIT_INPUT_SAMPLE_RATE: 48000
-LIVEKIT_OUTPUT_SAMPLE_RATE: 48000
-LIVEKIT_OUTPUT_FRAME_MS: 20
-LIVEKIT_OUTPUT_QUEUE_MS: 40
-LIVEKIT_PREROLL_FRAMES: 1
-TARGET_FIRST_AUDIO_P95_MS: 500
-MAX_SESSIONS:
-QUEUE_MAX_AUDIO_FRAMES:
-QUEUE_MAX_MODEL_EVENTS:
-QUEUE_MAX_LIVEKIT_EGRESS_FRAMES:
-MODEL_AUDIO_FORMAT:
-```
-
-Optional:
-
-```yaml
-ENABLE_TEXT_DELTAS: true
-ENABLE_AUDIO_DELTAS: true
-LIVEKIT_DATA_CHANNEL_CONTROL: true
-LIVEKIT_EGRESS_JITTER_BUFFER_MS: 40
-INTERRUPT_SUPPRESSION_TARGET_MS: 80
-```
-
-Forbidden for now:
-
-```yaml
-APP_WS_HOST:
-APP_WS_PORT:
-BROWSER_WEBSOCKET_URL:
-BROWSER_AUDIO_FORMAT: websocket_binary
-RAG_MODE:
-QDRANT_URL:
-POSTGRES_URL:
-REDIS_URL:
-MEMORY_RETRIEVAL_ENABLED:
-VECTOR_SEARCH_ENABLED:
-```
-
----
-
-## Readiness Contract
-
-Readiness states:
-
-```yaml
-WARMING
-READY
-DEGRADED
-FAILED
-```
-
-Production speech mode requires:
+## Clean module boundaries
 
 ```text
-LiveKit server reachable
-AND LiveKit worker connected
-AND LiveKit room joined
-AND LiveKit input track subscription ready
-AND LiveKit assistant audio publishing ready
-AND RealtimeSessionKernel READY
-AND model backend READY
-AND Qwen3-Omni READY
-AND speech output READY
-AND warmup cancel probe READY
+config.py
+  Settings only. No runtime audio logic.
+
+health.py
+  Liveness/readiness/diagnostics only. No participant state.
+
+livekit/auth.py
+  Identity/token grants only.
+
+livekit/control.py
+  Browser session/token endpoint only.
+
+livekit/worker.py
+  Room connection, participant session, VAD ownership, turn lifecycle, control packets.
+
+livekit/output.py
+  Assistant audio decode/resample/smooth/frame/publish only.
+
+realtime/audio.py
+  PCM16/WAV/chunk helper functions only.
+
+realtime/qwen_client.py
+  Qwen websocket protocol only.
+
+realtime/qwen_chat_client.py
+  Fallback chat/audio streaming only.
+
+realtime/session.py
+  Conversation runtime orchestration only.
+
+realtime/event_map.py
+  Internal event → public event conversion only.
+
+realtime/metrics.py
+  Timestamps and derived latency metrics only.
 ```
 
-`DEGRADED` is not production speech success.
-
-Text-only mode may be used for development, but cannot pass production speech-to-speech gates.
+Rule: if a function needs LiveKit and Qwen and VAD together, it belongs in `ParticipantBridgeSession` or `RealtimeSession`. If it only touches PCM bytes, it belongs in audio/output helpers.
 
 ---
 
-## Required Health Fields
+## Final “clean path” checklist
 
-```yaml
-livekit_status:
-livekit_url:
-livekit_room:
-livekit_worker_status:
-livekit_room_joined:
-livekit_input_track_status:
-livekit_output_track_status:
-livekit_reconnects:
-livekit_rtt_ms:
-livekit_packet_loss:
-livekit_egress_queue_depth:
-kernel_status:
-model_server_status:
-model_server_url:
-model_name:
-model_output_mode:
-model_reconnects:
-qwen3_omni_ready:
-speech_output_ready:
-warmup_first_packet_ms:
-warmup_cancel_ready:
-last_first_audio_ms:
-p50_first_audio_ms:
-p95_first_audio_ms:
-p99_first_audio_ms:
-active_sessions:
-gpu_device_map:
-topology_hash:
-drift_snapshot_hash:
-failure_reason:
-```
+A turn is healthy when this exact sequence happens:
 
-Forbidden health dependency for now:
+1. Browser has already joined LiveKit and subscribed to assistant audio.
+2. Browser publishes mic track.
+3. Worker consumes mic frames as 16 kHz mono.
+4. VAD start fires.
+5. Worker starts turn and flushes preroll.
+6. User audio streams to Qwen before VAD end.
+7. VAD end fires.
+8. Worker commits immediately.
+9. Qwen streams first assistant audio delta.
+10. `AssistantAudioPublisher` decodes, resamples, frames, and publishes immediately.
+11. First LiveKit frame is captured and metrics mark assistant egress.
+12. Browser plays assistant track.
+13. On interruption, queue clears, Qwen cancels/restarts, `output_version` increments, stale output drops.
+14. On done, publisher finalizes the turn and resets per-turn smoothing state.
 
-```yaml
-app_ws_status:
-app_ws_host:
-app_ws_port:
-browser_ws_clients:
-rag_status:
-qdrant_status:
-postgres_status:
-redis_status:
-memory_status:
-```
+If any step is slow, the timestamp timeline should show exactly where.
 
----
-
-## 500ms Latency Budget
-
-Target p95:
-
-```text
-browser capture frame              10-40ms
-browser -> LiveKit server           5-30ms
-LiveKit -> worker                   5-30ms
-kernel decision                     5-20ms
-worker -> model backend             5-30ms
-warm model first audio/event      230-350ms
-decode/resample/LiveKit egress      20-60ms
-browser playback                    20-60ms
-------------------------------------------
-target p95                       <= 500ms
-```
-
-Required timestamps:
-
-```yaml
-browser_capture_ns:
-livekit_uplink_send_ns:
-livekit_worker_receive_ns:
-kernel_decision_ns:
-model_send_ns:
-model_first_event_ns:
-model_first_audio_ns:
-livekit_egress_ns:
-browser_receive_ns:
-browser_playback_start_ns:
-```
-
-Minimum server-side report:
-
-```yaml
-livekit_worker_receive_ns:
-kernel_decision_ns:
-model_send_ns:
-model_first_event_ns:
-model_first_audio_ns:
-livekit_egress_ns:
-```
-
-Browser-side report should be added when possible.
-
----
-
-## Interruption / Barge-In Contract
-
-Interrupt levels:
-
-```yaml
-SOFT_PRE_INTERRUPT:
-  evidence: LiveKit user speech/VAD while assistant audio active
-  action:
-    - prepare cancellation
-    - reduce LiveKit egress buffer
-    - stop enqueueing new assistant audio if confidence rises
-
-HARD_INTERRUPT:
-  evidence: explicit client interrupt, committed user speech, strong VAD, or user stop command
-  action:
-    - send response.cancel to model backend
-    - increment epoch
-    - suppress old audio locally
-    - stop publishing stale assistant audio to LiveKit
-    - reject late model chunks
-```
-
-Required behavior:
-
-```text
-old assistant audio suppression p95 <= 80ms
-stretch target <= 40ms
-response.cancel sent to model server
-local output stops before backend confirms cancel
-late model audio chunks are dropped
-next user turn starts new epoch
-```
-
-The browser may also drop stale audio if it receives stale metadata through LiveKit data channel.
-
----
-
-## Queue and Backpressure Contract
-
-All queues must be bounded.
-
-Required queues:
-
-```yaml
-livekit_input_audio_queue:
-kernel_event_queue:
-model_send_queue:
-model_recv_queue:
-livekit_egress_queue:
-metrics_queue:
-```
-
-Required metrics:
-
-```yaml
-queue_depth:
-oldest_age_ms:
-drops:
-stale_drops:
-backpressure_action:
-```
-
-Never drop:
-
-```yaml
-client.interrupt
-client.session.close
-response.error
-response.cancel confirmation
-committed user speech
-LiveKit disconnect
-LiveKit reconnect
-```
-
-May drop:
-
-```yaml
-superseded VAD partials
-stale audio chunks
-stale text deltas
-duplicate telemetry
-old metrics samples
-```
-
----
-
-## Replay Contract
-
-Every session must be replayable from logs.
-
-Replay must compare:
-
-```yaml
-event_order:
-epoch:
-output_version:
-committed_user_turns:
-model_dispatch_commands:
-cancel_commands:
-stale_output_drops:
-first_audio_timing:
-livekit_egress_timing:
-final_state_hash:
-```
-
-Replay failure blocks production readiness.
-
----
-
-## Drift Protection
-
-CI/static guards must fail if production code contains:
-
-```text
-browser WebSocket audio transport
-browser directly calling vLLM-Omni
-vLLM-Omni directly sending to browser
-LiveKit callbacks mutating semantic state directly
-LiveKit worker bypassing RealtimeSessionKernel
-second application authority
-fake READY
-fake speech backend
-text-only fallback counted as speech success
-unbounded queues
-missing response.cancel path
-missing stale output lineage check
-startup model download
-missing p95/p99 report
-telephony production dependency
-Asterisk production dependency
-SIP production dependency
-RAG/vector/database memory dependency in realtime path
-Qdrant/Postgres/Redis required for production speech startup
-```
-
----
-
-## Completion Criteria
-
-System is production-ready only when:
-
-```text
-LiveKit server is reachable
-LiveKit worker joins room
-browser publishes microphone track
-worker subscribes to browser audio
-worker publishes assistant audio track
-model backend connects
-Qwen3-Omni warmup passes
-speech output mode is confirmed
-response.cancel probe passes
-LiveKit user audio is rejected until READY
-all semantic events go through RealtimeSessionKernel
-model output lineage is checked
-stale audio is dropped before LiveKit egress
-first audible response p95 <= 500ms on target hardware
-p99 is reported
-barge-in suppression is measured
-replay parity passes
-drift guards pass
-no fake backend is counted as production success
-no browser WebSocket audio transport exists
-no telephony dependency exists
-no RAG/vector/database memory dependency exists in realtime speech path
-```
-
-## Final Lock Phrase
-
-This is the final LiveKit-based Qwen3-Omni realtime architecture contract with RAG removed for now. Future work may only be implementation, testing, observability, latency hardening, warmup hardening, cancellation hardening, replay hardening, LiveKit transport hardening, or CI enforcement — not architecture redesign.

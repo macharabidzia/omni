@@ -7,9 +7,11 @@ from src.livekit.output import AssistantAudioPublisher
 
 
 class FakeAudioSource:
-    def __init__(self) -> None:
+    def __init__(self, *, queue_size_ms: int = 40, queued_duration: float = 0.0) -> None:
         self.frames = []
         self.cleared = False
+        self.queue_size_ms = queue_size_ms
+        self._queued_duration = queued_duration
 
     async def capture_frame(self, frame) -> None:
         self.frames.append(frame)
@@ -22,7 +24,7 @@ class FakeAudioSource:
 
     @property
     def queued_duration(self) -> float:
-        return 0.0
+        return self._queued_duration
 
 
 def _constant_pcm16_base64(*, samples: int, amplitude: int) -> str:
@@ -111,6 +113,26 @@ async def test_assistant_audio_publisher_calls_frame_sink_for_complete_frames() 
 
 
 @pytest.mark.asyncio
+async def test_assistant_audio_publisher_emits_stable_frames_from_uneven_chunks() -> None:
+    audio_source = FakeAudioSource()
+    publisher = AssistantAudioPublisher(
+        audio_source=audio_source,
+        output_sample_rate=48000,
+        output_frame_ms=10,
+    )
+
+    for sample_count in (240, 360, 600, 120):
+        await publisher.enqueue_base64(
+            _constant_pcm16_base64(samples=sample_count, amplitude=1_000),
+            input_sample_rate=48000,
+        )
+    await publisher.finalize_turn()
+
+    assert [frame.samples_per_channel for frame in audio_source.frames] == [480, 480, 480]
+    assert all(len(bytes(frame.data)) == 960 for frame in audio_source.frames)
+
+
+@pytest.mark.asyncio
 async def test_assistant_audio_publisher_trims_turn_leading_silence() -> None:
     audio_source = FakeAudioSource()
     publisher = AssistantAudioPublisher(
@@ -132,6 +154,32 @@ async def test_assistant_audio_publisher_trims_turn_leading_silence() -> None:
     first_frame_samples = array("h")
     first_frame_samples.frombytes(bytes(audio_source.frames[0].data))
     assert max(abs(sample) for sample in first_frame_samples[:480]) >= 500
+
+
+@pytest.mark.asyncio
+async def test_assistant_audio_publisher_applies_fade_in_after_leading_trim() -> None:
+    audio_source = FakeAudioSource()
+    publisher = AssistantAudioPublisher(
+        audio_source=audio_source,
+        output_sample_rate=48000,
+        output_frame_ms=20,
+    )
+
+    leading_silence_samples = int(48000 * 0.06)
+    voiced_samples = int(48000 * 0.04)
+    await publisher.enqueue_base64(
+        _pcm16_base64(([0] * leading_silence_samples) + ([4_000] * voiced_samples)),
+        input_sample_rate=48000,
+    )
+    await publisher.finalize_turn()
+
+    first_frame_samples = array("h")
+    first_frame_samples.frombytes(bytes(audio_source.frames[0].data))
+    non_zero_samples = [sample for sample in first_frame_samples if sample != 0]
+
+    assert non_zero_samples
+    assert abs(non_zero_samples[0]) < 4_000
+    assert abs(non_zero_samples[min(len(non_zero_samples) - 1, 16)]) >= abs(non_zero_samples[0])
 
 
 @pytest.mark.asyncio
@@ -220,7 +268,7 @@ async def test_assistant_audio_publisher_smooths_isolated_spike() -> None:
 
 
 @pytest.mark.asyncio
-async def test_assistant_audio_publisher_drops_fully_silent_chunk_after_voice_started() -> None:
+async def test_assistant_audio_publisher_preserves_short_internal_silence_after_voice_started() -> None:
     audio_source = FakeAudioSource()
     publisher = AssistantAudioPublisher(
         audio_source=audio_source,
@@ -242,10 +290,73 @@ async def test_assistant_audio_publisher_drops_fully_silent_chunk_after_voice_st
     )
     await publisher.finalize_turn()
 
-    assert len(audio_source.frames) == 2
-    second_frame_samples = array("h")
-    second_frame_samples.frombytes(bytes(audio_source.frames[1].data))
-    assert max(abs(sample) for sample in second_frame_samples) >= 500
+    assert len(audio_source.frames) == 3
+
+    silent_frame_samples = array("h")
+    silent_frame_samples.frombytes(bytes(audio_source.frames[1].data))
+    assert max(abs(sample) for sample in silent_frame_samples) == 0
+
+    third_frame_samples = array("h")
+    third_frame_samples.frombytes(bytes(audio_source.frames[2].data))
+    assert max(abs(sample) for sample in third_frame_samples) >= 500
+
+
+@pytest.mark.asyncio
+async def test_assistant_audio_publisher_logs_queue_backpressure_warning(caplog) -> None:
+    audio_source = FakeAudioSource(queue_size_ms=40, queued_duration=0.04)
+    publisher = AssistantAudioPublisher(
+        audio_source=audio_source,
+        output_sample_rate=48000,
+        output_frame_ms=20,
+    )
+
+    with caplog.at_level("WARNING"):
+        await publisher.enqueue_base64(
+            _constant_pcm16_base64(samples=960, amplitude=1_000),
+            input_sample_rate=48000,
+        )
+
+    assert "Assistant audio queue backpressure" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_assistant_audio_publisher_drops_pending_frames_at_hard_queue_cap(caplog) -> None:
+    audio_source = FakeAudioSource(queue_size_ms=20, queued_duration=0.02)
+    publisher = AssistantAudioPublisher(
+        audio_source=audio_source,
+        output_sample_rate=48000,
+        output_frame_ms=20,
+    )
+
+    with caplog.at_level("WARNING"):
+        await publisher.enqueue_base64(
+            _constant_pcm16_base64(samples=1920, amplitude=1_000),
+            input_sample_rate=48000,
+        )
+
+    assert len(audio_source.frames) == 1
+    assert "dropping queued frame due to hard queue cap" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_assistant_audio_publisher_rejects_mid_turn_sample_rate_change() -> None:
+    audio_source = FakeAudioSource()
+    publisher = AssistantAudioPublisher(
+        audio_source=audio_source,
+        output_sample_rate=48000,
+        output_frame_ms=20,
+    )
+
+    await publisher.enqueue_base64(
+        _constant_pcm16_base64(samples=480, amplitude=1_000),
+        input_sample_rate=24000,
+    )
+
+    with pytest.raises(ValueError, match="sample rate changed mid-turn"):
+        await publisher.enqueue_base64(
+            _constant_pcm16_base64(samples=960, amplitude=1_000),
+            input_sample_rate=48000,
+        )
 
 
 @pytest.mark.asyncio

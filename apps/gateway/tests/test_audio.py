@@ -9,6 +9,7 @@ from src.realtime.audio import (
     pcm16_rms,
     pcm16_samples,
     pcm16_to_wav,
+    validate_audio_bytes,
     validate_audio_chunk,
     wav_to_pcm16,
 )
@@ -44,6 +45,23 @@ def test_validate_audio_chunk_rejects_invalid_duration() -> None:
         )
 
     assert exc.value.code == "INVALID_CHUNK_DURATION"
+
+
+def test_validate_audio_bytes_accepts_internal_pcm16_chunk() -> None:
+    audio_bytes = b"\x01\x00" * 640
+
+    result = validate_audio_bytes(
+        audio_bytes=audio_bytes,
+        sample_rate=16000,
+        channels=1,
+        audio_format="pcm16",
+        allowed_chunk_ms=(20, 40, 80, 120, 200),
+    )
+
+    assert result.audio_base64 is None
+    assert result.audio_bytes == audio_bytes
+    assert result.duration_ms == 40
+    assert result.sample_count == 640
 
 
 def test_iter_pcm16_chunks_pads_final_chunk_when_requested() -> None:

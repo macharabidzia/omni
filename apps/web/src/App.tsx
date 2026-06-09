@@ -1,23 +1,67 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
 import { CallControls } from "./components/CallControls";
 import { MetricsHud } from "./components/MetricsHud";
+import { PerfOverlay } from "./components/PerfOverlay";
 import { SpeakerSelector } from "./components/SpeakerSelector";
 import { TranscriptPanel } from "./components/TranscriptPanel";
 import type { RealtimeClient } from "./realtime/client";
-import type { GatewayInboundEvent, GatewayMetrics, Speaker } from "./realtime/events";
+import type {
+  GatewayCounters,
+  GatewayInboundEvent,
+  GatewayMetrics,
+  GatewayRollups,
+  Speaker,
+} from "./realtime/events";
 
 type DebugEvent = GatewayInboundEvent | { type: string; [key: string]: unknown };
+type PerfOverlayState = {
+  livekitConnected: boolean;
+  canPlaybackAudio: boolean | null;
+  assistantTrackSubscribed: boolean;
+  assistantTrackSid: string | null;
+  playoutDelayMs: number | null;
+  jitterBufferAvgMs: number | null;
+  packetsLost: number | null;
+  concealedSamples: number | null;
+  statsUpdatedAtLabel: string | null;
+  qwenReconnectsTotal: number | null;
+  qwenLastReconnectReason: string | null;
+};
+type GatewayReadyPayload = {
+  status?: string;
+  detail?: string | null;
+  livekit_worker_status?: string | null;
+  model_server_status?: string | null;
+  active_sessions?: number | null;
+  assistant_queue_depth_ms?: number | null;
+  qwen_reconnects?: number | null;
+  qwen_last_reconnect_reason?: string | null;
+  error_count?: number | null;
+  interruption_count?: number | null;
+  duplicate_commit_count?: number | null;
+  stale_output_drop_count?: number | null;
+  metric_rollups?: GatewayRollups;
+};
 
 const DEBUG_EVENT_LIMIT = 200;
 const DEBUG_EVENT_FLUSH_MS = 120;
 const GATEWAY_METRIC_KEYS: (keyof GatewayMetrics)[] = [
+  "vad_end_to_commit_ms",
+  "commit_to_qwen_first_audio_ms",
+  "qwen_first_audio_to_livekit_first_frame_ms",
+  "speech_end_to_first_assistant_egress_ms",
+  "speech_start_to_commit_ms",
+  "turn_total_ms",
+  "queue_depth_at_first_frame_ms",
+  "assistant_queue_depth_ms",
+  "interrupt_clear_ms",
+  "commit_to_first_audio_played_ms",
   "mic_to_first_transcript_ms",
   "commit_to_first_transcript_ms",
   "commit_to_first_text_ms",
   "commit_to_first_audio_delta_ms",
   "commit_to_first_livekit_egress_ms",
-  "commit_to_first_audio_played_ms",
   "full_response_ms",
 ];
 
@@ -33,16 +77,34 @@ function metricsEqual(left: GatewayMetrics, right: GatewayMetrics): boolean {
 }
 
 export default function App() {
+  const transportDebugEnabled = isTransportDebugEnabled();
   const [speaker, setSpeaker] = useState<Speaker>("Ethan");
   const [sessionState, setSessionState] = useState<"idle" | "connecting" | "ready">("idle");
   const [liveMicActive, setLiveMicActive] = useState(false);
   const [gatewayMetrics, setGatewayMetrics] = useState<GatewayMetrics>({});
+  const [gatewayRollups, setGatewayRollups] = useState<GatewayRollups>({});
+  const [gatewayCounters, setGatewayCounters] = useState<GatewayCounters>({});
   const [assistantText, setAssistantText] = useState("");
   const [transcriptText, setTranscriptText] = useState("");
   const [debugEvents, setDebugEvents] = useState<DebugEvent[]>([]);
   const [errorText, setErrorText] = useState("");
   const [gatewayReady, setGatewayReady] = useState("checking");
+  const [gatewayReadySnapshot, setGatewayReadySnapshot] = useState<GatewayReadyPayload | null>(null);
+  const [sessionBackend, setSessionBackend] = useState("inactive");
   const [assistantPlaying, setAssistantPlaying] = useState(false);
+  const [perfOverlayState, setPerfOverlayState] = useState<PerfOverlayState>({
+    livekitConnected: false,
+    canPlaybackAudio: null,
+    assistantTrackSubscribed: false,
+    assistantTrackSid: null,
+    playoutDelayMs: null,
+    jitterBufferAvgMs: null,
+    packetsLost: null,
+    concealedSamples: null,
+    statsUpdatedAtLabel: null,
+    qwenReconnectsTotal: null,
+    qwenLastReconnectReason: null,
+  });
 
   const clientRef = useRef<RealtimeClient | null>(null);
   const realtimeClientCtorRef = useRef<Promise<typeof import("./realtime/client")> | null>(null);
@@ -50,6 +112,7 @@ export default function App() {
   const assistantResponseActiveRef = useRef(false);
   const assistantPlaybackActiveRef = useRef(false);
   const commitAtRef = useRef<number | null>(null);
+  const activeTurnIdRef = useRef<string | null>(null);
   const localAudioPlayedMetricRef = useRef<number | null>(null);
   const debugEventsRef = useRef<DebugEvent[]>([]);
   const debugFlushTimerRef = useRef<number | null>(null);
@@ -71,13 +134,33 @@ export default function App() {
         localAudioPlayedMetricRef.current ?? gatewayMetrics.commit_to_first_audio_played_ms,
     };
   }, [gatewayMetrics]);
+  const deferredMergedMetrics = useDeferredValue(mergedMetrics);
+  const deferredTranscriptText = useDeferredValue(transcriptText);
+  const deferredAssistantText = useDeferredValue(assistantText);
+  const deferredDebugEvents = useDeferredValue(debugEvents);
 
   async function refreshGatewayReady(): Promise<string> {
     try {
       const response = await fetch(`${resolveGatewayHttpUrl()}/ready`);
-      const payload = (await response.json()) as { status?: string };
+      const payload = (await response.json()) as GatewayReadyPayload;
       const status = payload.status ?? "unknown";
       setGatewayReady(status);
+      setGatewayReadySnapshot(payload);
+      if (payload.metric_rollups) {
+        setGatewayRollups(payload.metric_rollups);
+      }
+      setGatewayCounters(extractReadyCounters(payload));
+      setPerfOverlayState((current) => ({
+        ...current,
+        qwenReconnectsTotal:
+          typeof payload.qwen_reconnects === "number"
+            ? payload.qwen_reconnects
+            : current.qwenReconnectsTotal,
+        qwenLastReconnectReason:
+          typeof payload.qwen_last_reconnect_reason === "string"
+            ? payload.qwen_last_reconnect_reason
+            : current.qwenLastReconnectReason,
+      }));
       return status;
     } catch {
       setGatewayReady("failed");
@@ -93,6 +176,9 @@ export default function App() {
     setGatewayMetrics({});
     localAudioPlayedMetricRef.current = null;
     commitAtRef.current = null;
+    activeTurnIdRef.current = null;
+    setSessionBackend("inactive");
+    resetPerfOverlayState();
     resetRealtimeState();
 
     const readyStatus = await refreshGatewayReady();
@@ -147,7 +233,25 @@ export default function App() {
     resetRealtimeState();
     setSessionState("idle");
     setLiveMicActive(false);
+    setSessionBackend("inactive");
     setAssistantPlaying(false);
+    resetPerfOverlayState();
+  }
+
+  async function interruptAssistant(): Promise<void> {
+    const client = clientRef.current;
+    if (!client || sessionState !== "ready") {
+      return;
+    }
+    appendLocalDebugEvent("local.interrupt.clicked", {
+      turn_id: activeTurnIdRef.current,
+    });
+    try {
+      await client.sendInterrupt(activeTurnIdRef.current);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to interrupt assistant output.";
+      setErrorText(message);
+    }
   }
 
   function handleGatewayEvent(event: GatewayInboundEvent): void {
@@ -155,25 +259,30 @@ export default function App() {
 
     if (event.type === "session.ready") {
       setSessionState("ready");
+      setSessionBackend(event.backend ?? "unknown");
       liveCaptureActiveRef.current = true;
       setLiveMicActive(true);
       appendLocalDebugEvent("local.capture.live");
       return;
     }
 
-    if (event.type === "input.speech.start") {
+    if (event.type === "turn.started") {
+      activeTurnIdRef.current = event.turn_id ?? activeTurnIdRef.current;
       appendLocalDebugEvent("local.turn.started", {
+        turn_id: event.turn_id ?? null,
         speech_duration_ms: event.speech_duration_ms ?? null,
       });
       return;
     }
 
-    if (event.type === "input.speech.commit") {
+    if (event.type === "turn.committed") {
       assistantResponseActiveRef.current = true;
       commitAtRef.current = performance.now();
+      activeTurnIdRef.current = event.turn_id ?? activeTurnIdRef.current;
       localAudioPlayedMetricRef.current = null;
       clientRef.current?.resetAssistantPlaybackMonitor();
       appendLocalDebugEvent("local.turn.commit", {
+        turn_id: event.turn_id ?? null,
         speech_duration_ms: event.speech_duration_ms ?? null,
         silence_duration_ms: event.silence_duration_ms ?? null,
         input_audio_ms: event.input_audio_ms ?? null,
@@ -181,13 +290,26 @@ export default function App() {
       return;
     }
 
+    if (event.type === "assistant.audio_started") {
+      appendLocalDebugEvent("local.assistant.audio_started", {
+        sample_rate: event.sample_rate ?? null,
+        channels: event.channels ?? null,
+        format: event.format ?? null,
+      });
+      return;
+    }
+
     if (event.type === "transcript.delta") {
-      setTranscriptText((current) => `${current}${event.text}`);
+      startTransition(() => {
+        setTranscriptText((current) => `${current}${event.text}`);
+      });
       return;
     }
 
     if (event.type === "assistant.text.delta") {
-      setAssistantText((current) => `${current}${event.text}`);
+      startTransition(() => {
+        setAssistantText((current) => `${current}${event.text}`);
+      });
       return;
     }
 
@@ -200,11 +322,38 @@ export default function App() {
     if (event.type === "assistant.interrupted") {
       assistantResponseActiveRef.current = false;
       clientRef.current?.interruptAssistantAudio();
+      setGatewayCounters((current) => ({
+        ...current,
+        interruption_count:
+          typeof current.interruption_count === "number" ? current.interruption_count + 1 : 1,
+      }));
       return;
     }
 
     if (event.type === "metrics.update") {
-      setGatewayMetrics((current) => (metricsEqual(current, event.metrics) ? current : event.metrics));
+      startTransition(() => {
+        setGatewayMetrics((current) => (metricsEqual(current, event.metrics) ? current : event.metrics));
+        if (event.rollups) {
+          setGatewayRollups(event.rollups);
+        }
+        if (event.counters) {
+          setGatewayCounters(event.counters);
+        }
+      });
+      setPerfOverlayState((current) => ({
+        ...current,
+        qwenReconnectsTotal:
+          event.reconnects !== undefined
+            ? Object.values(event.reconnects).reduce<number>(
+                (total, value) => total + (typeof value === "number" ? value : 0),
+                0,
+              )
+            : current.qwenReconnectsTotal,
+        qwenLastReconnectReason:
+          typeof event.last_reconnect_reason === "string"
+            ? event.last_reconnect_reason
+            : current.qwenLastReconnectReason,
+      }));
       return;
     }
 
@@ -212,6 +361,18 @@ export default function App() {
       assistantResponseActiveRef.current = false;
       clientRef.current?.interruptAssistantAudio();
       setErrorText(`${event.code}: ${event.message}`);
+      setGatewayCounters((current) => ({
+        ...current,
+        error_count: typeof current.error_count === "number" ? current.error_count + 1 : 1,
+      }));
+      return;
+    }
+
+    if (event.type === "room.busy") {
+      assistantResponseActiveRef.current = false;
+      clientRef.current?.interruptAssistantAudio();
+      setErrorText(`${event.code}: ${event.message}`);
+      return;
     }
   }
 
@@ -221,7 +382,13 @@ export default function App() {
     appendLocalDebugEvent("local.playback.started");
     if (commitAtRef.current !== null && localAudioPlayedMetricRef.current === null) {
       localAudioPlayedMetricRef.current = performance.now() - commitAtRef.current;
-      setGatewayMetrics((current) => ({ ...current }));
+      startTransition(() => {
+        setGatewayMetrics((current) => ({ ...current }));
+      });
+      void clientRef.current?.reportAssistantPlaybackStarted({
+        turnId: activeTurnIdRef.current,
+        commitToFirstAudioPlayedMs: localAudioPlayedMetricRef.current,
+      });
     }
   }
 
@@ -235,16 +402,22 @@ export default function App() {
     liveCaptureActiveRef.current = false;
     assistantResponseActiveRef.current = false;
     assistantPlaybackActiveRef.current = false;
+    activeTurnIdRef.current = null;
   }
 
   function handleSessionClosed(): void {
     resetRealtimeState();
     setSessionState("idle");
     setLiveMicActive(false);
+    setSessionBackend("inactive");
     setAssistantPlaying(false);
+    resetPerfOverlayState();
   }
 
   function exportDebugLog(): void {
+    if (!transportDebugEnabled) {
+      return;
+    }
     flushDebugEvents();
     const blob = new Blob([JSON.stringify(debugEventsRef.current, null, 2)], {
       type: "application/json",
@@ -258,6 +431,10 @@ export default function App() {
   }
 
   function appendDebugEvent(event: DebugEvent): void {
+    if (!transportDebugEnabled) {
+      return;
+    }
+    updatePerfOverlayState(event);
     const nextEvents = debugEventsRef.current;
     nextEvents.push(event);
     if (nextEvents.length > DEBUG_EVENT_LIMIT) {
@@ -272,7 +449,9 @@ export default function App() {
     }
     debugFlushTimerRef.current = window.setTimeout(() => {
       debugFlushTimerRef.current = null;
-      setDebugEvents([...debugEventsRef.current]);
+      startTransition(() => {
+        setDebugEvents([...debugEventsRef.current]);
+      });
     }, DEBUG_EVENT_FLUSH_MS);
   }
 
@@ -281,7 +460,9 @@ export default function App() {
       window.clearTimeout(debugFlushTimerRef.current);
       debugFlushTimerRef.current = null;
     }
-    setDebugEvents([...debugEventsRef.current]);
+    startTransition(() => {
+      setDebugEvents([...debugEventsRef.current]);
+    });
   }
 
   function resetDebugEvents(): void {
@@ -290,7 +471,9 @@ export default function App() {
       debugFlushTimerRef.current = null;
     }
     debugEventsRef.current = [];
-    setDebugEvents([]);
+    startTransition(() => {
+      setDebugEvents([]);
+    });
   }
 
   function appendLocalDebugEvent(type: string, payload: Record<string, unknown> = {}): void {
@@ -305,13 +488,118 @@ export default function App() {
     appendDebugEvent(event);
   }
 
+  function resetPerfOverlayState(): void {
+    setPerfOverlayState({
+      livekitConnected: false,
+      canPlaybackAudio: null,
+      assistantTrackSubscribed: false,
+      assistantTrackSid: null,
+      playoutDelayMs: null,
+      jitterBufferAvgMs: null,
+      packetsLost: null,
+      concealedSamples: null,
+      statsUpdatedAtLabel: null,
+      qwenReconnectsTotal: null,
+      qwenLastReconnectReason: null,
+    });
+  }
+
+  function updatePerfOverlayState(event: DebugEvent): void {
+    setPerfOverlayState((current) => {
+      if (event.type === "local.livekit.connected") {
+        return {
+          ...current,
+          livekitConnected: true,
+          canPlaybackAudio:
+            typeof event.can_playback_audio === "boolean"
+              ? event.can_playback_audio
+              : current.canPlaybackAudio,
+        };
+      }
+
+      if (
+        event.type === "local.livekit.audio_playback_status" ||
+        event.type === "local.livekit.audio_playback_start_resolved"
+      ) {
+        return {
+          ...current,
+          canPlaybackAudio:
+            typeof event.can_playback_audio === "boolean"
+              ? event.can_playback_audio
+              : current.canPlaybackAudio,
+        };
+      }
+
+      if (event.type === "local.livekit.track_playout_delay_configured") {
+        return {
+          ...current,
+          assistantTrackSubscribed: true,
+          assistantTrackSid:
+            typeof event.track_sid === "string" ? event.track_sid : current.assistantTrackSid,
+          playoutDelayMs:
+            typeof event.effective_delay_ms === "number"
+              ? event.effective_delay_ms
+              : current.playoutDelayMs,
+        };
+      }
+
+      if (event.type === "local.livekit.track_subscribed") {
+        const trackName = typeof event.track_name === "string" ? event.track_name : "";
+        if (trackName !== "assistant") {
+          return current;
+        }
+        return {
+          ...current,
+          assistantTrackSubscribed: true,
+          assistantTrackSid:
+            typeof event.track_sid === "string" ? event.track_sid : current.assistantTrackSid,
+        };
+      }
+
+      if (event.type === "local.livekit.track_unsubscribed") {
+        const trackName = typeof event.track_name === "string" ? event.track_name : "";
+        if (trackName !== "assistant") {
+          return current;
+        }
+        return {
+          ...current,
+          assistantTrackSubscribed: false,
+          assistantTrackSid: null,
+          jitterBufferAvgMs: null,
+          packetsLost: null,
+          concealedSamples: null,
+          statsUpdatedAtLabel: null,
+        };
+      }
+
+      if (event.type === "local.livekit.track_stats") {
+        return {
+          ...current,
+          jitterBufferAvgMs:
+            typeof event.jitter_buffer_avg_ms === "number"
+              ? event.jitter_buffer_avg_ms
+              : current.jitterBufferAvgMs,
+          packetsLost:
+            typeof event.packets_lost === "number" ? event.packets_lost : current.packetsLost,
+          concealedSamples:
+            typeof event.concealed_samples === "number"
+              ? event.concealed_samples
+              : current.concealedSamples,
+          statsUpdatedAtLabel: new Date().toLocaleTimeString(),
+        };
+      }
+
+      return current;
+    });
+  }
+
   return (
     <main className="app-shell">
       <header className="hero">
         <div>
           <h1>Realtime AI</h1>
           <p className="status-line">
-            Ready: {gatewayReady} | Session: {sessionState} | Playback: {assistantPlaying ? "active" : "idle"}
+            Ready: {gatewayReady} | Session: {sessionState} | Backend: {sessionBackend} | Playback: {assistantPlaying ? "active" : "idle"}
           </p>
         </div>
         <div className="header-controls">
@@ -332,35 +620,80 @@ export default function App() {
         startDisabled={sessionState !== "idle" || gatewayReady !== "ready"}
         liveMicActive={liveMicActive}
         onStart={() => void startSession()}
+        onInterrupt={() => void interruptAssistant()}
         onStop={() => void stopSession()}
       />
 
       {errorText ? <div className="error-banner">{errorText}</div> : null}
 
-      <MetricsHud metrics={mergedMetrics} />
+      <MetricsHud
+        metrics={deferredMergedMetrics}
+        rollups={gatewayRollups}
+        counters={gatewayCounters}
+        qwenReconnectsTotal={
+          perfOverlayState.qwenReconnectsTotal ?? gatewayReadySnapshot?.qwen_reconnects ?? null
+        }
+        activeSessions={gatewayReadySnapshot?.active_sessions ?? null}
+        workerStatus={gatewayReadySnapshot?.livekit_worker_status ?? null}
+        modelStatus={gatewayReadySnapshot?.model_server_status ?? null}
+      />
+      <PerfOverlay
+        enabled={transportDebugEnabled}
+        sessionState={sessionState}
+        assistantPlaying={assistantPlaying}
+        livekitConnected={perfOverlayState.livekitConnected}
+        canPlaybackAudio={perfOverlayState.canPlaybackAudio}
+        assistantTrackSubscribed={perfOverlayState.assistantTrackSubscribed}
+        assistantTrackSid={perfOverlayState.assistantTrackSid}
+        playoutDelayMs={perfOverlayState.playoutDelayMs}
+        jitterBufferAvgMs={perfOverlayState.jitterBufferAvgMs}
+        packetsLost={perfOverlayState.packetsLost}
+        concealedSamples={perfOverlayState.concealedSamples}
+        statsUpdatedAtLabel={perfOverlayState.statsUpdatedAtLabel}
+        commitToAudioPlayedMs={deferredMergedMetrics.commit_to_first_audio_played_ms}
+        assistantQueueDepthMs={deferredMergedMetrics.assistant_queue_depth_ms}
+        qwenReconnectsTotal={perfOverlayState.qwenReconnectsTotal}
+        qwenLastReconnectReason={perfOverlayState.qwenLastReconnectReason}
+      />
 
       <section className="panel-grid">
         <TranscriptPanel
           title="User Transcript"
-          text={transcriptText}
+          text={deferredTranscriptText}
           placeholder="Transcript deltas will appear here."
         />
         <TranscriptPanel
           title="Assistant Text"
-          text={assistantText}
+          text={deferredAssistantText}
           placeholder="Assistant text deltas will appear here."
         />
       </section>
 
-      <section className="panel debug-panel">
-        <header className="panel-header">
-          <h2>Debug Events</h2>
-          <button className="button" onClick={exportDebugLog}>
-            Export JSON
-          </button>
-        </header>
-        <pre className="debug-log">{JSON.stringify(debugEvents, null, 2)}</pre>
-      </section>
+      {transportDebugEnabled ? (
+        <section className="panel debug-panel">
+          <header className="panel-header">
+            <h2>Debug Events</h2>
+            <button className="button" onClick={exportDebugLog}>
+              Export JSON
+            </button>
+          </header>
+          <pre className="debug-log">{JSON.stringify(deferredDebugEvents, null, 2)}</pre>
+        </section>
+      ) : null}
     </main>
   );
+}
+
+function isTransportDebugEnabled(): boolean {
+  const override = new URLSearchParams(window.location.search).get("transportDebug");
+  return override === "1" || override === "true";
+}
+
+function extractReadyCounters(payload: GatewayReadyPayload): GatewayCounters {
+  return {
+    error_count: payload.error_count ?? null,
+    interruption_count: payload.interruption_count ?? null,
+    duplicate_commit_count: payload.duplicate_commit_count ?? null,
+    stale_output_drop_count: payload.stale_output_drop_count ?? null,
+  };
 }

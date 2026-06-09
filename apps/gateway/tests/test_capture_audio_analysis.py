@@ -2,6 +2,23 @@ import array
 import importlib.util
 from pathlib import Path
 
+from src.livekit.audio_policy import (
+    CAPTURE_ACTIVE_THRESHOLD,
+    CAPTURE_CLICK_DERIVATIVE_THRESHOLD,
+    CAPTURE_CLICK_RMS_MULTIPLIER,
+    CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+    CAPTURE_CONTEXT_WINDOW_MS,
+    CAPTURE_EDGE_PADDING_MS,
+    CAPTURE_MAX_CLICK_SPIKES_PER_SECOND,
+    CAPTURE_MAX_INTERNAL_SILENCE_MS,
+    CAPTURE_MAX_NOISY_FRAME_RATIO,
+    CAPTURE_ROUGHNESS_THRESHOLD,
+    CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
+    CAPTURE_SILENCE_THRESHOLD,
+    CAPTURE_VOICED_RMS_THRESHOLD,
+    CAPTURE_ZERO_CROSSING_THRESHOLD,
+)
+
 
 def _load_analysis_module():
     repo_root = Path(__file__).resolve().parents[3]
@@ -27,6 +44,7 @@ def _repeat_upsample(values: list[int], factor: int) -> list[int]:
 def test_analyze_samples_ignores_edge_silence_runs() -> None:
     analysis_module = _load_analysis_module()
     sample_rate = 48_000
+    max_internal_silence_ms = CAPTURE_MAX_INTERNAL_SILENCE_MS
     samples = array.array(
         "h",
         _segment(2_400, 0)
@@ -42,18 +60,18 @@ def test_analyze_samples_ignores_edge_silence_runs() -> None:
         input_path=Path("synthetic.wav"),
         expected_sample_rate=sample_rate,
         frame_ms=20,
-        active_threshold=24,
-        silence_threshold=8,
-        max_internal_silence_ms=20.0,
-        edge_padding_ms=60.0,
-        context_window_ms=10.0,
-        context_active_threshold=32,
-        silence_context_rms_threshold=500.0,
+        active_threshold=CAPTURE_ACTIVE_THRESHOLD,
+        silence_threshold=CAPTURE_SILENCE_THRESHOLD,
+        max_internal_silence_ms=max_internal_silence_ms,
+        edge_padding_ms=CAPTURE_EDGE_PADDING_MS,
+        context_window_ms=CAPTURE_CONTEXT_WINDOW_MS,
+        context_active_threshold=CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+        silence_context_rms_threshold=CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
     )
 
     assert analysis["status"] == "ok"
-    assert analysis["edge_silence_runs_ge_threshold"] == 1
-    assert analysis["longest_edge_silence_ms"] == 25.0
+    assert analysis["edge_silence_runs_ge_threshold"] == 0
+    assert analysis["longest_edge_silence_ms"] == 0.0
     assert analysis["internal_silence_runs_ge_threshold"] == 0
     assert analysis["suspicious_internal_silence_runs_ge_threshold"] == 0
     assert analysis["warnings"] == []
@@ -62,11 +80,13 @@ def test_analyze_samples_ignores_edge_silence_runs() -> None:
 def test_analyze_samples_flags_internal_silence_runs() -> None:
     analysis_module = _load_analysis_module()
     sample_rate = 48_000
+    long_pause_ms = CAPTURE_MAX_INTERNAL_SILENCE_MS + 25.0
+    long_pause_samples = int(sample_rate * long_pause_ms / 1000)
     samples = array.array(
         "h",
         _segment(2_400, 0)
         + _segment(3_840, 800)
-        + _segment(1_200, 4)
+        + _segment(long_pause_samples, 4)
         + _segment(3_840, -800)
         + _segment(2_400, 0),
     )
@@ -77,24 +97,24 @@ def test_analyze_samples_flags_internal_silence_runs() -> None:
         input_path=Path("synthetic.wav"),
         expected_sample_rate=sample_rate,
         frame_ms=20,
-        active_threshold=24,
-        silence_threshold=8,
-        max_internal_silence_ms=20.0,
-        edge_padding_ms=60.0,
-        context_window_ms=10.0,
-        context_active_threshold=32,
-        silence_context_rms_threshold=500.0,
+        active_threshold=CAPTURE_ACTIVE_THRESHOLD,
+        silence_threshold=CAPTURE_SILENCE_THRESHOLD,
+        max_internal_silence_ms=CAPTURE_MAX_INTERNAL_SILENCE_MS,
+        edge_padding_ms=CAPTURE_EDGE_PADDING_MS,
+        context_window_ms=CAPTURE_CONTEXT_WINDOW_MS,
+        context_active_threshold=CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+        silence_context_rms_threshold=CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
     )
 
     assert analysis["status"] == "warning"
     assert analysis["edge_silence_runs_ge_threshold"] == 0
     assert analysis["internal_silence_runs_ge_threshold"] == 1
-    assert analysis["longest_internal_silence_ms"] == 25.0
+    assert analysis["longest_internal_silence_ms"] == long_pause_ms
     assert analysis["suspicious_internal_silence_runs_ge_threshold"] == 1
     assert analysis["suspicious_internal_silence_runs"][0]["pre_rms"] >= 200
     assert analysis["suspicious_internal_silence_runs"][0]["post_rms"] >= 200
     assert analysis["warnings"] == [
-        "suspicious internal silence run 25.0 ms exceeded 20.0 ms"
+        f"suspicious internal silence run {long_pause_ms} ms exceeded {CAPTURE_MAX_INTERNAL_SILENCE_MS} ms"
     ]
 
 
@@ -118,18 +138,18 @@ def test_analyze_samples_does_not_flag_low_energy_internal_pause() -> None:
         input_path=Path("synthetic.wav"),
         expected_sample_rate=sample_rate,
         frame_ms=20,
-        active_threshold=24,
-        silence_threshold=8,
-        max_internal_silence_ms=20.0,
-        edge_padding_ms=60.0,
-        context_window_ms=10.0,
-        context_active_threshold=32,
-        silence_context_rms_threshold=500.0,
+        active_threshold=CAPTURE_ACTIVE_THRESHOLD,
+        silence_threshold=CAPTURE_SILENCE_THRESHOLD,
+        max_internal_silence_ms=CAPTURE_MAX_INTERNAL_SILENCE_MS,
+        edge_padding_ms=CAPTURE_EDGE_PADDING_MS,
+        context_window_ms=CAPTURE_CONTEXT_WINDOW_MS,
+        context_active_threshold=CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+        silence_context_rms_threshold=CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
     )
 
     assert analysis["status"] == "ok"
-    assert analysis["internal_silence_runs_ge_threshold"] == 1
-    assert analysis["longest_internal_silence_ms"] == 22.5
+    assert analysis["internal_silence_runs_ge_threshold"] == 0
+    assert analysis["longest_internal_silence_ms"] == 0.0
     assert analysis["suspicious_internal_silence_runs_ge_threshold"] == 0
     assert analysis["warnings"] == []
 
@@ -152,20 +172,20 @@ def test_analyze_samples_flags_rough_noisy_frames_and_click_spikes() -> None:
         input_path=Path("synthetic.wav"),
         expected_sample_rate=sample_rate,
         frame_ms=20,
-        active_threshold=24,
-        silence_threshold=8,
-        max_internal_silence_ms=20.0,
-        edge_padding_ms=60.0,
-        context_window_ms=10.0,
-        context_active_threshold=32,
-        silence_context_rms_threshold=500.0,
-        voiced_rms_threshold=200.0,
-        roughness_threshold=1.0,
-        zero_crossing_threshold=0.35,
-        max_noisy_frame_ratio=0.12,
-        click_derivative_threshold=12000.0,
-        click_rms_multiplier=8.0,
-        max_click_spikes_per_second=0.5,
+        active_threshold=CAPTURE_ACTIVE_THRESHOLD,
+        silence_threshold=CAPTURE_SILENCE_THRESHOLD,
+        max_internal_silence_ms=CAPTURE_MAX_INTERNAL_SILENCE_MS,
+        edge_padding_ms=CAPTURE_EDGE_PADDING_MS,
+        context_window_ms=CAPTURE_CONTEXT_WINDOW_MS,
+        context_active_threshold=CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+        silence_context_rms_threshold=CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
+        voiced_rms_threshold=CAPTURE_VOICED_RMS_THRESHOLD,
+        roughness_threshold=CAPTURE_ROUGHNESS_THRESHOLD,
+        zero_crossing_threshold=CAPTURE_ZERO_CROSSING_THRESHOLD,
+        max_noisy_frame_ratio=CAPTURE_MAX_NOISY_FRAME_RATIO,
+        click_derivative_threshold=CAPTURE_CLICK_DERIVATIVE_THRESHOLD,
+        click_rms_multiplier=CAPTURE_CLICK_RMS_MULTIPLIER,
+        max_click_spikes_per_second=CAPTURE_MAX_CLICK_SPIKES_PER_SECOND,
     )
 
     assert analysis["status"] == "warning"
@@ -191,20 +211,20 @@ def test_analyze_samples_normalizes_artifact_metrics_across_sample_rates() -> No
         input_path=Path("native.wav"),
         expected_sample_rate=sample_rate,
         frame_ms=20,
-        active_threshold=24,
-        silence_threshold=8,
-        max_internal_silence_ms=20.0,
-        edge_padding_ms=60.0,
-        context_window_ms=10.0,
-        context_active_threshold=32,
-        silence_context_rms_threshold=500.0,
-        voiced_rms_threshold=200.0,
-        roughness_threshold=1.0,
-        zero_crossing_threshold=0.35,
-        max_noisy_frame_ratio=0.12,
-        click_derivative_threshold=12000.0,
-        click_rms_multiplier=8.0,
-        max_click_spikes_per_second=0.5,
+        active_threshold=CAPTURE_ACTIVE_THRESHOLD,
+        silence_threshold=CAPTURE_SILENCE_THRESHOLD,
+        max_internal_silence_ms=CAPTURE_MAX_INTERNAL_SILENCE_MS,
+        edge_padding_ms=CAPTURE_EDGE_PADDING_MS,
+        context_window_ms=CAPTURE_CONTEXT_WINDOW_MS,
+        context_active_threshold=CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+        silence_context_rms_threshold=CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
+        voiced_rms_threshold=CAPTURE_VOICED_RMS_THRESHOLD,
+        roughness_threshold=CAPTURE_ROUGHNESS_THRESHOLD,
+        zero_crossing_threshold=CAPTURE_ZERO_CROSSING_THRESHOLD,
+        max_noisy_frame_ratio=CAPTURE_MAX_NOISY_FRAME_RATIO,
+        click_derivative_threshold=CAPTURE_CLICK_DERIVATIVE_THRESHOLD,
+        click_rms_multiplier=CAPTURE_CLICK_RMS_MULTIPLIER,
+        max_click_spikes_per_second=CAPTURE_MAX_CLICK_SPIKES_PER_SECOND,
         artifact_analysis_rate=24_000,
     )
     upsampled_analysis = analysis_module.analyze_samples(
@@ -213,20 +233,20 @@ def test_analyze_samples_normalizes_artifact_metrics_across_sample_rates() -> No
         input_path=Path("upsampled.wav"),
         expected_sample_rate=48_000,
         frame_ms=20,
-        active_threshold=24,
-        silence_threshold=8,
-        max_internal_silence_ms=20.0,
-        edge_padding_ms=60.0,
-        context_window_ms=10.0,
-        context_active_threshold=32,
-        silence_context_rms_threshold=500.0,
-        voiced_rms_threshold=200.0,
-        roughness_threshold=1.0,
-        zero_crossing_threshold=0.35,
-        max_noisy_frame_ratio=0.12,
-        click_derivative_threshold=12000.0,
-        click_rms_multiplier=8.0,
-        max_click_spikes_per_second=0.5,
+        active_threshold=CAPTURE_ACTIVE_THRESHOLD,
+        silence_threshold=CAPTURE_SILENCE_THRESHOLD,
+        max_internal_silence_ms=CAPTURE_MAX_INTERNAL_SILENCE_MS,
+        edge_padding_ms=CAPTURE_EDGE_PADDING_MS,
+        context_window_ms=CAPTURE_CONTEXT_WINDOW_MS,
+        context_active_threshold=CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+        silence_context_rms_threshold=CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
+        voiced_rms_threshold=CAPTURE_VOICED_RMS_THRESHOLD,
+        roughness_threshold=CAPTURE_ROUGHNESS_THRESHOLD,
+        zero_crossing_threshold=CAPTURE_ZERO_CROSSING_THRESHOLD,
+        max_noisy_frame_ratio=CAPTURE_MAX_NOISY_FRAME_RATIO,
+        click_derivative_threshold=CAPTURE_CLICK_DERIVATIVE_THRESHOLD,
+        click_rms_multiplier=CAPTURE_CLICK_RMS_MULTIPLIER,
+        max_click_spikes_per_second=CAPTURE_MAX_CLICK_SPIKES_PER_SECOND,
         artifact_analysis_rate=24_000,
     )
 
@@ -257,20 +277,20 @@ def test_analyze_samples_defaults_artifacts_to_native_rate() -> None:
         input_path=Path("transport.wav"),
         expected_sample_rate=sample_rate,
         frame_ms=20,
-        active_threshold=24,
-        silence_threshold=8,
-        max_internal_silence_ms=20.0,
-        edge_padding_ms=60.0,
-        context_window_ms=10.0,
-        context_active_threshold=32,
-        silence_context_rms_threshold=500.0,
-        voiced_rms_threshold=200.0,
-        roughness_threshold=1.0,
-        zero_crossing_threshold=0.35,
-        max_noisy_frame_ratio=0.12,
-        click_derivative_threshold=12000.0,
-        click_rms_multiplier=8.0,
-        max_click_spikes_per_second=0.5,
+        active_threshold=CAPTURE_ACTIVE_THRESHOLD,
+        silence_threshold=CAPTURE_SILENCE_THRESHOLD,
+        max_internal_silence_ms=CAPTURE_MAX_INTERNAL_SILENCE_MS,
+        edge_padding_ms=CAPTURE_EDGE_PADDING_MS,
+        context_window_ms=CAPTURE_CONTEXT_WINDOW_MS,
+        context_active_threshold=CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+        silence_context_rms_threshold=CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
+        voiced_rms_threshold=CAPTURE_VOICED_RMS_THRESHOLD,
+        roughness_threshold=CAPTURE_ROUGHNESS_THRESHOLD,
+        zero_crossing_threshold=CAPTURE_ZERO_CROSSING_THRESHOLD,
+        max_noisy_frame_ratio=CAPTURE_MAX_NOISY_FRAME_RATIO,
+        click_derivative_threshold=CAPTURE_CLICK_DERIVATIVE_THRESHOLD,
+        click_rms_multiplier=CAPTURE_CLICK_RMS_MULTIPLIER,
+        max_click_spikes_per_second=CAPTURE_MAX_CLICK_SPIKES_PER_SECOND,
     )
 
     assert analysis["artifact_analysis"]["effective_rate"] == 48_000

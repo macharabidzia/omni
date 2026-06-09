@@ -4,6 +4,7 @@ type CallControlsProps = {
   startDisabled: boolean;
   liveMicActive: boolean;
   onStart: () => void;
+  onInterrupt: () => void;
   onStop: () => void;
 };
 
@@ -18,7 +19,10 @@ export function CallControls(props: CallControlsProps) {
           onClick={props.onStart}
           disabled={props.startDisabled || props.sessionActive || disabled}
         >
-          Start Session
+          Start Voice
+        </button>
+        <button className="button" onClick={props.onInterrupt} disabled={!props.sessionActive || disabled}>
+          Interrupt
         </button>
         <button className="button" onClick={props.onStop} disabled={!props.sessionActive && !props.connecting}>
           Stop Session

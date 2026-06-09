@@ -5,11 +5,34 @@ import argparse
 import array
 import json
 import subprocess
+import sys
 import tempfile
 import wave
 from pathlib import Path
 
 import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+GATEWAY_ROOT = REPO_ROOT / "apps" / "gateway"
+if str(GATEWAY_ROOT) not in sys.path:
+    sys.path.insert(0, str(GATEWAY_ROOT))
+
+from src.livekit.audio_policy import (
+    CAPTURE_ACTIVE_THRESHOLD,
+    CAPTURE_CLICK_DERIVATIVE_THRESHOLD,
+    CAPTURE_CLICK_RMS_MULTIPLIER,
+    CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
+    CAPTURE_CONTEXT_WINDOW_MS,
+    CAPTURE_EDGE_PADDING_MS,
+    CAPTURE_MAX_CLICK_SPIKES_PER_SECOND,
+    CAPTURE_MAX_INTERNAL_SILENCE_MS,
+    CAPTURE_MAX_NOISY_FRAME_RATIO,
+    CAPTURE_ROUGHNESS_THRESHOLD,
+    CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
+    CAPTURE_SILENCE_THRESHOLD,
+    CAPTURE_VOICED_RMS_THRESHOLD,
+    CAPTURE_ZERO_CROSSING_THRESHOLD,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -17,73 +40,77 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("input", type=Path, help="Path to a WAV or decodable media file.")
     parser.add_argument("--frame-ms", type=int, default=20)
     parser.add_argument("--expected-sample-rate", type=int, default=48000)
-    parser.add_argument("--active-threshold", type=int, default=24)
-    parser.add_argument("--silence-threshold", type=int, default=8)
-    parser.add_argument("--max-internal-silence-ms", type=float, default=20.0)
+    parser.add_argument("--active-threshold", type=int, default=CAPTURE_ACTIVE_THRESHOLD)
+    parser.add_argument("--silence-threshold", type=int, default=CAPTURE_SILENCE_THRESHOLD)
+    parser.add_argument(
+        "--max-internal-silence-ms",
+        type=float,
+        default=CAPTURE_MAX_INTERNAL_SILENCE_MS,
+    )
     parser.add_argument(
         "--edge-padding-ms",
         type=float,
-        default=60.0,
+        default=CAPTURE_EDGE_PADDING_MS,
         help="Ignore silence runs within this distance of the active-region edges when classifying internal gaps.",
     )
     parser.add_argument(
         "--context-window-ms",
         type=float,
-        default=10.0,
+        default=CAPTURE_CONTEXT_WINDOW_MS,
         help="Inspect this much audio on each side of an internal silence run before classifying it as a suspicious gap.",
     )
     parser.add_argument(
         "--context-active-threshold",
         type=int,
-        default=32,
+        default=CAPTURE_CONTEXT_ACTIVE_THRESHOLD,
         help="Treat an internal silence run as suspicious only when the surrounding context exceeds this amplitude threshold.",
     )
     parser.add_argument(
         "--silence-context-rms-threshold",
         type=float,
-        default=500.0,
+        default=CAPTURE_SILENCE_CONTEXT_RMS_THRESHOLD,
         help="Treat an internal silence run as suspicious only when both surrounding context windows exceed this RMS.",
     )
     parser.add_argument(
         "--voiced-rms-threshold",
         type=float,
-        default=200.0,
+        default=CAPTURE_VOICED_RMS_THRESHOLD,
         help="Ignore low-energy frames when classifying rough/noisy playback artifacts.",
     )
     parser.add_argument(
         "--roughness-threshold",
         type=float,
-        default=1.0,
+        default=CAPTURE_ROUGHNESS_THRESHOLD,
         help="Flag voiced frames whose mean absolute sample delta exceeds this multiple of RMS.",
     )
     parser.add_argument(
         "--zero-crossing-threshold",
         type=float,
-        default=0.35,
+        default=CAPTURE_ZERO_CROSSING_THRESHOLD,
         help="Flag voiced frames whose zero-crossing ratio exceeds this threshold.",
     )
     parser.add_argument(
         "--max-noisy-frame-ratio",
         type=float,
-        default=0.12,
+        default=CAPTURE_MAX_NOISY_FRAME_RATIO,
         help="Warn when rough/noisy voiced frames exceed this fraction of voiced frames.",
     )
     parser.add_argument(
         "--click-derivative-threshold",
         type=float,
-        default=12000.0,
+        default=CAPTURE_CLICK_DERIVATIVE_THRESHOLD,
         help="Minimum second-derivative magnitude required to count a click-like spike.",
     )
     parser.add_argument(
         "--click-rms-multiplier",
         type=float,
-        default=8.0,
+        default=CAPTURE_CLICK_RMS_MULTIPLIER,
         help="Scale click detection relative to the active-region RMS.",
     )
     parser.add_argument(
         "--max-click-spikes-per-second",
         type=float,
-        default=0.5,
+        default=CAPTURE_MAX_CLICK_SPIKES_PER_SECOND,
         help="Warn when click-like sample spikes exceed this rate.",
     )
     parser.add_argument(

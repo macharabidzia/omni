@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from src.config import get_settings
 from src.livekit.auth import build_browser_identity, build_browser_token
+from src.livekit.worker_state import load_livekit_worker_state
 
 router = APIRouter(prefix="/livekit")
 
@@ -15,6 +16,15 @@ async def create_livekit_session() -> dict[str, str]:
         raise HTTPException(
             status_code=503,
             detail="LiveKit control plane is not configured.",
+        )
+    worker_snapshot = load_livekit_worker_state(settings.livekit_worker_state_path)
+    if (
+        isinstance(worker_snapshot, dict)
+        and worker_snapshot.get("livekit_worker_status") == "draining"
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="LiveKit worker is draining and not accepting new sessions.",
         )
     identity = build_browser_identity(settings)
     token = build_browser_token(settings, identity=identity)

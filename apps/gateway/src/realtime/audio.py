@@ -19,7 +19,7 @@ class AudioValidationError(ValueError):
 
 @dataclass(slots=True)
 class ValidatedAudioChunk:
-    audio_base64: str
+    audio_base64: str | None
     audio_bytes: bytes
     sample_rate: int
     channels: int
@@ -36,6 +36,82 @@ def validate_audio_chunk(
     audio_format: str,
     allowed_chunk_ms: tuple[int, ...],
 ) -> ValidatedAudioChunk:
+    if not audio_base64:
+        raise AudioValidationError("EMPTY_AUDIO", "Audio chunk is empty.")
+
+    try:
+        audio_bytes = base64.b64decode(audio_base64, validate=True)
+    except Exception as exc:
+        raise AudioValidationError(
+            "INVALID_BASE64_AUDIO",
+            f"Audio chunk could not be base64-decoded: {exc}",
+        ) from exc
+
+    if not audio_bytes:
+        raise AudioValidationError("EMPTY_AUDIO", "Audio chunk is empty.")
+
+    duration_ms, sample_count = _validate_audio_bytes(
+        audio_bytes=audio_bytes,
+        sample_rate=sample_rate,
+        channels=channels,
+        audio_format=audio_format,
+        allowed_chunk_ms=allowed_chunk_ms,
+    )
+
+    return ValidatedAudioChunk(
+        audio_base64=audio_base64,
+        audio_bytes=audio_bytes,
+        sample_rate=sample_rate,
+        channels=channels,
+        audio_format=audio_format,
+        duration_ms=duration_ms,
+        sample_count=sample_count,
+    )
+
+
+def validate_audio_bytes(
+    *,
+    audio_bytes: bytes | bytearray | memoryview,
+    sample_rate: int,
+    channels: int,
+    audio_format: str,
+    allowed_chunk_ms: tuple[int, ...],
+) -> ValidatedAudioChunk:
+    normalized_audio_bytes = (
+        audio_bytes
+        if isinstance(audio_bytes, bytes)
+        else bytes(audio_bytes)
+    )
+    if not normalized_audio_bytes:
+        raise AudioValidationError("EMPTY_AUDIO", "Audio chunk is empty.")
+
+    duration_ms, sample_count = _validate_audio_bytes(
+        audio_bytes=normalized_audio_bytes,
+        sample_rate=sample_rate,
+        channels=channels,
+        audio_format=audio_format,
+        allowed_chunk_ms=allowed_chunk_ms,
+    )
+
+    return ValidatedAudioChunk(
+        audio_base64=None,
+        audio_bytes=normalized_audio_bytes,
+        sample_rate=sample_rate,
+        channels=channels,
+        audio_format=audio_format,
+        duration_ms=duration_ms,
+        sample_count=sample_count,
+    )
+
+
+def _validate_audio_bytes(
+    *,
+    audio_bytes: bytes,
+    sample_rate: int,
+    channels: int,
+    audio_format: str,
+    allowed_chunk_ms: tuple[int, ...],
+) -> tuple[int, int]:
     if audio_format != "pcm16":
         raise AudioValidationError(
             "UNSUPPORTED_AUDIO_FORMAT",
@@ -54,20 +130,6 @@ def validate_audio_chunk(
             "Input audio must be 16 kHz PCM16 mono.",
         )
 
-    if not audio_base64:
-        raise AudioValidationError("EMPTY_AUDIO", "Audio chunk is empty.")
-
-    try:
-        audio_bytes = base64.b64decode(audio_base64, validate=True)
-    except Exception as exc:
-        raise AudioValidationError(
-            "INVALID_BASE64_AUDIO",
-            f"Audio chunk could not be base64-decoded: {exc}",
-        ) from exc
-
-    if not audio_bytes:
-        raise AudioValidationError("EMPTY_AUDIO", "Audio chunk is empty.")
-
     if len(audio_bytes) % 2 != 0:
         raise AudioValidationError(
             "INVALID_PCM16_FRAME_SIZE",
@@ -84,16 +146,7 @@ def validate_audio_chunk(
             "INVALID_CHUNK_DURATION",
             f"Chunk duration {duration_ms} ms is not allowed. Use one of: {allowed}.",
         )
-
-    return ValidatedAudioChunk(
-        audio_base64=audio_base64,
-        audio_bytes=audio_bytes,
-        sample_rate=sample_rate,
-        channels=channels,
-        audio_format=audio_format,
-        duration_ms=closest_ms,
-        sample_count=sample_count,
-    )
+    return closest_ms, sample_count
 
 
 def pcm16_duration_ms(byte_count: int, sample_rate: int) -> int:

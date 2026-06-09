@@ -9,6 +9,25 @@ from typing import Awaitable, Callable
 import numpy as np
 from livekit import rtc
 
+from src.livekit.audio_policy import (
+    BOUNDARY_JUMP_SMOOTH_ABS,
+    BOUNDARY_JUMP_WARNING_ABS,
+    BOUNDARY_SMOOTH_MS,
+    CHUNK_GAP_WARNING_MS,
+    FINAL_TRAILING_SILENCE_KEEP_MS,
+    INTERCHUNK_LEADING_SILENCE_TRIM_MAX_MS,
+    INTERCHUNK_TRAILING_SILENCE_RMS_THRESHOLD,
+    INTERCHUNK_TRAILING_SILENCE_TRIM_MAX_MS,
+    INTERCHUNK_TRAILING_SILENCE_TRIM_MIN_MS,
+    INTERNAL_SILENCE_PRESERVE_MAX_MS,
+    ISOLATED_SPIKE_SMOOTH_ABS,
+    LEADING_FADE_IN_MS,
+    LEADING_SILENCE_PEAK_THRESHOLD,
+    LEADING_SILENCE_TRIM_MAX_MS,
+    LEADING_SILENCE_WINDOW_MS,
+    QUEUE_BACKPRESSURE_WARNING_RATIO,
+    QUEUE_STARVATION_WARNING_MS,
+)
 from src.realtime.audio import (
     chunk_bytes_for_duration_ms,
     pcm16_bytes as encode_pcm16_bytes,
@@ -20,20 +39,6 @@ from src.realtime.audio import (
 logger = logging.getLogger(__name__)
 
 FrameSink = Callable[[bytes], Awaitable[None]]
-LEADING_SILENCE_TRIM_MAX_MS = 120
-INTERCHUNK_LEADING_SILENCE_TRIM_MAX_MS = 60
-INTERCHUNK_TRAILING_SILENCE_TRIM_MIN_MS = 20
-INTERCHUNK_TRAILING_SILENCE_TRIM_MAX_MS = 30
-INTERCHUNK_TRAILING_SILENCE_RMS_THRESHOLD = 96
-LEADING_SILENCE_WINDOW_MS = 5
-LEADING_SILENCE_PEAK_THRESHOLD = 48
-LEADING_FADE_IN_MS = 4
-CHUNK_GAP_WARNING_MS = 160
-QUEUE_STARVATION_WARNING_MS = 40
-BOUNDARY_SMOOTH_MS = 3.0
-BOUNDARY_JUMP_SMOOTH_ABS = 4_000
-BOUNDARY_JUMP_WARNING_ABS = 8_000
-ISOLATED_SPIKE_SMOOTH_ABS = 12_000
 
 
 class AssistantAudioPublisher:
@@ -49,13 +54,22 @@ class AssistantAudioPublisher:
         self.output_sample_rate = output_sample_rate
         self.output_frame_ms = output_frame_ms
         self.frame_sink = frame_sink
+        raw_queue_size_ms = getattr(audio_source, "queue_size_ms", 0)
+        if isinstance(raw_queue_size_ms, (int, float)) and raw_queue_size_ms > 0:
+            self._queue_warning_threshold_ms = float(raw_queue_size_ms) * QUEUE_BACKPRESSURE_WARNING_RATIO
+            self._max_queue_ms = float(raw_queue_size_ms)
+        else:
+            self._queue_warning_threshold_ms = 0.0
+            self._max_queue_ms = 0.0
         self.output_frame_bytes = chunk_bytes_for_duration_ms(
             output_frame_ms,
             sample_rate=output_sample_rate,
         )
+        self.output_frame_samples = self.output_frame_bytes // 2
         self.pending_output = bytearray()
         self._resampler: rtc.AudioResampler | None = None
         self._resampler_input_rate: int | None = None
+        self._turn_input_sample_rate: int | None = None
         self._leading_trim_window_samples = max(
             1,
             int(round(output_sample_rate * (LEADING_SILENCE_WINDOW_MS / 1000))),
@@ -72,6 +86,14 @@ class AssistantAudioPublisher:
             1,
             int(round(output_sample_rate * (INTERCHUNK_TRAILING_SILENCE_TRIM_MAX_MS / 1000))),
         )
+        self._max_internal_silence_samples = max(
+            1,
+            int(round(output_sample_rate * (INTERNAL_SILENCE_PRESERVE_MAX_MS / 1000))),
+        )
+        self._final_trailing_silence_keep_samples = max(
+            1,
+            int(round(output_sample_rate * (FINAL_TRAILING_SILENCE_KEEP_MS / 1000))),
+        )
         self._leading_fade_in_samples = max(
             1,
             int(round(output_sample_rate * (LEADING_FADE_IN_MS / 1000))),
@@ -81,7 +103,21 @@ class AssistantAudioPublisher:
             int(round(output_sample_rate * (BOUNDARY_SMOOTH_MS / 1000))),
         )
         self._last_chunk_monotonic: float | None = None
+        self._session_id: str | None = None
+        self._participant_identity: str | None = None
+        self._turn_id: str | None = None
         self._reset_turn_boundary_state()
+
+    def set_log_context(
+        self,
+        *,
+        session_id: str | None,
+        participant_identity: str | None,
+        turn_id: str | None,
+    ) -> None:
+        self._session_id = session_id
+        self._participant_identity = participant_identity
+        self._turn_id = turn_id
 
     async def enqueue_base64(self, audio_base64: str, *, input_sample_rate: int) -> None:
         now = time.monotonic()
@@ -90,11 +126,14 @@ class AssistantAudioPublisher:
             queued_ms = self.queued_duration_seconds() * 1000
             if gap_ms >= CHUNK_GAP_WARNING_MS and queued_ms <= QUEUE_STARVATION_WARNING_MS:
                 logger.warning(
-                    "Assistant audio input gap gap_ms=%.2f queued_ms=%.2f pending_bytes=%d turn_chunks=%d",
+                    "Assistant audio input gap gap_ms=%.2f queued_ms=%.2f pending_bytes=%d turn_chunks=%d session_id=%s participant=%s turn_id=%s",
                     gap_ms,
                     queued_ms,
                     len(self.pending_output),
                     self._turn_chunk_count,
+                    self._session_id,
+                    self._participant_identity,
+                    self._turn_id,
                 )
         self._last_chunk_monotonic = now
 
@@ -110,9 +149,10 @@ class AssistantAudioPublisher:
         if not pcm16_output:
             return
         self._turn_chunk_count += 1
-        self._turn_input_audio_ms += (len(pcm16_output) / 2 / self.output_sample_rate) * 1000
+        self._turn_output_sample_count += len(pcm16_output) // 2
         self.pending_output.extend(pcm16_output)
         await self._flush_complete_frames()
+        self._warn_if_output_queue_backed_up()
 
     async def finalize_turn(self) -> None:
         tail = self._flush_resampler()
@@ -123,24 +163,29 @@ class AssistantAudioPublisher:
 
         if not self.pending_output:
             logger.info(
-                "Assistant audio turn finalized with no publishable audio trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d",
-                self._turn_trimmed_leading_ms,
-                self._turn_interchunk_trimmed_ms,
+                "Assistant audio turn finalized with no publishable audio trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d session_id=%s participant=%s turn_id=%s",
+                self._samples_to_ms(self._turn_trimmed_leading_sample_count),
+                self._samples_to_ms(self._turn_interchunk_trimmed_sample_count),
                 self._turn_dropped_silent_chunk_count,
+                self._session_id,
+                self._participant_identity,
+                self._turn_id,
             )
             self._reset_turn_boundary_state()
             return
 
+        self._trim_final_trailing_silence()
         self._pad_tail_with_fadeout()
         await self._flush_complete_frames()
         logger.info(
-            "Assistant audio turn finalized chunks=%d published_audio_ms=%.2f queued_ms=%.2f trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d raw_boundary_jump_max=%d raw_boundary_jump_p95=%d effective_boundary_jump_max=%d effective_boundary_jump_p95=%d suspicious_boundaries=%d smoothed_boundaries=%d smoothed_spikes=%d",
+            "Assistant audio turn finalized chunks=%d published_audio_ms=%.2f queued_ms=%.2f trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d dropped_backpressure_frames=%d raw_boundary_jump_max=%d raw_boundary_jump_p95=%d effective_boundary_jump_max=%d effective_boundary_jump_p95=%d suspicious_boundaries=%d smoothed_boundaries=%d smoothed_spikes=%d session_id=%s participant=%s turn_id=%s",
             self._turn_chunk_count,
-            self._turn_input_audio_ms,
+            self._samples_to_ms(self._turn_output_sample_count),
             self.queued_duration_seconds() * 1000,
-            self._turn_trimmed_leading_ms,
-            self._turn_interchunk_trimmed_ms,
+            self._samples_to_ms(self._turn_trimmed_leading_sample_count),
+            self._samples_to_ms(self._turn_interchunk_trimmed_sample_count),
             self._turn_dropped_silent_chunk_count,
+            self._turn_dropped_backpressure_frame_count,
             max(self._turn_raw_boundary_jump_values) if self._turn_raw_boundary_jump_values else 0,
             self._percentile(self._turn_raw_boundary_jump_values, 95),
             max(self._turn_effective_boundary_jump_values)
@@ -150,19 +195,26 @@ class AssistantAudioPublisher:
             self._turn_suspicious_boundary_count,
             self._turn_smoothed_boundary_count,
             self._turn_smoothed_spike_count,
+            self._session_id,
+            self._participant_identity,
+            self._turn_id,
         )
         self._reset_turn_boundary_state()
 
     async def clear(self) -> None:
         if self._turn_chunk_count > 0 or self.pending_output:
             logger.info(
-                "Assistant audio turn cleared chunks=%d queued_ms=%.2f pending_bytes=%d trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d",
+                "Assistant audio turn cleared chunks=%d queued_ms=%.2f pending_bytes=%d trimmed_leading_ms=%.2f interchunk_trimmed_ms=%.2f dropped_silent_chunks=%d dropped_backpressure_frames=%d session_id=%s participant=%s turn_id=%s",
                 self._turn_chunk_count,
                 self.queued_duration_seconds() * 1000,
                 len(self.pending_output),
-                self._turn_trimmed_leading_ms,
-                self._turn_interchunk_trimmed_ms,
+                self._samples_to_ms(self._turn_trimmed_leading_sample_count),
+                self._samples_to_ms(self._turn_interchunk_trimmed_sample_count),
                 self._turn_dropped_silent_chunk_count,
+                self._turn_dropped_backpressure_frame_count,
+                self._session_id,
+                self._participant_identity,
+                self._turn_id,
             )
         self.pending_output.clear()
         self._resampler = None
@@ -177,6 +229,14 @@ class AssistantAudioPublisher:
         return self.audio_source.queued_duration
 
     def _convert_input_rate(self, pcm16_bytes: bytes, *, input_sample_rate: int) -> bytes:
+        if self._turn_input_sample_rate is None:
+            self._turn_input_sample_rate = input_sample_rate
+        elif self._turn_input_sample_rate != input_sample_rate:
+            raise ValueError(
+                "Assistant audio input sample rate changed mid-turn: "
+                f"{self._turn_input_sample_rate} -> {input_sample_rate}."
+            )
+
         if input_sample_rate == self.output_sample_rate:
             return pcm16_bytes
 
@@ -234,13 +294,18 @@ class AssistantAudioPublisher:
                 return b""
             if self._chunk_peak_abs(pcm16_bytes) > LEADING_SILENCE_PEAK_THRESHOLD:
                 self._turn_voiced_audio_started = True
+                self._turn_consecutive_silence_samples = 0
             return pcm16_bytes
 
+        sample_count = len(pcm16_bytes) // 2
         if self._chunk_peak_abs(pcm16_bytes) <= LEADING_SILENCE_PEAK_THRESHOLD:
+            self._turn_consecutive_silence_samples += sample_count
+            if self._turn_consecutive_silence_samples <= self._max_internal_silence_samples:
+                return pcm16_bytes
             self._turn_dropped_silent_chunk_count += 1
             return b""
 
-        sample_count = len(pcm16_bytes) // 2
+        self._turn_consecutive_silence_samples = 0
         trim_samples = self._count_leading_silence_samples(
             pcm16_bytes,
             max_trim_samples=min(sample_count, self._interchunk_trim_max_samples),
@@ -248,7 +313,7 @@ class AssistantAudioPublisher:
         if trim_samples <= 0:
             return self._trim_interchunk_trailing_silence(pcm16_bytes)
 
-        self._turn_interchunk_trimmed_ms += (trim_samples / self.output_sample_rate) * 1000
+        self._turn_interchunk_trimmed_sample_count += trim_samples
         return self._trim_interchunk_trailing_silence(pcm16_bytes[trim_samples * 2 :])
 
     def _trim_turn_leading_silence(self, pcm16_bytes: bytes) -> bytes:
@@ -269,8 +334,7 @@ class AssistantAudioPublisher:
             return pcm16_bytes
 
         self._leading_trim_remaining_samples -= trim_samples
-        trimmed_ms = (trim_samples / self.output_sample_rate) * 1000
-        self._turn_trimmed_leading_ms += trimmed_ms
+        self._turn_trimmed_leading_sample_count += trim_samples
         trimmed_bytes = pcm16_bytes[trim_samples * 2 :]
         if not trimmed_bytes:
             if self._leading_trim_remaining_samples <= 0:
@@ -312,11 +376,14 @@ class AssistantAudioPublisher:
             if raw_boundary_jump_abs >= BOUNDARY_JUMP_WARNING_ABS:
                 self._turn_suspicious_boundary_count += 1
                 logger.warning(
-                    "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f",
+                    "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f session_id=%s participant=%s turn_id=%s",
                     raw_boundary_jump_abs,
                     raw_boundary_jump_abs,
                     self._turn_chunk_count,
                     self.queued_duration_seconds() * 1000,
+                    self._session_id,
+                    self._participant_identity,
+                    self._turn_id,
                 )
             return
 
@@ -343,11 +410,14 @@ class AssistantAudioPublisher:
             if raw_boundary_jump_abs >= BOUNDARY_JUMP_WARNING_ABS:
                 self._turn_suspicious_boundary_count += 1
                 logger.warning(
-                    "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f",
+                    "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f session_id=%s participant=%s turn_id=%s",
                     raw_boundary_jump_abs,
                     raw_boundary_jump_abs,
                     self._turn_chunk_count,
                     self.queued_duration_seconds() * 1000,
+                    self._session_id,
+                    self._participant_identity,
+                    self._turn_id,
                 )
             return
 
@@ -356,11 +426,14 @@ class AssistantAudioPublisher:
         if effective_boundary_jump_abs >= BOUNDARY_JUMP_WARNING_ABS:
             self._turn_suspicious_boundary_count += 1
             logger.warning(
-                "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f",
+                "Assistant audio boundary jump effective_abs=%d raw_abs=%d turn_chunks=%d queued_ms=%.2f session_id=%s participant=%s turn_id=%s",
                 effective_boundary_jump_abs,
                 raw_boundary_jump_abs,
                 self._turn_chunk_count,
                 self.queued_duration_seconds() * 1000,
+                self._session_id,
+                self._participant_identity,
+                self._turn_id,
             )
         self._turn_smoothed_boundary_count += 1
 
@@ -385,11 +458,56 @@ class AssistantAudioPublisher:
         if smoothed > 0:
             self._turn_smoothed_spike_count += smoothed
             logger.info(
-                "Assistant audio spike smoothing applied smoothed_samples=%d turn_chunks=%d queued_ms=%.2f",
+                "Assistant audio spike smoothing applied smoothed_samples=%d turn_chunks=%d queued_ms=%.2f session_id=%s participant=%s turn_id=%s",
                 smoothed,
                 self._turn_chunk_count,
                 self.queued_duration_seconds() * 1000,
+                self._session_id,
+                self._participant_identity,
+                self._turn_id,
             )
+
+    def _warn_if_output_queue_backed_up(self) -> None:
+        if self._turn_backpressure_warned or self._queue_warning_threshold_ms <= 0:
+            return
+        queued_ms = self.queued_duration_seconds() * 1000
+        if queued_ms < self._queue_warning_threshold_ms:
+            return
+        self._turn_backpressure_warned = True
+        logger.warning(
+            "Assistant audio queue backpressure queued_ms=%.2f threshold_ms=%.2f max_queue_ms=%.2f pending_bytes=%d turn_chunks=%d session_id=%s participant=%s turn_id=%s",
+            queued_ms,
+            self._queue_warning_threshold_ms,
+            self._max_queue_ms,
+            len(self.pending_output),
+            self._turn_chunk_count,
+            self._session_id,
+            self._participant_identity,
+            self._turn_id,
+        )
+
+    def _should_drop_backpressure_frame(self) -> bool:
+        if self._max_queue_ms <= 0 or self._turn_published_frame_count <= 0:
+            return False
+        queued_ms = self.queued_duration_seconds() * 1000
+        return queued_ms >= self._max_queue_ms
+
+    def _record_backpressure_frame_drop(self) -> None:
+        self._turn_dropped_backpressure_frame_count += 1
+        self._turn_dropped_backpressure_sample_count += self.output_frame_samples
+        if self._turn_backpressure_drop_warned:
+            return
+        self._turn_backpressure_drop_warned = True
+        logger.warning(
+            "Assistant audio dropping queued frame due to hard queue cap queued_ms=%.2f max_queue_ms=%.2f pending_bytes=%d dropped_frames=%d session_id=%s participant=%s turn_id=%s",
+            self.queued_duration_seconds() * 1000,
+            self._max_queue_ms,
+            len(self.pending_output),
+            self._turn_dropped_backpressure_frame_count,
+            self._session_id,
+            self._participant_identity,
+            self._turn_id,
+        )
 
     def _reset_turn_boundary_state(self) -> None:
         self._leading_trim_complete = False
@@ -399,17 +517,27 @@ class AssistantAudioPublisher:
         )
         self._last_chunk_monotonic = None
         self._last_output_sample: int | None = None
+        self._turn_input_sample_rate = None
         self._turn_voiced_audio_started = False
+        self._turn_backpressure_warned = False
+        self._turn_backpressure_drop_warned = False
         self._turn_chunk_count = 0
-        self._turn_input_audio_ms = 0.0
-        self._turn_trimmed_leading_ms = 0.0
-        self._turn_interchunk_trimmed_ms = 0.0
+        self._turn_output_sample_count = 0
+        self._turn_trimmed_leading_sample_count = 0
+        self._turn_interchunk_trimmed_sample_count = 0
+        self._turn_consecutive_silence_samples = 0
         self._turn_dropped_silent_chunk_count = 0
+        self._turn_published_frame_count = 0
+        self._turn_dropped_backpressure_frame_count = 0
+        self._turn_dropped_backpressure_sample_count = 0
         self._turn_raw_boundary_jump_values: list[int] = []
         self._turn_effective_boundary_jump_values: list[int] = []
         self._turn_suspicious_boundary_count = 0
         self._turn_smoothed_boundary_count = 0
         self._turn_smoothed_spike_count = 0
+
+    def _samples_to_ms(self, sample_count: int) -> float:
+        return round((sample_count / self.output_sample_rate) * 1000, 2)
 
     def _count_leading_silence_samples(self, pcm16_bytes: bytes, *, max_trim_samples: int) -> int:
         trim_samples = 0
@@ -455,8 +583,39 @@ class AssistantAudioPublisher:
         if keep_samples <= 0:
             return pcm16_bytes
 
-        self._turn_interchunk_trimmed_ms += (trim_samples / self.output_sample_rate) * 1000
+        self._turn_interchunk_trimmed_sample_count += trim_samples
         return pcm16_bytes[: keep_samples * 2]
+
+    def _trim_final_trailing_silence(self) -> None:
+        sample_count = len(self.pending_output) // 2
+        if sample_count <= 0:
+            return
+
+        trim_samples = self._count_trailing_silence_samples(
+            bytes(self.pending_output),
+            max_trim_samples=sample_count,
+        )
+        if trim_samples <= self._final_trailing_silence_keep_samples:
+            return
+        if (
+            self._rms(
+                self.pending_output,
+                start_sample=sample_count - trim_samples,
+                sample_count=trim_samples,
+            )
+            > INTERCHUNK_TRAILING_SILENCE_RMS_THRESHOLD
+        ):
+            return
+
+        keep_samples = sample_count - (
+            trim_samples - self._final_trailing_silence_keep_samples
+        )
+        if keep_samples <= 0:
+            return
+
+        trimmed_samples = sample_count - keep_samples
+        del self.pending_output[keep_samples * 2 :]
+        self._turn_interchunk_trimmed_sample_count += trimmed_samples
 
     @staticmethod
     def _chunk_peak_abs(pcm16_bytes: bytes) -> int:
@@ -526,14 +685,19 @@ class AssistantAudioPublisher:
 
     async def _flush_complete_frames(self) -> None:
         while len(self.pending_output) >= self.output_frame_bytes:
+            if self._should_drop_backpressure_frame():
+                del self.pending_output[: self.output_frame_bytes]
+                self._record_backpressure_frame_drop()
+                continue
             frame_bytes = bytes(self.pending_output[: self.output_frame_bytes])
             del self.pending_output[: self.output_frame_bytes]
-            if self.frame_sink is not None:
-                await self.frame_sink(frame_bytes)
             audio_frame = rtc.AudioFrame(
                 data=frame_bytes,
                 sample_rate=self.output_sample_rate,
                 num_channels=1,
-                samples_per_channel=len(frame_bytes) // 2,
+                samples_per_channel=self.output_frame_samples,
             )
             await self.audio_source.capture_frame(audio_frame)
+            self._turn_published_frame_count += 1
+            if self.frame_sink is not None:
+                await self.frame_sink(frame_bytes)

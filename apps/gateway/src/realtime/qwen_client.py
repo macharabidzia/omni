@@ -6,6 +6,7 @@ from typing import Literal
 
 import websockets
 
+from src.security import redact_url_secrets
 
 logger = logging.getLogger(__name__)
 _INITIAL_SERVER_EVENT_TIMEOUT_SECONDS = 5.0
@@ -74,7 +75,7 @@ class QwenRealtimeClient:
     async def connect(self) -> None:
         if self.websocket is not None:
             return
-        logger.info("Connecting to Qwen realtime websocket url=%s", self.url)
+        logger.info("Connecting to Qwen realtime websocket url=%s", redact_url_secrets(self.url))
         websocket = await websockets.connect(
             self.url,
             max_size=self.max_ws_message_bytes,
@@ -94,7 +95,7 @@ class QwenRealtimeClient:
             await websocket.close()
             raise
         self.websocket = websocket
-        logger.info("Connected to Qwen realtime websocket url=%s", self.url)
+        logger.info("Connected to Qwen realtime websocket url=%s", redact_url_secrets(self.url))
 
     async def start_session(
         self,
@@ -143,9 +144,15 @@ class QwenRealtimeClient:
         await self._send({"type": "input_audio_buffer.commit", "final": True})
 
     async def cancel_response(self) -> None:
-        # Current official vllm-omni realtime websocket does not expose a
-        # cancel event. The gateway still suppresses later audio locally.
-        return
+        if self.websocket is None:
+            return
+        logger.warning(
+            "Qwen realtime websocket cancel requested without native upstream cancel support; closing the socket."
+        )
+        self.input_stream_started = False
+        self.awaiting_response = False
+        await self.websocket.close()
+        self.websocket = None
 
     async def close(self) -> None:
         if self.websocket is not None:
@@ -208,7 +215,17 @@ class QwenRealtimeClient:
         if self.websocket is None:
             raise RuntimeError("Qwen websocket has not been connected.")
         try:
-            await self.websocket.send(json.dumps(payload))
+            await asyncio.wait_for(
+                self.websocket.send(json.dumps(payload)),
+                timeout=self.request_timeout_seconds,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Qwen websocket send timed out type=%s timeout_seconds=%.2f",
+                payload.get("type", "unknown"),
+                self.request_timeout_seconds,
+            )
+            raise
         except websockets.ConnectionClosed as exc:
             logger.warning(
                 "Qwen websocket send failed type=%s code=%s reason=%s",

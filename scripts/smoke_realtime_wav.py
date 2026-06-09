@@ -36,28 +36,37 @@ class SessionRecorder:
     def record(self, event: dict) -> None:
         event_with_time = {
             **event,
-            "t_ms": round((time.perf_counter() - self.metrics.t_session_start) * 1000, 2),
+            "t_ms": round(
+                (time.perf_counter() - self.metrics.session_start_received) * 1000,
+                2,
+            ),
         }
         self.events.append(event_with_time)
         event_type = event.get("type")
         if event_type == "session.ready":
             self.ready.set()
         elif event_type == "transcript.delta":
-            self.metrics.mark_once("t_first_transcript_delta")
+            self.metrics.mark_once("qwen_first_transcript")
         elif event_type == "assistant.text.delta":
-            self.metrics.mark_once("t_first_text_delta")
+            self.metrics.mark_once("qwen_first_text")
         elif event_type == "assistant.audio.delta":
-            self.metrics.mark_once("t_first_audio_delta_received")
-            self.metrics.mark_once("t_first_audio_played")
+            self.metrics.mark_once("qwen_first_audio")
+            if self.metrics.commit_sent is not None:
+                self.metrics.set_value_once(
+                    "first_audio_played_client_ms",
+                    round((time.perf_counter() - self.metrics.commit_sent) * 1000, 2),
+                )
             self.assistant_audio_sample_rate = int(event.get("sample_rate", self.assistant_audio_sample_rate))
             audio_base64 = event.get("audio_base64", "")
             if audio_base64:
                 self.assistant_audio_bytes.extend(base64.b64decode(audio_base64))
         elif event_type == "assistant.done":
-            self.metrics.mark_once("t_response_done")
+            self.metrics.mark_once("assistant_done")
+            self.metrics.mark_once("turn_closed")
             self.done.set()
         elif event_type == "error":
             self.errors.append(event)
+            self.metrics.mark_once("turn_closed")
             self.done.set()
 
 
@@ -134,17 +143,19 @@ async def run_direct(args: argparse.Namespace, audio_bytes: bytes, recorder: Ses
 
     reader_task = asyncio.create_task(collect_direct_events(client, recorder))
     recorder.events.append({"type": "session.ready", "mode": "direct"})
-    recorder.metrics.mark_once("t_microphone_started")
+    recorder.metrics.mark_once("vad_speech_start")
 
     chunks = list(iter_chunks(audio_bytes, chunk_ms=args.chunk_ms))
     for index, chunk in enumerate(chunks):
         if index == 0:
-            recorder.metrics.mark_once("t_first_audio_chunk_sent")
+            recorder.metrics.mark_once("first_user_audio_uploaded")
         await client.append_audio(base64.b64encode(chunk).decode("ascii"))
+        recorder.metrics.mark_latest("last_user_audio_uploaded")
         if args.send_delay_ms > 0 and index + 1 < len(chunks):
             await asyncio.sleep(args.send_delay_ms / 1000)
 
-    recorder.metrics.mark_once("t_audio_commit_sent")
+    recorder.metrics.mark_once("vad_speech_end")
+    recorder.metrics.mark_once("commit_sent")
     await client.commit_audio()
     await asyncio.wait_for(recorder.done.wait(), timeout=args.response_timeout_seconds)
     await client.close()

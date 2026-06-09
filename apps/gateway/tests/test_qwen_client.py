@@ -25,6 +25,16 @@ class FakeWebSocket:
         self.closed = True
 
 
+class SlowSendWebSocket(FakeWebSocket):
+    def __init__(self, *, send_delay_seconds: float) -> None:
+        super().__init__([])
+        self.send_delay_seconds = send_delay_seconds
+
+    async def send(self, payload: str) -> None:
+        await asyncio.sleep(self.send_delay_seconds)
+        await super().send(payload)
+
+
 def test_probe_qwen_realtime_websocket_accepts_session_created(monkeypatch) -> None:
     websocket = FakeWebSocket(
         [json.dumps({"type": "session.created", "id": "sess-1"})]
@@ -168,3 +178,41 @@ def test_qwen_client_starts_input_stream_before_first_append() -> None:
         {"type": "input_audio_buffer.append", "audio": "aGVsbG8="},
         {"type": "input_audio_buffer.commit", "final": True},
     ]
+
+
+def test_qwen_client_cancel_closes_socket_when_backend_has_no_cancel() -> None:
+    websocket = FakeWebSocket([])
+    client = QwenRealtimeClient(
+        model="qwen",
+        url="ws://qwen/v1/realtime",
+        request_timeout_seconds=1.0,
+        response_timeout_seconds=1.0,
+        output_sample_rate=24000,
+        max_ws_message_bytes=1024,
+    )
+    client.websocket = websocket
+    client.input_stream_started = True
+    client.awaiting_response = True
+
+    asyncio.run(client.cancel_response())
+
+    assert websocket.closed is True
+    assert client.websocket is None
+    assert client.input_stream_started is False
+    assert client.awaiting_response is False
+
+
+def test_qwen_client_send_times_out_when_websocket_stalls() -> None:
+    websocket = SlowSendWebSocket(send_delay_seconds=0.05)
+    client = QwenRealtimeClient(
+        model="qwen",
+        url="ws://qwen/v1/realtime",
+        request_timeout_seconds=0.01,
+        response_timeout_seconds=1.0,
+        output_sample_rate=24000,
+        max_ws_message_bytes=1024,
+    )
+    client.websocket = websocket
+
+    with pytest.raises(asyncio.TimeoutError):
+        asyncio.run(client.append_audio("aGVsbG8="))

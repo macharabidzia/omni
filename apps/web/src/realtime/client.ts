@@ -33,11 +33,13 @@ const LIVEKIT_WEB_AUDIO_MIX = resolveBooleanQueryParam("webAudioMix", true);
 
 export class RealtimeClient {
   private room: Room | null = null;
+  private sessionStarted = false;
   private controlTopic = "omni.control";
   private microphoneStream: MediaStream | null = null;
   private assistantRemoteTrack: RemoteTrack | null = null;
   private assistantTrackSid: string | null = null;
   private assistantTrackStream: MediaStream | null = null;
+  private assistantTrackStatsIntervalId: number | null = null;
   private assistantTrackPlaybackActive = false;
   private assistantTrackFinalizePending = false;
   private assistantTrackLastActiveAt = 0;
@@ -69,6 +71,7 @@ export class RealtimeClient {
   private readonly encoder = new TextEncoder();
   private readonly decoder = new TextDecoder();
   private controlEventSequence = 0;
+  private pendingTelemetryEvents: Record<string, unknown>[] = [];
 
   constructor(private readonly options: RealtimeClientOptions) {}
 
@@ -150,6 +153,10 @@ export class RealtimeClient {
       remote_participant_count: room.remoteParticipants.size,
       can_playback_audio: room.canPlaybackAudio,
     });
+    void this.sendTelemetry("livekit.connected", {
+      can_playback_audio: room.canPlaybackAudio,
+      remote_participant_count: room.remoteParticipants.size,
+    }).catch(() => undefined);
     if (!room.canPlaybackAudio) {
       this.options.onDebugEvent({
         type: "local.livekit.audio_playback_start_requested",
@@ -172,6 +179,9 @@ export class RealtimeClient {
       source: Track.Source.Microphone,
       stopMicTrackOnMute: false,
     });
+    void this.sendTelemetry("microphone.published", {
+      can_playback_audio: room.canPlaybackAudio,
+    }).catch(() => undefined);
     await this.syncExistingRemoteAudioTracks();
 
     await this.send({
@@ -180,6 +190,8 @@ export class RealtimeClient {
       modalities: ["text", "audio"],
       debug_audio_metadata: this.isTransportDebugEnabled(),
     });
+    this.sessionStarted = true;
+    await this.flushPendingTelemetryEvents();
   }
 
   async send(event: Record<string, unknown>): Promise<void> {
@@ -187,9 +199,66 @@ export class RealtimeClient {
       throw new Error("Realtime session is not connected.");
     }
     const reliable = this.isReliableControlEvent(event);
+    await this.publishControlEvent(event, { reliable, includeDebugMetadata: this.isTransportDebugEnabled() });
+  }
+
+  async sendInterrupt(turnId: string | null): Promise<void> {
+    await this.sendTelemetry("interrupt.clicked", {
+      turn_id: turnId,
+    });
+    await this.send({
+      type: "client.interrupt",
+      turn_id: turnId,
+    });
+  }
+
+  async reportAssistantPlaybackStarted(args: {
+    turnId: string | null;
+    commitToFirstAudioPlayedMs: number | null;
+  }): Promise<void> {
+    await this.sendTelemetry("assistant.playback.started", {
+      turn_id: args.turnId,
+      commit_to_first_audio_played_ms: args.commitToFirstAudioPlayedMs,
+    });
+  }
+
+  private async sendTelemetry(
+    eventName: string,
+    payload: Record<string, unknown> = {},
+  ): Promise<void> {
+    if (!this.room) {
+      return;
+    }
+    const telemetryEvent = {
+      type: "client.telemetry",
+      event_name: eventName,
+      client_epoch_ms: Date.now(),
+      client_perf_now_ms: round(performance.now()),
+      ...payload,
+    };
+    if (!this.sessionStarted) {
+      this.pendingTelemetryEvents.push(telemetryEvent);
+      return;
+    }
+    await this.publishControlEvent(telemetryEvent, {
+      reliable: false,
+      includeDebugMetadata: false,
+    });
+  }
+
+  private async publishControlEvent(
+    event: Record<string, unknown>,
+    options: {
+      reliable: boolean;
+      includeDebugMetadata: boolean;
+    },
+  ): Promise<void> {
+    if (!this.room) {
+      throw new Error("Realtime session is not connected.");
+    }
     const debugSequence = ++this.controlEventSequence;
     const debugEventType = typeof event.type === "string" ? event.type : "unknown";
-    const payload = this.isTransportDebugEnabled()
+    const payload = options.includeDebugMetadata
       ? {
           ...event,
           _client_debug_sequence: debugSequence,
@@ -199,23 +268,37 @@ export class RealtimeClient {
     this.options.onDebugEvent({
       type: "local.control.send.started",
       event_type: debugEventType,
-      reliable,
+      reliable: options.reliable,
       sequence: debugSequence,
       perf_now_ms: round(performance.now()),
     });
     const startedAt = performance.now();
     await this.room.localParticipant.publishData(this.encoder.encode(JSON.stringify(payload)), {
-      reliable,
+      reliable: options.reliable,
       topic: this.controlTopic,
     });
     this.options.onDebugEvent({
       type: "local.control.send.resolved",
       event_type: debugEventType,
-      reliable,
+      reliable: options.reliable,
       sequence: debugSequence,
       perf_now_ms: round(performance.now()),
       duration_ms: round(performance.now() - startedAt),
     });
+  }
+
+  private async flushPendingTelemetryEvents(): Promise<void> {
+    if (!this.room || !this.sessionStarted || this.pendingTelemetryEvents.length === 0) {
+      return;
+    }
+    const pendingEvents = this.pendingTelemetryEvents;
+    this.pendingTelemetryEvents = [];
+    for (const event of pendingEvents) {
+      await this.publishControlEvent(event, {
+        reliable: false,
+        includeDebugMetadata: false,
+      });
+    }
   }
 
   finalizeAssistantAudio(): void {
@@ -244,6 +327,8 @@ export class RealtimeClient {
   }
 
   async close(): Promise<void> {
+    this.sessionStarted = false;
+    this.pendingTelemetryEvents = [];
     this.assistantRemoteTrack = null;
     this.assistantTrackSid = null;
     this.assistantTrackStream = null;
@@ -251,6 +336,7 @@ export class RealtimeClient {
     this.assistantTrackFinalizePending = false;
     this.assistantTrackLastActiveAt = 0;
     this.assistantTrackSuppressUntil = 0;
+    this.stopAssistantTrackStatsSampler();
     this.clearAssistantCaptureStream();
     this.assistantTrackMonitor.detach();
     this.microphoneStream?.getTracks().forEach((track) => track.stop());
@@ -290,6 +376,20 @@ export class RealtimeClient {
         noiseSuppression: true,
       },
     });
+    const microphoneTrack = this.microphoneStream.getAudioTracks()[0];
+    if (microphoneTrack && this.isTransportDebugEnabled()) {
+      const settings = microphoneTrack.getSettings();
+      this.options.onDebugEvent({
+        type: "local.capture.settings",
+        channel_count: settings.channelCount ?? null,
+        sample_rate: settings.sampleRate ?? null,
+        sample_size: settings.sampleSize ?? null,
+        echo_cancellation: settings.echoCancellation ?? null,
+        noise_suppression: settings.noiseSuppression ?? null,
+        auto_gain_control: settings.autoGainControl ?? null,
+        device_id_present: Boolean(settings.deviceId),
+      });
+    }
   }
 
   private async handleTrackSubscribed(
@@ -337,6 +437,11 @@ export class RealtimeClient {
     this.syncAssistantCaptureStream();
     await this.assistantTrackMonitor.attachStream(stream, { playback: true });
     this.syncAssistantCaptureStream();
+    this.startAssistantTrackStatsSampler();
+    void this.sendTelemetry("assistant.track_subscribed", {
+      track_sid: resolvedTrackSid,
+      playout_delay_ms: round(track.getPlayoutDelay() * 1000),
+    }).catch(() => undefined);
     this.options.onDebugEvent({
       type: "local.livekit.track_playback_enabled",
       track_sid: resolvedTrackSid,
@@ -368,6 +473,7 @@ export class RealtimeClient {
     this.assistantTrackFinalizePending = false;
     this.assistantTrackLastActiveAt = 0;
     this.assistantTrackSuppressUntil = 0;
+    this.stopAssistantTrackStatsSampler();
     this.assistantTrackMonitor.detach();
     this.syncAssistantCaptureStream();
   }
@@ -471,6 +577,30 @@ export class RealtimeClient {
     return override === "1" || override === "true";
   }
 
+  private startAssistantTrackStatsSampler(): void {
+    if (!this.isTransportDebugEnabled() || this.assistantRemoteTrack === null) {
+      return;
+    }
+    if (this.assistantTrackStatsIntervalId !== null) {
+      return;
+    }
+    this.assistantTrackStatsIntervalId = window.setInterval(() => {
+      if (this.assistantRemoteTrack === null) {
+        this.stopAssistantTrackStatsSampler();
+        return;
+      }
+      void this.emitAssistantTrackStats("sample");
+    }, 1000);
+  }
+
+  private stopAssistantTrackStatsSampler(): void {
+    if (this.assistantTrackStatsIntervalId === null) {
+      return;
+    }
+    window.clearInterval(this.assistantTrackStatsIntervalId);
+    this.assistantTrackStatsIntervalId = null;
+  }
+
   private async emitAssistantTrackStats(phase: string): Promise<void> {
     if (!this.isTransportDebugEnabled() || this.assistantRemoteTrack === null) {
       return;
@@ -484,6 +614,7 @@ export class RealtimeClient {
       this.options.onDebugEvent({
         type: "local.livekit.track_stats",
         phase,
+        track_sid: this.assistantTrackSid,
         ...summarizeAudioReceiverStats(report),
       });
     } catch (error) {
@@ -535,6 +666,19 @@ function summarizeAudioReceiverStats(report: RTCStatsReport): Record<string, unk
     copyIfFinite(summary, "total_samples_received", stat.totalSamplesReceived);
     copyIfFinite(summary, "total_samples_duration_s", stat.totalSamplesDuration);
     copyIfFinite(summary, "audio_level", stat.audioLevel);
+    if (
+      typeof stat.jitterBufferDelay === "number" &&
+      Number.isFinite(stat.jitterBufferDelay) &&
+      typeof stat.jitterBufferEmittedCount === "number" &&
+      Number.isFinite(stat.jitterBufferEmittedCount) &&
+      stat.jitterBufferEmittedCount > 0
+    ) {
+      summary.jitter_buffer_avg_ms =
+        Math.round((stat.jitterBufferDelay / stat.jitterBufferEmittedCount) * 1000 * 100) / 100;
+    }
+    if (typeof stat.jitter === "number" && Number.isFinite(stat.jitter)) {
+      summary.jitter_ms = Math.round(stat.jitter * 1000 * 100) / 100;
+    }
     break;
   }
   return summary;

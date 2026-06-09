@@ -1,7 +1,9 @@
 from http import HTTPStatus
+import asyncio
 import base64
 from functools import lru_cache
 import math
+import logging
 import time
 from pathlib import Path
 import wave
@@ -12,11 +14,14 @@ from fastapi.responses import JSONResponse
 from livekit import api as livekit_api
 
 from src.config import Settings, get_settings
+from src.livekit.worker_state import load_livekit_worker_state
 from src.realtime.audio import iter_pcm16_chunks
 from src.realtime.qwen_chat_client import QwenChatClient
 from src.realtime.qwen_client import QwenRealtimeClient, probe_qwen_realtime_websocket
+from src.security import redact_url_secrets
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 _QWEN_INFERENCE_PROBE_TIMEOUT_SECONDS = 10.0
 _QWEN_INFERENCE_PROBE_DURATION_SECONDS = 0.5
 _QWEN_INFERENCE_PROBE_WAV_DURATION_SECONDS = 0.8
@@ -33,14 +38,78 @@ async def health() -> dict[str, str]:
     return {"status": "container_alive"}
 
 
-@router.get("/ready")
-async def ready(deep: bool = Query(default=True)) -> JSONResponse:
+async def _ready_response(*, deep: bool) -> JSONResponse:
     settings = get_settings()
     qwen_result = await probe_qwen(settings, deep=deep)
     livekit_result = await probe_livekit(settings)
-    result = compose_ready_payload(qwen_result=qwen_result, livekit_result=livekit_result)
+    result = compose_ready_payload(
+        qwen_result=qwen_result,
+        livekit_result=livekit_result,
+        settings=settings,
+    )
     status_code = HTTPStatus.OK if result["status"] == "ready" else HTTPStatus.SERVICE_UNAVAILABLE
     return JSONResponse(status_code=status_code, content=result)
+
+
+@router.get("/ready")
+async def ready(deep: bool = Query(default=False)) -> JSONResponse:
+    return await _ready_response(deep=deep)
+
+
+@router.get("/diagnostics/deep")
+async def diagnostics_deep() -> JSONResponse:
+    return await _ready_response(deep=True)
+
+
+async def prewarm_qwen_startup(settings: Settings) -> None:
+    if not settings.qwen_prewarm_on_startup:
+        return
+
+    deadline = time.monotonic() + settings.qwen_prewarm_max_wait_seconds
+    attempt = 0
+    last_status = "qwen_failed"
+    last_detail = "prewarm was not attempted"
+
+    while True:
+        attempt += 1
+        result = await probe_qwen(settings, deep=True)
+        last_status = str(result.get("status", "qwen_failed"))
+        last_detail = str(result.get("detail", "unknown prewarm failure"))
+        if last_status == "qwen_ready":
+            logger.info(
+                "Qwen startup prewarm succeeded attempt=%d backend=%s qwen_health_url=%s qwen_realtime_url=%s",
+                attempt,
+                settings.qwen_audio_backend,
+                redact_url_secrets(settings.qwen_health_url),
+                redact_url_secrets(settings.qwen_realtime_url),
+            )
+            return
+
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            break
+
+        retry_delay_seconds = min(
+            settings.qwen_prewarm_retry_interval_seconds,
+            remaining_seconds,
+        )
+        logger.info(
+            "Qwen startup prewarm retrying attempt=%d status=%s retry_in=%.2fs detail=%s",
+            attempt,
+            last_status,
+            retry_delay_seconds,
+            last_detail,
+        )
+        await asyncio.sleep(retry_delay_seconds)
+
+    logger.warning(
+        "Qwen startup prewarm exhausted attempt=%d status=%s detail=%s qwen_health_url=%s qwen_realtime_url=%s",
+        attempt,
+        last_status,
+        last_detail,
+        redact_url_secrets(settings.qwen_health_url),
+        redact_url_secrets(settings.qwen_realtime_url),
+    )
 
 
 async def probe_qwen(settings: Settings, *, deep: bool = False) -> dict[str, str]:
@@ -51,16 +120,16 @@ async def probe_qwen(settings: Settings, *, deep: bool = False) -> dict[str, str
         return {
             "status": "qwen_unreachable",
             "detail": f"Health probe failed: {exc}",
-            "qwen_health_url": settings.qwen_health_url,
-            "qwen_realtime_url": settings.qwen_realtime_url,
+            "qwen_health_url": redact_url_secrets(settings.qwen_health_url),
+            "qwen_realtime_url": redact_url_secrets(settings.qwen_realtime_url),
         }
 
     if response.status_code >= 500:
         return {
             "status": "qwen_loading",
             "detail": f"Health endpoint returned {response.status_code}",
-            "qwen_health_url": settings.qwen_health_url,
-            "qwen_realtime_url": settings.qwen_realtime_url,
+            "qwen_health_url": redact_url_secrets(settings.qwen_health_url),
+            "qwen_realtime_url": redact_url_secrets(settings.qwen_realtime_url),
         }
 
     if settings.qwen_audio_backend == "realtime":
@@ -75,9 +144,9 @@ async def probe_qwen(settings: Settings, *, deep: bool = False) -> dict[str, str
             return {
                 "status": "qwen_failed",
                 "detail": f"Realtime websocket probe failed: {exc}",
-                "qwen_health_url": settings.qwen_health_url,
-                "qwen_realtime_url": settings.qwen_realtime_url,
-                "qwen_chat_url": settings.qwen_chat_url,
+                "qwen_health_url": redact_url_secrets(settings.qwen_health_url),
+                "qwen_realtime_url": redact_url_secrets(settings.qwen_realtime_url),
+                "qwen_chat_url": redact_url_secrets(settings.qwen_chat_url),
             }
 
     if deep:
@@ -100,9 +169,9 @@ async def probe_qwen(settings: Settings, *, deep: bool = False) -> dict[str, str
                 else "Qwen health probe succeeded."
             )
         ),
-        "qwen_health_url": settings.qwen_health_url,
-        "qwen_realtime_url": settings.qwen_realtime_url,
-        "qwen_chat_url": settings.qwen_chat_url,
+        "qwen_health_url": redact_url_secrets(settings.qwen_health_url),
+        "qwen_realtime_url": redact_url_secrets(settings.qwen_realtime_url),
+        "qwen_chat_url": redact_url_secrets(settings.qwen_chat_url),
     }
 
 
@@ -129,9 +198,9 @@ async def probe_qwen_realtime_inference_cached(settings: Settings) -> dict[str, 
                 if settings.qwen_audio_backend == "realtime"
                 else f"Streaming chat audio inference probe failed: {exc}"
             ),
-            "qwen_health_url": settings.qwen_health_url,
-            "qwen_realtime_url": settings.qwen_realtime_url,
-            "qwen_chat_url": settings.qwen_chat_url,
+            "qwen_health_url": redact_url_secrets(settings.qwen_health_url),
+            "qwen_realtime_url": redact_url_secrets(settings.qwen_realtime_url),
+            "qwen_chat_url": redact_url_secrets(settings.qwen_chat_url),
         }
 
     _last_qwen_inference_probe_ok_at = now
@@ -256,28 +325,84 @@ def _load_probe_audio_pcm16(*, sample_rate: int) -> bytes:
     )
 
 
-async def probe_livekit(settings: Settings) -> dict[str, str | bool | int]:
+def _load_livekit_worker_snapshot(settings: Settings) -> dict[str, object] | None:
+    return load_livekit_worker_state(settings.livekit_worker_state_path)
+
+
+def _merge_livekit_worker_snapshot(
+    result: dict[str, object],
+    worker_snapshot: dict[str, object] | None,
+) -> dict[str, object]:
+    if not worker_snapshot:
+        return result
+    merged = dict(result)
+    merged["livekit_reconnects"] = worker_snapshot.get("livekit_reconnects", 0)
+    merged["qwen_reconnects"] = worker_snapshot.get("qwen_reconnects", 0)
+    merged["active_sessions"] = worker_snapshot.get("active_sessions", 0)
+    merged["livekit_input_track_status"] = worker_snapshot.get("livekit_input_track_status", "idle")
+    merged["assistant_queue_depth_ms"] = worker_snapshot.get("assistant_queue_depth_ms", 0.0)
+    merged["qwen_last_reconnect_reason"] = worker_snapshot.get("qwen_last_reconnect_reason")
+    merged["error_count"] = worker_snapshot.get("error_count", 0)
+    merged["interruption_count"] = worker_snapshot.get("interruption_count", 0)
+    merged["duplicate_commit_count"] = worker_snapshot.get("duplicate_commit_count", 0)
+    merged["stale_output_drop_count"] = worker_snapshot.get("stale_output_drop_count", 0)
+    reconnect_reasons = worker_snapshot.get("qwen_reconnect_reasons")
+    if isinstance(reconnect_reasons, dict):
+        merged["qwen_reconnect_reasons"] = reconnect_reasons
+    if "interrupt_clear_ms" in worker_snapshot:
+        merged["interrupt_clear_ms"] = worker_snapshot["interrupt_clear_ms"]
+    rollups = worker_snapshot.get("metric_rollups")
+    if isinstance(rollups, dict):
+        merged["metric_rollups"] = rollups
+        for metric_key, ready_key in (
+            ("commit_to_first_livekit_egress_last_ms", "last_first_audio_ms"),
+            ("commit_to_first_livekit_egress_p50_ms", "p50_first_audio_ms"),
+            ("commit_to_first_livekit_egress_p95_ms", "p95_first_audio_ms"),
+            ("commit_to_first_livekit_egress_p99_ms", "p99_first_audio_ms"),
+        ):
+            value = rollups.get(metric_key)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                merged[ready_key] = value
+    updated_at_epoch_ms = worker_snapshot.get("updated_at_epoch_ms")
+    if isinstance(updated_at_epoch_ms, (int, float)) and not isinstance(updated_at_epoch_ms, bool):
+        merged["livekit_worker_snapshot_age_ms"] = max(
+            int(time.time() * 1000) - int(updated_at_epoch_ms),
+            0,
+        )
+    return merged
+
+
+async def probe_livekit(settings: Settings) -> dict[str, object]:
+    worker_snapshot = _load_livekit_worker_snapshot(settings)
     if not settings.livekit_url:
-        return {
+        return _merge_livekit_worker_snapshot(
+            {
             "status": "livekit_failed",
             "detail": "LIVEKIT_URL is not configured.",
-            "livekit_url": settings.livekit_url,
+            "livekit_url": redact_url_secrets(settings.livekit_url),
             "livekit_room": settings.livekit_room,
             "livekit_worker_status": "not_configured",
             "livekit_room_joined": False,
+            "livekit_input_track_status": "idle",
             "livekit_output_track_status": "unknown",
-        }
+            },
+            worker_snapshot,
+        )
 
     if not settings.livekit_api_key or not settings.livekit_api_secret:
-        return {
+        return _merge_livekit_worker_snapshot(
+            {
             "status": "livekit_failed",
             "detail": "LIVEKIT_API_KEY or LIVEKIT_API_SECRET is missing.",
-            "livekit_url": settings.livekit_url,
+            "livekit_url": redact_url_secrets(settings.livekit_url),
             "livekit_room": settings.livekit_room,
             "livekit_worker_status": "not_configured",
             "livekit_room_joined": False,
+            "livekit_input_track_status": "idle",
             "livekit_output_track_status": "unknown",
-        }
+            },
+            worker_snapshot,
+        )
 
     client = livekit_api.LiveKitAPI(
         url=settings.livekit_url,
@@ -297,15 +422,19 @@ async def probe_livekit(settings: Settings) -> dict[str, str | bool | int]:
             )
             participants = list(participant_response.participants)
     except Exception as exc:
-        return {
+        return _merge_livekit_worker_snapshot(
+            {
             "status": "livekit_failed",
             "detail": f"LiveKit API probe failed: {exc}",
-            "livekit_url": settings.livekit_url,
+            "livekit_url": redact_url_secrets(settings.livekit_url),
             "livekit_room": settings.livekit_room,
             "livekit_worker_status": "unreachable",
             "livekit_room_joined": False,
+            "livekit_input_track_status": "idle",
             "livekit_output_track_status": "unknown",
-        }
+            },
+            worker_snapshot,
+        )
     finally:
         await client.aclose()
 
@@ -317,42 +446,74 @@ async def probe_livekit(settings: Settings) -> dict[str, str | bool | int]:
     if worker is not None:
         assistant_track_ready = any(track.name == "assistant" for track in worker.tracks)
 
-    return {
+    return _merge_livekit_worker_snapshot(
+        {
         "status": "livekit_ready" if worker is not None and assistant_track_ready else "livekit_waiting",
         "detail": "LiveKit worker is connected." if worker is not None else "LiveKit worker is not connected to the room yet.",
-        "livekit_url": settings.livekit_url,
+        "livekit_url": redact_url_secrets(settings.livekit_url),
         "livekit_room": settings.livekit_room,
         "livekit_worker_status": "connected" if worker is not None else "missing",
         "livekit_room_joined": room_exists,
+        "livekit_input_track_status": "idle",
         "livekit_output_track_status": "ready" if assistant_track_ready else "missing",
         "livekit_participants": len(participants),
-    }
+        },
+        worker_snapshot,
+    )
 
 
 def compose_ready_payload(
     *,
     qwen_result: dict[str, str],
-    livekit_result: dict[str, str | bool | int],
-) -> dict[str, str | bool | int]:
+    livekit_result: dict[str, object],
+    settings: Settings,
+) -> dict[str, object]:
+    model_server_url = (
+        settings.qwen_realtime_url
+        if settings.qwen_audio_backend == "realtime"
+        else settings.qwen_chat_url
+    )
+    base_payload: dict[str, object] = {
+        **qwen_result,
+        **livekit_result,
+        "kernel_status": "ready",
+        "model_server_status": qwen_result["status"],
+        "model_server_url": model_server_url,
+        "model_name": settings.qwen_model,
+        "model_output_mode": "speech",
+        "qwen3_omni_ready": qwen_result["status"] == "qwen_ready",
+        "speech_output_ready": (
+            qwen_result["status"] == "qwen_ready"
+            and livekit_result.get("livekit_output_track_status") == "ready"
+        ),
+    }
     if qwen_result["status"] != "qwen_ready":
         return {
-            **qwen_result,
-            **livekit_result,
+            **base_payload,
             "status": "warming" if qwen_result["status"] == "qwen_loading" else "failed",
             "detail": qwen_result["detail"],
+            "failure_reason": qwen_result["detail"],
+        }
+
+    if livekit_result.get("livekit_worker_status") == "draining":
+        return {
+            **base_payload,
+            "status": "degraded",
+            "detail": "LiveKit worker is draining and not accepting new sessions.",
+            "failure_reason": "LiveKit worker is draining and not accepting new sessions.",
         }
 
     if livekit_result["status"] != "livekit_ready":
         return {
-            **qwen_result,
-            **livekit_result,
+            **base_payload,
             "status": "degraded",
             "detail": str(livekit_result["detail"]),
+            "failure_reason": str(livekit_result["detail"]),
         }
 
     return {
-        **qwen_result,
-        **livekit_result,
+        **base_payload,
         "status": "ready",
         "detail": "Qwen and LiveKit worker probes succeeded.",
+        "failure_reason": None,
     }
